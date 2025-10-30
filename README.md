@@ -8,25 +8,16 @@ This is a boilerplate Spring Boot application for building an AI-powered tech st
 
 ## Project Structure
 
-```
-stacksniffer/
-├── src/
-│   ├── main/
-│   │   ├── java/
-│   │   │   └── io/
-│   │   │       └── stacksniffer/
-│   │   │           └── StackSnifferApplication.java
-│   │   └── resources/
-│   │       └── application.properties
-│   └── test/
-│       └── java/
-│           └── io/
-│               └── stacksniffer/
-│                   └── StackSnifferApplicationTests.java
-├── pom.xml
-├── .gitignore
-├── LICENSE
-└── README.md
+```stacksniffer/
+├── stacksniffer-parent/         # Maven parent POM
+├── stacksniffer-core/           # Domain models, DTOs, events 
+├── stacksniffer-config/         # YAML pattern configurations
+├── stacksniffer-ingestion/      # GitHub API, file analysis
+├── stacksniffer-search/         # Elasticsearch integration
+├── stacksniffer-ai/             # Vertex AI, Gemini, embeddings, RAG
+├── stacksniffer-learning/       # Self-learning ML pipeline
+├── stacksniffer-agents/         # Google ADK agents
+└── stacksniffer-api/            # REST controllers, Spring Boot app
 ```
 
 ## Prerequisites
@@ -63,16 +54,6 @@ mvn test
 - Java 17
 - Spring Boot 3.2
 - Maven
-
-## Next Steps
-
-This is a skeleton project. To implement the full functionality, you'll need to add:
-
-1. Controllers for API endpoints
-2. Services for business logic
-3. Models/DTOs for data structures
-4. Configuration for external services
-5. Additional dependencies as needed
 
 ## License
 
