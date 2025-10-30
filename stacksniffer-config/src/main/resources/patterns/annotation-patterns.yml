@@ -1,0 +1,238 @@
+annotations:
+  java:
+    spring:
+      - pattern: "@SpringBootApplication"
+        category: "Application"
+        implies: ["Spring Boot"]
+      - pattern: "@RestController"
+        category: "Web"
+        implies: ["Spring MVC", "REST API"]
+      - pattern: "@Controller"
+        category: "Web"
+        implies: ["Spring MVC"]
+      - pattern: "@Service"
+        category: "Business Logic"
+        implies: ["Spring Core"]
+      - pattern: "@Repository"
+        category: "Data Access"
+        implies: ["Spring Data"]
+      - pattern: "@Component"
+        category: "Component"
+        implies: ["Spring Core"]
+      - pattern: "@Autowired"
+        category: "Dependency Injection"
+        implies: ["Spring Core"]
+      - pattern: "@RequestMapping"
+        category: "Web"
+        implies: ["Spring MVC"]
+      - pattern: "@GetMapping"
+        category: "Web"
+        implies: ["Spring MVC"]
+      - pattern: "@PostMapping"
+        category: "Web"
+        implies: ["Spring MVC"]
+      - pattern: "@PutMapping"
+        category: "Web"
+        implies: ["Spring MVC"]
+      - pattern: "@DeleteMapping"
+        category: "Web"
+        implies: ["Spring MVC"]
+      - pattern: "@Transactional"
+        category: "Transaction"
+        implies: ["Spring Transaction"]
+      - pattern: "@EnableWebSecurity"
+        category: "Security"
+        implies: ["Spring Security"]
+      - pattern: "@Scheduled"
+        category: "Scheduling"
+        implies: ["Spring Scheduling"]
+
+    jpa:
+      - pattern: "@Entity"
+        category: "ORM"
+        implies: ["JPA", "Hibernate"]
+      - pattern: "@Table"
+        category: "ORM"
+        implies: ["JPA", "Hibernate"]
+      - pattern: "@Id"
+        category: "ORM"
+        implies: ["JPA", "Hibernate"]
+      - pattern: "@GeneratedValue"
+        category: "ORM"
+        implies: ["JPA", "Hibernate"]
+      - pattern: "@Column"
+        category: "ORM"
+        implies: ["JPA", "Hibernate"]
+      - pattern: "@OneToMany"
+        category: "ORM"
+        implies: ["JPA", "Hibernate"]
+      - pattern: "@ManyToOne"
+        category: "ORM"
+        implies: ["JPA", "Hibernate"]
+      - pattern: "@ManyToMany"
+        category: "ORM"
+        implies: ["JPA", "Hibernate"]
+      - pattern: "@JoinColumn"
+        category: "ORM"
+        implies: ["JPA", "Hibernate"]
+
+    lombok:
+      - pattern: "@Data"
+        category: "Utility"
+        implies: ["Lombok"]
+      - pattern: "@Getter"
+        category: "Utility"
+        implies: ["Lombok"]
+      - pattern: "@Setter"
+        category: "Utility"
+        implies: ["Lombok"]
+      - pattern: "@Builder"
+        category: "Utility"
+        implies: ["Lombok"]
+      - pattern: "@NoArgsConstructor"
+        category: "Utility"
+        implies: ["Lombok"]
+      - pattern: "@AllArgsConstructor"
+        category: "Utility"
+        implies: ["Lombok"]
+      - pattern: "@Slf4j"
+        category: "Logging"
+        implies: ["Lombok", "SLF4J"]
+
+    testing:
+      - pattern: "@Test"
+        category: "Testing"
+        implies: ["JUnit"]
+      - pattern: "@BeforeEach"
+        category: "Testing"
+        implies: ["JUnit 5"]
+      - pattern: "@AfterEach"
+        category: "Testing"
+        implies: ["JUnit 5"]
+      - pattern: "@Mock"
+        category: "Testing"
+        implies: ["Mockito"]
+      - pattern: "@InjectMocks"
+        category: "Testing"
+        implies: ["Mockito"]
+
+  typescript:
+    angular:
+      - pattern: "@Component"
+        category: "Component"
+        implies: ["Angular"]
+      - pattern: "@NgModule"
+        category: "Module"
+        implies: ["Angular"]
+      - pattern: "@Injectable"
+        category: "Service"
+        implies: ["Angular"]
+      - pattern: "@Directive"
+        category: "Directive"
+        implies: ["Angular"]
+      - pattern: "@Pipe"
+        category: "Pipe"
+        implies: ["Angular"]
+      - pattern: "@Input"
+        category: "Component"
+        implies: ["Angular"]
+      - pattern: "@Output"
+        category: "Component"
+        implies: ["Angular"]
+
+    nestjs:
+      - pattern: "@Module"
+        category: "Module"
+        implies: ["NestJS"]
+      - pattern: "@Controller"
+        category: "Controller"
+        implies: ["NestJS"]
+      - pattern: "@Injectable"
+        category: "Service"
+        implies: ["NestJS"]
+      - pattern: "@Get"
+        category: "HTTP"
+        implies: ["NestJS"]
+      - pattern: "@Post"
+        category: "HTTP"
+        implies: ["NestJS"]
+
+    typeorm:
+      - pattern: "@Entity"
+        category: "ORM"
+        implies: ["TypeORM"]
+      - pattern: "@Column"
+        category: "ORM"
+        implies: ["TypeORM"]
+      - pattern: "@PrimaryGeneratedColumn"
+        category: "ORM"
+        implies: ["TypeORM"]
+      - pattern: "@ManyToOne"
+        category: "ORM"
+        implies: ["TypeORM"]
+      - pattern: "@OneToMany"
+        category: "ORM"
+        implies: ["TypeORM"]
+
+  python:
+    decorators:
+      - pattern: "@app.route"
+        category: "Web"
+        implies: ["Flask"]
+      - pattern: "@app.get"
+        category: "Web"
+        implies: ["FastAPI"]
+      - pattern: "@app.post"
+        category: "Web"
+        implies: ["FastAPI"]
+      - pattern: "@dataclass"
+        category: "Utility"
+        implies: ["Python Standard Library"]
+      - pattern: "@property"
+        category: "Utility"
+        implies: ["Python Standard Library"]
+      - pattern: "@staticmethod"
+        category: "Utility"
+        implies: ["Python Standard Library"]
+      - pattern: "@classmethod"
+        category: "Utility"
+        implies: ["Python Standard Library"]
+
+  rust:
+    attributes:
+      - pattern: "#[derive"
+        category: "Macro"
+        implies: ["Rust Standard Library"]
+      - pattern: "#[test]"
+        category: "Testing"
+        implies: ["Rust Standard Library"]
+      - pattern: "#[get"
+        category: "Web"
+        implies: ["Rocket"]
+      - pattern: "#[post"
+        category: "Web"
+        implies: ["Rocket"]
+      - pattern: "#[launch]"
+        category: "Application"
+        implies: ["Rocket"]
+
+  csharp:
+    dotnet:
+      - pattern: "[ApiController]"
+        category: "Web"
+        implies: ["ASP.NET Core"]
+      - pattern: "[Route"
+        category: "Web"
+        implies: ["ASP.NET Core"]
+      - pattern: "[HttpGet]"
+        category: "Web"
+        implies: ["ASP.NET Core"]
+      - pattern: "[HttpPost]"
+        category: "Web"
+        implies: ["ASP.NET Core"]
+      - pattern: "[Authorize]"
+        category: "Security"
+        implies: ["ASP.NET Core"]
+      - pattern: "[AllowAnonymous]"
+        category: "Security"
+        implies: ["ASP.NET Core"]

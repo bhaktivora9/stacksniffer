@@ -1,0 +1,364 @@
+domains:
+  - name: "Authentication"
+    description: "User authentication and identity management"
+    pathPatterns:
+      - "/auth/"
+      - "/security/"
+      - "/login/"
+      - "/oauth/"
+      - "/identity/"
+    keywords:
+      - "authenticate"
+      - "password"
+      - "token"
+      - "jwt"
+      - "oauth"
+      - "login"
+      - "logout"
+      - "session"
+      - "credentials"
+      - "authorization"
+    imports:
+      - "org.springframework.security.*"
+      - "javax.security.*"
+      - "from flask_login"
+      - "from passport"
+    complexity:
+      base: 7
+      factors:
+        encryption: 2
+        oauth: 3
+        mfa: 2
+        sso: 2
+
+  - name: "Database"
+    description: "Database operations and data persistence"
+    pathPatterns:
+      - "/db/"
+      - "/database/"
+      - "/repository/"
+      - "/dao/"
+      - "/persistence/"
+    keywords:
+      - "query"
+      - "transaction"
+      - "entity"
+      - "schema"
+      - "migration"
+      - "connection"
+      - "select"
+      - "insert"
+      - "update"
+      - "delete"
+    imports:
+      - "javax.persistence.*"
+      - "jakarta.persistence.*"
+      - "org.hibernate.*"
+      - "from sqlalchemy"
+      - "from 'typeorm'"
+    complexity:
+      base: 5
+      factors:
+        joins: 1
+        transactions: 2
+        migrations: 1
+        optimization: 2
+
+  - name: "API"
+    description: "RESTful and GraphQL API endpoints"
+    pathPatterns:
+      - "/api/"
+      - "/rest/"
+      - "/graphql/"
+      - "/endpoint/"
+      - "/controller/"
+    keywords:
+      - "endpoint"
+      - "route"
+      - "controller"
+      - "handler"
+      - "request"
+      - "response"
+      - "get"
+      - "post"
+      - "put"
+      - "delete"
+    imports:
+      - "org.springframework.web.*"
+      - "javax.ws.rs.*"
+      - "from flask import"
+      - "from express"
+      - "from '@nestjs/common'"
+    complexity:
+      base: 4
+      factors:
+        versioning: 1
+        pagination: 1
+        filtering: 1
+        validation: 1
+
+  - name: "Caching"
+    description: "Caching mechanisms and strategies"
+    pathPatterns:
+      - "/cache/"
+      - "/redis/"
+      - "/memcached/"
+    keywords:
+      - "cache"
+      - "redis"
+      - "memcached"
+      - "expiration"
+      - "eviction"
+      - "ttl"
+    imports:
+      - "org.springframework.cache.*"
+      - "redis.clients.jedis.*"
+      - "from redis"
+      - "from 'node-cache'"
+    complexity:
+      base: 5
+      factors:
+        distributed: 2
+        invalidation: 1
+        strategies: 1
+
+  - name: "File Processing"
+    description: "File upload, download, and processing"
+    pathPatterns:
+      - "/file/"
+      - "/upload/"
+      - "/download/"
+      - "/storage/"
+    keywords:
+      - "upload"
+      - "download"
+      - "file"
+      - "stream"
+      - "multipart"
+      - "storage"
+      - "blob"
+    imports:
+      - "java.io.*"
+      - "java.nio.*"
+      - "from werkzeug.utils"
+      - "from 'multer'"
+    complexity:
+      base: 4
+      factors:
+        streaming: 1
+        validation: 1
+        compression: 1
+        cloud_storage: 2
+
+  - name: "Messaging"
+    description: "Message queues and event streaming"
+    pathPatterns:
+      - "/message/"
+      - "/queue/"
+      - "/kafka/"
+      - "/rabbitmq/"
+      - "/event/"
+    keywords:
+      - "queue"
+      - "publish"
+      - "subscribe"
+      - "consumer"
+      - "producer"
+      - "topic"
+      - "event"
+      - "message"
+    imports:
+      - "org.springframework.kafka.*"
+      - "org.springframework.amqp.*"
+      - "from kafka"
+      - "from 'amqplib'"
+    complexity:
+      base: 6
+      factors:
+        partitioning: 2
+        ordering: 1
+        retries: 1
+        dead_letter: 1
+
+  - name: "Search"
+    description: "Search and indexing functionality"
+    pathPatterns:
+      - "/search/"
+      - "/index/"
+      - "/elasticsearch/"
+      - "/solr/"
+    keywords:
+      - "search"
+      - "index"
+      - "query"
+      - "filter"
+      - "facet"
+      - "aggregation"
+      - "score"
+    imports:
+      - "org.elasticsearch.*"
+      - "co.elastic.clients.*"
+      - "from elasticsearch"
+      - "from '@elastic/elasticsearch'"
+    complexity:
+      base: 6
+      factors:
+        full_text: 1
+        faceting: 1
+        relevance: 2
+        distributed: 2
+
+  - name: "Payment"
+    description: "Payment processing and financial transactions"
+    pathPatterns:
+      - "/payment/"
+      - "/billing/"
+      - "/checkout/"
+      - "/subscription/"
+    keywords:
+      - "payment"
+      - "stripe"
+      - "paypal"
+      - "transaction"
+      - "billing"
+      - "invoice"
+      - "subscription"
+      - "checkout"
+    imports:
+      - "com.stripe.*"
+      - "from stripe"
+      - "from 'stripe'"
+    complexity:
+      base: 8
+      factors:
+        pci_compliance: 3
+        refunds: 1
+        subscriptions: 2
+        webhooks: 1
+
+  - name: "Email"
+    description: "Email sending and template management"
+    pathPatterns:
+      - "/email/"
+      - "/mail/"
+      - "/notification/"
+    keywords:
+      - "email"
+      - "mail"
+      - "smtp"
+      - "send"
+      - "template"
+      - "notification"
+    imports:
+      - "javax.mail.*"
+      - "org.springframework.mail.*"
+      - "from flask_mail"
+      - "from 'nodemailer'"
+    complexity:
+      base: 3
+      factors:
+        templates: 1
+        attachments: 1
+        scheduling: 1
+
+  - name: "Monitoring"
+    description: "Application monitoring and observability"
+    pathPatterns:
+      - "/metrics/"
+      - "/health/"
+      - "/monitoring/"
+      - "/observability/"
+    keywords:
+      - "metrics"
+      - "health"
+      - "monitoring"
+      - "telemetry"
+      - "tracing"
+      - "logging"
+    imports:
+      - "io.micrometer.*"
+      - "org.springframework.boot.actuate.*"
+      - "from prometheus_client"
+      - "from 'prom-client'"
+    complexity:
+      base: 4
+      factors:
+        distributed_tracing: 2
+        custom_metrics: 1
+        alerting: 1
+
+  - name: "Security"
+    description: "Application security and encryption"
+    pathPatterns:
+      - "/security/"
+      - "/encryption/"
+      - "/crypto/"
+    keywords:
+      - "encrypt"
+      - "decrypt"
+      - "hash"
+      - "secure"
+      - "certificate"
+      - "ssl"
+      - "tls"
+      - "signature"
+    imports:
+      - "javax.crypto.*"
+      - "java.security.*"
+      - "from cryptography"
+      - "from 'crypto'"
+    complexity:
+      base: 7
+      factors:
+        encryption: 2
+        signing: 1
+        key_management: 2
+
+  - name: "Testing"
+    description: "Unit tests, integration tests, and test utilities"
+    pathPatterns:
+      - "/test/"
+      - "/tests/"
+      - "/__tests__/"
+      - "/spec/"
+    keywords:
+      - "test"
+      - "mock"
+      - "assert"
+      - "verify"
+      - "expect"
+      - "should"
+    imports:
+      - "org.junit.*"
+      - "org.mockito.*"
+      - "import unittest"
+      - "from 'jest'"
+    complexity:
+      base: 3
+      factors:
+        integration: 1
+        e2e: 2
+        mocking: 1
+
+  - name: "Configuration"
+    description: "Application configuration and settings"
+    pathPatterns:
+      - "/config/"
+      - "/settings/"
+      - "/properties/"
+    keywords:
+      - "config"
+      - "settings"
+      - "properties"
+      - "environment"
+      - "configuration"
+    imports:
+      - "org.springframework.context.annotation.*"
+      - "from configparser"
+      - "from 'config'"
+    complexity:
+      base: 2
+      factors:
+        profiles: 1
+        externalized: 1
+        secrets: 2

@@ -1,0 +1,169 @@
+keywords:
+  frameworks:
+    spring:
+      - pattern: "SpringApplication\\.run"
+        confidence: 0.95
+        category: "Backend Framework"
+        technology: "Spring Boot"
+      - pattern: "@SpringBootApplication"
+        confidence: 0.95
+        category: "Backend Framework"
+        technology: "Spring Boot"
+      - pattern: "@RestController"
+        confidence: 0.90
+        category: "Backend Framework"
+        technology: "Spring MVC"
+
+    react:
+      - pattern: "ReactDOM\\.render"
+        confidence: 0.90
+        category: "Frontend Framework"
+        technology: "React"
+      - pattern: "useState"
+        confidence: 0.85
+        category: "Frontend Framework"
+        technology: "React"
+      - pattern: "useEffect"
+        confidence: 0.85
+        category: "Frontend Framework"
+        technology: "React"
+
+    angular:
+      - pattern: "platformBrowserDynamic"
+        confidence: 0.95
+        category: "Frontend Framework"
+        technology: "Angular"
+      - pattern: "@Component"
+        confidence: 0.90
+        category: "Frontend Framework"
+        technology: "Angular"
+
+    vue:
+      - pattern: "createApp"
+        confidence: 0.90
+        category: "Frontend Framework"
+        technology: "Vue.js"
+      - pattern: "Vue\\.createApp"
+        confidence: 0.95
+        category: "Frontend Framework"
+        technology: "Vue.js"
+
+    express:
+      - pattern: "express\\(\\)"
+        confidence: 0.90
+        category: "Backend Framework"
+        technology: "Express.js"
+      - pattern: "app\\.listen"
+        confidence: 0.75
+        category: "Backend Framework"
+        technology: "Express.js"
+
+    django:
+      - pattern: "django\\.setup"
+        confidence: 0.95
+        category: "Backend Framework"
+        technology: "Django"
+      - pattern: "INSTALLED_APPS"
+        confidence: 0.90
+        category: "Backend Framework"
+        technology: "Django"
+
+    flask:
+      - pattern: "Flask\\(__name__\\)"
+        confidence: 0.95
+        category: "Backend Framework"
+        technology: "Flask"
+      - pattern: "@app\\.route"
+        confidence: 0.90
+        category: "Backend Framework"
+        technology: "Flask"
+
+  databases:
+    postgresql:
+      - pattern: "jdbc:postgresql"
+        confidence: 0.95
+        category: "Database"
+        technology: "PostgreSQL"
+      - pattern: "psycopg2"
+        confidence: 0.90
+        category: "Database"
+        technology: "PostgreSQL"
+
+    mongodb:
+      - pattern: "mongodb://"
+        confidence: 0.95
+        category: "Database"
+        technology: "MongoDB"
+      - pattern: "MongoClient"
+        confidence: 0.85
+        category: "Database"
+        technology: "MongoDB"
+
+    redis:
+      - pattern: "redis://"
+        confidence: 0.95
+        category: "Database"
+        technology: "Redis"
+      - pattern: "RedisClient"
+        confidence: 0.85
+        category: "Database"
+        technology: "Redis"
+
+  patterns:
+    async:
+      - pattern: "async/await"
+        confidence: 0.80
+        category: "Pattern"
+        technology: "Asynchronous Programming"
+      - pattern: "Promise"
+        confidence: 0.75
+        category: "Pattern"
+        technology: "Asynchronous Programming"
+
+    reactive:
+      - pattern: "Observable"
+        confidence: 0.85
+        category: "Pattern"
+        technology: "Reactive Programming"
+      - pattern: "subscribe"
+        confidence: 0.70
+        category: "Pattern"
+        technology: "Reactive Programming"
+
+    dependency_injection:
+      - pattern: "@Autowired"
+        confidence: 0.90
+        category: "Pattern"
+        technology: "Dependency Injection"
+      - pattern: "@Inject"
+        confidence: 0.85
+        category: "Pattern"
+        technology: "Dependency Injection"
+
+  security:
+    - pattern: "bcrypt"
+      confidence: 0.85
+      category: "Security"
+      technology: "Password Hashing"
+    - pattern: "jwt"
+      confidence: 0.85
+      category: "Security"
+      technology: "JWT Authentication"
+    - pattern: "oauth"
+      confidence: 0.85
+      category: "Security"
+      technology: "OAuth"
+
+  testing:
+    - pattern: "@Test"
+      confidence: 0.90
+      category: "Testing"
+      technology: "JUnit"
+    - pattern: "describe\\("
+      confidence: 0.85
+      category: "Testing"
+      technology: "Jest/Mocha"
+    - pattern: "it\\("
+      confidence: 0.80
+      category: "Testing"
+      technology: "Jest/Mocha"

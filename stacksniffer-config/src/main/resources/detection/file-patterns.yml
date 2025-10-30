@@ -1,0 +1,200 @@
+filePatterns:
+  configuration:
+    - pattern: "package.json"
+      confidence: 0.95
+      indicates: ["Node.js", "npm"]
+      category: "Package Manager"
+    - pattern: "pom.xml"
+      confidence: 0.95
+      indicates: ["Maven", "Java"]
+      category: "Build Tool"
+    - pattern: "build.gradle"
+      confidence: 0.95
+      indicates: ["Gradle", "Java"]
+      category: "Build Tool"
+    - pattern: "Cargo.toml"
+      confidence: 0.95
+      indicates: ["Cargo", "Rust"]
+      category: "Package Manager"
+    - pattern: "requirements.txt"
+      confidence: 0.90
+      indicates: ["pip", "Python"]
+      category: "Package Manager"
+    - pattern: "Pipfile"
+      confidence: 0.90
+      indicates: ["Pipenv", "Python"]
+      category: "Package Manager"
+    - pattern: "Gemfile"
+      confidence: 0.95
+      indicates: ["Bundler", "Ruby"]
+      category: "Package Manager"
+    - pattern: "composer.json"
+      confidence: 0.95
+      indicates: ["Composer", "PHP"]
+      category: "Package Manager"
+    - pattern: "go.mod"
+      confidence: 0.95
+      indicates: ["Go Modules", "Go"]
+      category: "Package Manager"
+
+  spring:
+    - pattern: "application.properties"
+      confidence: 0.90
+      indicates: ["Spring Boot"]
+      category: "Framework"
+    - pattern: "application.yml"
+      confidence: 0.90
+      indicates: ["Spring Boot"]
+      category: "Framework"
+    - pattern: "application.yaml"
+      confidence: 0.90
+      indicates: ["Spring Boot"]
+      category: "Framework"
+
+  frontend:
+    - pattern: "angular.json"
+      confidence: 0.95
+      indicates: ["Angular"]
+      category: "Framework"
+    - pattern: "vue.config.js"
+      confidence: 0.95
+      indicates: ["Vue.js"]
+      category: "Framework"
+    - pattern: "next.config.js"
+      confidence: 0.95
+      indicates: ["Next.js"]
+      category: "Framework"
+    - pattern: "nuxt.config.js"
+      confidence: 0.95
+      indicates: ["Nuxt.js"]
+      category: "Framework"
+    - pattern: "svelte.config.js"
+      confidence: 0.95
+      indicates: ["Svelte"]
+      category: "Framework"
+
+  backend:
+    - pattern: "settings.py"
+      confidence: 0.90
+      indicates: ["Django"]
+      category: "Framework"
+    - pattern: "manage.py"
+      confidence: 0.90
+      indicates: ["Django"]
+      category: "Framework"
+    - pattern: "nest-cli.json"
+      confidence: 0.95
+      indicates: ["NestJS"]
+      category: "Framework"
+    - pattern: "artisan"
+      confidence: 0.95
+      indicates: ["Laravel"]
+      category: "Framework"
+
+  database:
+    - pattern: "schema.prisma"
+      confidence: 0.95
+      indicates: ["Prisma"]
+      category: "ORM"
+    - pattern: "ormconfig.json"
+      confidence: 0.90
+      indicates: ["TypeORM"]
+      category: "ORM"
+    - pattern: "hibernate.cfg.xml"
+      confidence: 0.90
+      indicates: ["Hibernate"]
+      category: "ORM"
+    - pattern: "mybatis-config.xml"
+      confidence: 0.90
+      indicates: ["MyBatis"]
+      category: "ORM"
+    - pattern: "knexfile.js"
+      confidence: 0.90
+      indicates: ["Knex.js"]
+      category: "Query Builder"
+
+  testing:
+    - pattern: "jest.config.js"
+      confidence: 0.95
+      indicates: ["Jest"]
+      category: "Testing"
+    - pattern: "karma.conf.js"
+      confidence: 0.95
+      indicates: ["Karma"]
+      category: "Testing"
+    - pattern: "pytest.ini"
+      confidence: 0.95
+      indicates: ["Pytest"]
+      category: "Testing"
+    - pattern: "phpunit.xml"
+      confidence: 0.95
+      indicates: ["PHPUnit"]
+      category: "Testing"
+
+  docker:
+    - pattern: "Dockerfile"
+      confidence: 0.95
+      indicates: ["Docker"]
+      category: "Containerization"
+    - pattern: "docker-compose.yml"
+      confidence: 0.95
+      indicates: ["Docker Compose"]
+      category: "Containerization"
+    - pattern: ".dockerignore"
+      confidence: 0.85
+      indicates: ["Docker"]
+      category: "Containerization"
+
+  ci_cd:
+    - pattern: ".github/workflows/*.yml"
+      confidence: 0.95
+      indicates: ["GitHub Actions"]
+      category: "CI/CD"
+    - pattern: ".gitlab-ci.yml"
+      confidence: 0.95
+      indicates: ["GitLab CI"]
+      category: "CI/CD"
+    - pattern: ".travis.yml"
+      confidence: 0.95
+      indicates: ["Travis CI"]
+      category: "CI/CD"
+    - pattern: "Jenkinsfile"
+      confidence: 0.95
+      indicates: ["Jenkins"]
+      category: "CI/CD"
+
+  graphql:
+    - pattern: "schema.graphql"
+      confidence: 0.95
+      indicates: ["GraphQL"]
+      category: "API"
+    - pattern: "*.graphql"
+      confidence: 0.85
+      indicates: ["GraphQL"]
+      category: "API"
+
+  protobuf:
+    - pattern: "*.proto"
+      confidence: 0.95
+      indicates: ["gRPC", "Protocol Buffers"]
+      category: "API"
+
+  typescript:
+    - pattern: "tsconfig.json"
+      confidence: 0.95
+      indicates: ["TypeScript"]
+      category: "Language"
+
+  linting:
+    - pattern: ".eslintrc.js"
+      confidence: 0.90
+      indicates: ["ESLint"]
+      category: "Code Quality"
+    - pattern: ".prettierrc"
+      confidence: 0.90
+      indicates: ["Prettier"]
+      category: "Code Quality"
+    - pattern: "checkstyle.xml"
+      confidence: 0.90
+      indicates: ["Checkstyle"]
+      category: "Code Quality"

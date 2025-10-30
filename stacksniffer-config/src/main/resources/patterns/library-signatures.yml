@@ -1,0 +1,342 @@
+libraries:
+  - name: "Lombok"
+    category: "Utility Library"
+    signatures:
+      imports:
+        - "lombok.*"
+      annotations:
+        - "@Data"
+        - "@Getter"
+        - "@Setter"
+        - "@Builder"
+        - "@NoArgsConstructor"
+        - "@AllArgsConstructor"
+    confidence: 0.95
+
+  - name: "Jackson"
+    category: "JSON Library"
+    signatures:
+      imports:
+        - "com.fasterxml.jackson.*"
+      annotations:
+        - "@JsonProperty"
+        - "@JsonIgnore"
+        - "@JsonFormat"
+    confidence: 0.90
+
+  - name: "Gson"
+    category: "JSON Library"
+    signatures:
+      imports:
+        - "com.google.gson.*"
+      keywords:
+        - "Gson()"
+        - "fromJson"
+        - "toJson"
+    confidence: 0.90
+
+  - name: "Guava"
+    category: "Utility Library"
+    signatures:
+      imports:
+        - "com.google.common.*"
+      keywords:
+        - "ImmutableList"
+        - "ImmutableMap"
+        - "Preconditions"
+    confidence: 0.85
+
+  - name: "Apache Commons"
+    category: "Utility Library"
+    signatures:
+      imports:
+        - "org.apache.commons.*"
+      keywords:
+        - "StringUtils"
+        - "CollectionUtils"
+    confidence: 0.85
+
+  - name: "SLF4J"
+    category: "Logging Library"
+    signatures:
+      imports:
+        - "org.slf4j.*"
+      keywords:
+        - "LoggerFactory.getLogger"
+    confidence: 0.90
+
+  - name: "Log4j"
+    category: "Logging Library"
+    signatures:
+      imports:
+        - "org.apache.log4j.*"
+        - "org.apache.logging.log4j.*"
+      files:
+        - "log4j.properties"
+        - "log4j2.xml"
+    confidence: 0.90
+
+  - name: "Logback"
+    category: "Logging Library"
+    signatures:
+      imports:
+        - "ch.qos.logback.*"
+      files:
+        - "logback.xml"
+        - "logback-spring.xml"
+    confidence: 0.90
+
+  - name: "JUnit 5"
+    category: "Testing Library"
+    signatures:
+      imports:
+        - "org.junit.jupiter.*"
+      annotations:
+        - "@Test"
+        - "@BeforeEach"
+        - "@AfterEach"
+        - "@DisplayName"
+    confidence: 0.95
+
+  - name: "Mockito"
+    category: "Testing Library"
+    signatures:
+      imports:
+        - "org.mockito.*"
+      annotations:
+        - "@Mock"
+        - "@InjectMocks"
+      keywords:
+        - "Mockito.when"
+        - "Mockito.verify"
+    confidence: 0.90
+
+  - name: "AssertJ"
+    category: "Testing Library"
+    signatures:
+      imports:
+        - "org.assertj.core.*"
+      keywords:
+        - "assertThat"
+    confidence: 0.85
+
+  - name: "Axios"
+    category: "HTTP Library"
+    signatures:
+      imports:
+        - "from 'axios'"
+        - "require('axios')"
+      keywords:
+        - "axios.get"
+        - "axios.post"
+    confidence: 0.90
+
+  - name: "Lodash"
+    category: "Utility Library"
+    signatures:
+      imports:
+        - "from 'lodash'"
+        - "require('lodash')"
+      keywords:
+        - "_.map"
+        - "_.filter"
+        - "_.reduce"
+    confidence: 0.85
+
+  - name: "Moment.js"
+    category: "Date Library"
+    signatures:
+      imports:
+        - "from 'moment'"
+        - "require('moment')"
+      keywords:
+        - "moment()"
+    confidence: 0.85
+
+  - name: "Date-fns"
+    category: "Date Library"
+    signatures:
+      imports:
+        - "from 'date-fns'"
+      keywords:
+        - "format"
+        - "parseISO"
+    confidence: 0.85
+
+  - name: "Redux"
+    category: "State Management"
+    signatures:
+      imports:
+        - "from 'redux'"
+        - "from 'react-redux'"
+      keywords:
+        - "createStore"
+        - "useDispatch"
+        - "useSelector"
+    confidence: 0.90
+
+  - name: "MobX"
+    category: "State Management"
+    signatures:
+      imports:
+        - "from 'mobx'"
+        - "from 'mobx-react'"
+      keywords:
+        - "observable"
+        - "action"
+        - "computed"
+    confidence: 0.90
+
+  - name: "NumPy"
+    category: "Scientific Library"
+    signatures:
+      imports:
+        - "import numpy"
+        - "import numpy as np"
+      keywords:
+        - "np.array"
+        - "np.ndarray"
+    confidence: 0.95
+
+  - name: "Pandas"
+    category: "Data Analysis"
+    signatures:
+      imports:
+        - "import pandas"
+        - "import pandas as pd"
+      keywords:
+        - "pd.DataFrame"
+        - "pd.read_csv"
+    confidence: 0.95
+
+  - name: "TensorFlow"
+    category: "Machine Learning"
+    signatures:
+      imports:
+        - "import tensorflow"
+        - "import tensorflow as tf"
+      keywords:
+        - "tf.keras"
+        - "tf.Variable"
+    confidence: 0.95
+
+  - name: "PyTorch"
+    category: "Machine Learning"
+    signatures:
+      imports:
+        - "import torch"
+      keywords:
+        - "torch.nn"
+        - "torch.optim"
+    confidence: 0.95
+
+  - name: "Scikit-learn"
+    category: "Machine Learning"
+    signatures:
+      imports:
+        - "from sklearn"
+        - "import sklearn"
+      keywords:
+        - "fit"
+        - "predict"
+        - "transform"
+    confidence: 0.90
+
+  - name: "Requests"
+    category: "HTTP Library"
+    signatures:
+      imports:
+        - "import requests"
+      keywords:
+        - "requests.get"
+        - "requests.post"
+    confidence: 0.90
+
+  - name: "Beautiful Soup"
+    category: "Web Scraping"
+    signatures:
+      imports:
+        - "from bs4 import"
+      keywords:
+        - "BeautifulSoup"
+    confidence: 0.90
+
+  - name: "SQLAlchemy"
+    category: "ORM Library"
+    signatures:
+      imports:
+        - "from sqlalchemy"
+        - "import sqlalchemy"
+      keywords:
+        - "create_engine"
+        - "declarative_base"
+    confidence: 0.90
+
+  - name: "Sequelize"
+    category: "ORM Library"
+    signatures:
+      imports:
+        - "from 'sequelize'"
+        - "require('sequelize')"
+      keywords:
+        - "new Sequelize"
+        - "Model.init"
+    confidence: 0.90
+
+  - name: "Prisma"
+    category: "ORM Library"
+    signatures:
+      imports:
+        - "from '@prisma/client'"
+      keywords:
+        - "PrismaClient"
+      files:
+        - "schema.prisma"
+    confidence: 0.95
+
+  - name: "TypeORM"
+    category: "ORM Library"
+    signatures:
+      imports:
+        - "from 'typeorm'"
+      annotations:
+        - "@Entity"
+        - "@Column"
+        - "@PrimaryGeneratedColumn"
+      files:
+        - "ormconfig.json"
+    confidence: 0.90
+
+  - name: "GraphQL"
+    category: "API Library"
+    signatures:
+      imports:
+        - "from 'graphql'"
+        - "from '@apollo/server'"
+      keywords:
+        - "gql"
+        - "ApolloServer"
+      files:
+        - "schema.graphql"
+    confidence: 0.90
+
+  - name: "gRPC"
+    category: "RPC Library"
+    signatures:
+      imports:
+        - "import grpc"
+        - "io.grpc.*"
+      files:
+        - "*.proto"
+    confidence: 0.90
+
+  - name: "Socket.IO"
+    category: "WebSocket Library"
+    signatures:
+      imports:
+        - "from 'socket.io'"
+        - "require('socket.io')"
+      keywords:
+        - "io.on"
+        - "socket.emit"
+    confidence: 0.90

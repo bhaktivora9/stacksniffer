@@ -21,10 +21,13 @@
 
     <modules>
         <module>stacksniffer-core</module>
-        <module>stacksniffer-ingestion</module>
+        <module>stacksniffer-api</module>
+        <module>stacksniffer-config</module>
+        <!-- <module>stacksniffer-ingestion</module>
         <module>stacksniffer-search</module>
         <module>stacksniffer-ai</module>
-        <module>stacksniffer-api</module>
+        <module>stacksniffer-learning</module>
+        <module>stacksniffer-agents</module>-->
     </modules>
 
     <properties>
@@ -55,6 +58,16 @@
             <dependency>
                 <groupId>io.stacksniffer</groupId>
                 <artifactId>stacksniffer-ai</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.stacksniffer</groupId>
+                <artifactId>stacksniffer-config</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.stacksniffer</groupId>
+                <artifactId>stacksniffer-learning</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>

@@ -1,0 +1,134 @@
+languages:
+  - name: "Java"
+    importRegex: "^import\\s+([\\w.]+)\\*?;?"
+    staticImportRegex: "^import\\s+static\\s+([\\w.]+)\\*?;?"
+    packageRegex: "^package\\s+([\\w.]+);?"
+    exampleImports:
+      - "import java.util.List;"
+      - "import org.springframework.boot.*;"
+      - "import static org.junit.Assert.*;"
+    extractionRules:
+      - pattern: "import\\s+([\\w.]+);"
+        group: 1
+      - pattern: "import\\s+static\\s+([\\w.]+);"
+        group: 1
+
+  - name: "Python"
+    importRegex: "^(?:from\\s+([\\w.]+)\\s+)?import\\s+([\\w.,\\s*]+)"
+    exampleImports:
+      - "import numpy as np"
+      - "from flask import Flask"
+      - "from typing import List, Dict"
+    extractionRules:
+      - pattern: "^import\\s+([\\w.]+)"
+        group: 1
+      - pattern: "^from\\s+([\\w.]+)\\s+import"
+        group: 1
+
+  - name: "JavaScript"
+    importRegex: "^import\\s+.*?from\\s+['\"]([^'\"]+)['\"]"
+    requireRegex: "(?:const|let|var)\\s+.*?=\\s+require\\(['\"]([^'\"]+)['\"]\\)"
+    exampleImports:
+      - "import React from 'react'"
+      - "import { useState } from 'react'"
+      - "const express = require('express')"
+    extractionRules:
+      - pattern: "import\\s+.*?from\\s+['\"]([^'\"]+)['\"]"
+        group: 1
+      - pattern: "require\\(['\"]([^'\"]+)['\"]\\)"
+        group: 1
+
+  - name: "TypeScript"
+    importRegex: "^import\\s+.*?from\\s+['\"]([^'\"]+)['\"]"
+    typeImportRegex: "^import\\s+type\\s+.*?from\\s+['\"]([^'\"]+)['\"]"
+    exampleImports:
+      - "import { Component } from '@angular/core'"
+      - "import type { User } from './types'"
+    extractionRules:
+      - pattern: "import\\s+.*?from\\s+['\"]([^'\"]+)['\"]"
+        group: 1
+
+  - name: "Go"
+    importRegex: "^import\\s+(?:\\()?['\"]([^'\"]+)['\"]"
+    exampleImports:
+      - "import \"fmt\""
+      - "import \"github.com/gin-gonic/gin\""
+      - "import ( \"fmt\" \"net/http\" )"
+    extractionRules:
+      - pattern: "import\\s+\"([^\"]+)\""
+        group: 1
+
+  - name: "Rust"
+    importRegex: "^use\\s+([\\w:]+)"
+    exampleImports:
+      - "use std::collections::HashMap;"
+      - "use actix_web::{web, App};"
+    extractionRules:
+      - pattern: "use\\s+([\\w:]+)"
+        group: 1
+
+  - name: "C++"
+    importRegex: "^#include\\s+[<\"]([^>\"]+)[>\"]"
+    exampleImports:
+      - "#include <iostream>"
+      - "#include \"myheader.h\""
+    extractionRules:
+      - pattern: "#include\\s+[<\"]([^>\"]+)[>\"]"
+        group: 1
+
+  - name: "C#"
+    importRegex: "^using\\s+([\\w.]+);?"
+    exampleImports:
+      - "using System;"
+      - "using Microsoft.AspNetCore.Mvc;"
+    extractionRules:
+      - pattern: "using\\s+([\\w.]+);"
+        group: 1
+
+  - name: "Ruby"
+    importRegex: "^require\\s+['\"]([^'\"]+)['\"]"
+    gemRegex: "^gem\\s+['\"]([^'\"]+)['\"]"
+    exampleImports:
+      - "require 'rails'"
+      - "require_relative './my_file'"
+      - "gem 'devise'"
+    extractionRules:
+      - pattern: "require\\s+['\"]([^'\"]+)['\"]"
+        group: 1
+
+  - name: "PHP"
+    importRegex: "^use\\s+([\\w\\\\]+);?"
+    requireRegex: "^require(?:_once)?\\s+['\"]([^'\"]+)['\"]"
+    exampleImports:
+      - "use App\\Models\\User;"
+      - "require_once 'config.php';"
+    extractionRules:
+      - pattern: "use\\s+([\\w\\\\]+);"
+        group: 1
+
+  - name: "Swift"
+    importRegex: "^import\\s+(\\w+)"
+    exampleImports:
+      - "import Foundation"
+      - "import UIKit"
+    extractionRules:
+      - pattern: "import\\s+(\\w+)"
+        group: 1
+
+  - name: "Kotlin"
+    importRegex: "^import\\s+([\\w.]+)\\*?"
+    exampleImports:
+      - "import kotlin.collections.*"
+      - "import androidx.appcompat.app.AppCompatActivity"
+    extractionRules:
+      - pattern: "import\\s+([\\w.]+)"
+        group: 1
+
+  - name: "Scala"
+    importRegex: "^import\\s+([\\w.]+)"
+    exampleImports:
+      - "import scala.collection.mutable._"
+      - "import akka.actor.ActorSystem"
+    extractionRules:
+      - pattern: "import\\s+([\\w.]+)"
+        group: 1

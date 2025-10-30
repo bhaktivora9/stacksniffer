@@ -1,0 +1,217 @@
+languages:
+  - name: "Java"
+    fileExtensions:
+      - ".java"
+    keywords:
+      - "public class"
+      - "private static"
+      - "public static void main"
+      - "import java."
+      - "package "
+    patterns:
+      classDeclaration: "^\\s*(public|private|protected)?\\s*(abstract|final)?\\s*class\\s+\\w+"
+      methodDeclaration: "^\\s*(public|private|protected)?\\s*(static)?\\s*\\w+\\s+\\w+\\s*\\([^)]*\\)"
+      importStatement: "^import\\s+([\\w.]+)\\*?;"
+    confidence: 0.95
+
+  - name: "Python"
+    fileExtensions:
+      - ".py"
+      - ".pyw"
+    keywords:
+      - "def "
+      - "class "
+      - "import "
+      - "from "
+      - "__init__"
+    patterns:
+      classDeclaration: "^class\\s+\\w+.*:"
+      methodDeclaration: "^\\s*def\\s+\\w+\\s*\\([^)]*\\):"
+      importStatement: "^(?:from\\s+([\\w.]+)\\s+)?import\\s+([\\w.,\\s*]+)"
+    confidence: 0.95
+
+  - name: "JavaScript"
+    fileExtensions:
+      - ".js"
+      - ".jsx"
+      - ".mjs"
+      - ".cjs"
+    keywords:
+      - "function"
+      - "const "
+      - "let "
+      - "var "
+      - "=>"
+      - "export"
+      - "import"
+    patterns:
+      functionDeclaration: "^\\s*function\\s+\\w+\\s*\\([^)]*\\)"
+      classDeclaration: "^\\s*class\\s+\\w+"
+      importStatement: "^import\\s+.*?from\\s+['\"]([^'\"]+)['\"]"
+    confidence: 0.90
+
+  - name: "TypeScript"
+    fileExtensions:
+      - ".ts"
+      - ".tsx"
+    keywords:
+      - "interface "
+      - "type "
+      - "enum "
+      - "function"
+      - "const "
+      - "export"
+      - "import"
+    patterns:
+      interfaceDeclaration: "^\\s*interface\\s+\\w+"
+      typeDeclaration: "^\\s*type\\s+\\w+"
+      classDeclaration: "^\\s*class\\s+\\w+"
+      importStatement: "^import\\s+.*?from\\s+['\"]([^'\"]+)['\"]"
+    confidence: 0.95
+
+  - name: "Go"
+    fileExtensions:
+      - ".go"
+    keywords:
+      - "package "
+      - "func "
+      - "import "
+      - "type "
+      - "struct"
+      - "interface"
+    patterns:
+      packageDeclaration: "^package\\s+\\w+"
+      functionDeclaration: "^func\\s+(\\([^)]+\\)\\s+)?\\w+\\s*\\([^)]*\\)"
+      importStatement: "^import\\s+\"([^\"]+)\""
+    confidence: 0.95
+
+  - name: "Rust"
+    fileExtensions:
+      - ".rs"
+    keywords:
+      - "fn "
+      - "struct "
+      - "impl "
+      - "trait "
+      - "use "
+      - "mod "
+    patterns:
+      functionDeclaration: "^\\s*fn\\s+\\w+\\s*\\([^)]*\\)"
+      structDeclaration: "^\\s*struct\\s+\\w+"
+      importStatement: "^use\\s+([\\w:]+)"
+    confidence: 0.95
+
+  - name: "C++"
+    fileExtensions:
+      - ".cpp"
+      - ".cc"
+      - ".cxx"
+      - ".hpp"
+      - ".h"
+    keywords:
+      - "#include"
+      - "class "
+      - "namespace "
+      - "template"
+      - "public:"
+      - "private:"
+    patterns:
+      classDeclaration: "^\\s*class\\s+\\w+"
+      functionDeclaration: "^\\s*\\w+\\s+\\w+\\s*\\([^)]*\\)"
+      includeStatement: "^#include\\s+[<\"]([^>\"]+)[>\"]"
+    confidence: 0.90
+
+  - name: "C#"
+    fileExtensions:
+      - ".cs"
+    keywords:
+      - "using "
+      - "namespace "
+      - "class "
+      - "interface "
+      - "public "
+      - "private "
+    patterns:
+      classDeclaration: "^\\s*(public|private|protected)?\\s*class\\s+\\w+"
+      methodDeclaration: "^\\s*(public|private|protected)?\\s*(static)?\\s*\\w+\\s+\\w+\\s*\\([^)]*\\)"
+      usingStatement: "^using\\s+([\\w.]+);"
+    confidence: 0.95
+
+  - name: "Ruby"
+    fileExtensions:
+      - ".rb"
+    keywords:
+      - "def "
+      - "class "
+      - "module "
+      - "require "
+      - "end"
+    patterns:
+      classDeclaration: "^\\s*class\\s+\\w+"
+      methodDeclaration: "^\\s*def\\s+\\w+"
+      requireStatement: "^require\\s+['\"]([^'\"]+)['\"]"
+    confidence: 0.90
+
+  - name: "PHP"
+    fileExtensions:
+      - ".php"
+    keywords:
+      - "<?php"
+      - "namespace "
+      - "class "
+      - "function "
+      - "use "
+    patterns:
+      classDeclaration: "^\\s*class\\s+\\w+"
+      functionDeclaration: "^\\s*function\\s+\\w+\\s*\\([^)]*\\)"
+      useStatement: "^use\\s+([\\w\\\\]+);"
+    confidence: 0.90
+
+  - name: "Swift"
+    fileExtensions:
+      - ".swift"
+    keywords:
+      - "func "
+      - "class "
+      - "struct "
+      - "enum "
+      - "import "
+      - "extension "
+    patterns:
+      classDeclaration: "^\\s*class\\s+\\w+"
+      functionDeclaration: "^\\s*func\\s+\\w+\\s*\\([^)]*\\)"
+      importStatement: "^import\\s+(\\w+)"
+    confidence: 0.95
+
+  - name: "Kotlin"
+    fileExtensions:
+      - ".kt"
+      - ".kts"
+    keywords:
+      - "fun "
+      - "class "
+      - "object "
+      - "interface "
+      - "import "
+      - "package "
+    patterns:
+      classDeclaration: "^\\s*class\\s+\\w+"
+      functionDeclaration: "^\\s*fun\\s+\\w+\\s*\\([^)]*\\)"
+      importStatement: "^import\\s+([\\w.]+)"
+    confidence: 0.95
+
+  - name: "Scala"
+    fileExtensions:
+      - ".scala"
+    keywords:
+      - "def "
+      - "class "
+      - "object "
+      - "trait "
+      - "import "
+      - "package "
+    patterns:
+      classDeclaration: "^\\s*class\\s+\\w+"
+      objectDeclaration: "^\\s*object\\s+\\w+"
+      importStatement: "^import\\s+([\\w.]+)"
+    confidence: 0.95

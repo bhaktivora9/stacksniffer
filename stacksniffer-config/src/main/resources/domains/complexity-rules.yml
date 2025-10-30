@@ -1,0 +1,197 @@
+complexity:
+  scoring:
+    description: "Complexity scoring rules for code analysis"
+    scale:
+      min: 1
+      max: 10
+
+  base_complexity:
+    simple_crud: 2
+    configuration: 2
+    utilities: 3
+    business_logic: 4
+    data_processing: 5
+    integration: 6
+    security: 7
+    distributed_systems: 8
+    machine_learning: 9
+    real_time_systems: 9
+
+  modifiers:
+    code_characteristics:
+      - name: "Cyclomatic Complexity"
+        weight: 0.5
+        thresholds:
+          low: 10
+          medium: 20
+          high: 30
+        scores:
+          low: 0
+          medium: 1
+          high: 2
+
+      - name: "Lines of Code"
+        weight: 0.3
+        thresholds:
+          small: 100
+          medium: 300
+          large: 500
+        scores:
+          small: 0
+          medium: 1
+          large: 2
+
+      - name: "Method Count"
+        weight: 0.2
+        thresholds:
+          few: 5
+          moderate: 15
+          many: 30
+        scores:
+          few: 0
+          moderate: 1
+          many: 2
+
+    architectural_patterns:
+      - name: "Microservices"
+        modifier: 2
+      - name: "Event-Driven"
+        modifier: 2
+      - name: "CQRS"
+        modifier: 3
+      - name: "Event Sourcing"
+        modifier: 3
+      - name: "Saga Pattern"
+        modifier: 3
+      - name: "Circuit Breaker"
+        modifier: 1
+      - name: "API Gateway"
+        modifier: 1
+
+    integration_complexity:
+      - name: "External API Integration"
+        modifier: 1
+      - name: "Multiple Databases"
+        modifier: 2
+      - name: "Message Queue"
+        modifier: 1
+      - name: "Caching Layer"
+        modifier: 1
+      - name: "Search Engine"
+        modifier: 2
+      - name: "File Storage"
+        modifier: 1
+
+    concurrency:
+      - name: "Multi-threading"
+        modifier: 2
+      - name: "Async/Await"
+        modifier: 1
+      - name: "Reactive Programming"
+        modifier: 2
+      - name: "Parallel Processing"
+        modifier: 2
+      - name: "Distributed Locks"
+        modifier: 2
+
+    data_operations:
+      - name: "Complex Joins"
+        modifier: 1
+      - name: "Aggregations"
+        modifier: 1
+      - name: "Transactions"
+        modifier: 1
+      - name: "Data Migration"
+        modifier: 2
+      - name: "ETL Operations"
+        modifier: 2
+      - name: "Real-time Processing"
+        modifier: 3
+
+    security_requirements:
+      - name: "Authentication"
+        modifier: 1
+      - name: "Authorization"
+        modifier: 1
+      - name: "Encryption"
+        modifier: 2
+      - name: "PCI Compliance"
+        modifier: 3
+      - name: "HIPAA Compliance"
+        modifier: 3
+      - name: "Rate Limiting"
+        modifier: 1
+
+  domain_specific:
+    authentication:
+      base: 7
+      oauth2: 3
+      saml: 3
+      mfa: 2
+      biometric: 3
+
+    payment:
+      base: 8
+      pci_compliance: 3
+      multiple_gateways: 2
+      subscriptions: 2
+      refunds: 1
+      fraud_detection: 2
+
+    machine_learning:
+      base: 9
+      model_training: 3
+      real_time_inference: 2
+      model_versioning: 1
+      feature_engineering: 2
+
+    real_time:
+      base: 9
+      websockets: 2
+      streaming: 2
+      low_latency: 3
+      high_throughput: 2
+
+    blockchain:
+      base: 10
+      smart_contracts: 3
+      consensus: 3
+      cryptography: 2
+
+  language_specific:
+    java:
+      reflection: 2
+      generics: 1
+      concurrency: 2
+      streams: 1
+
+    javascript:
+      async_patterns: 1
+      closures: 1
+      prototypes: 1
+      event_loop: 2
+
+    python:
+      decorators: 1
+      generators: 1
+      metaclasses: 2
+      async_io: 1
+
+    rust:
+      lifetime_management: 2
+      ownership: 2
+      unsafe_code: 3
+      macros: 2
+
+  testing_complexity:
+    unit_tests: 0
+    integration_tests: 1
+    e2e_tests: 2
+    performance_tests: 2
+    security_tests: 2
+    chaos_testing: 3
+
+  calculation:
+    formula: "base + sum(modifiers) * weights"
+    normalization: "min-max scaling to 1-10"
+    rounding: "nearest integer"

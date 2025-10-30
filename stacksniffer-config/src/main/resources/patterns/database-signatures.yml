@@ -1,0 +1,197 @@
+databases:
+  - name: "PostgreSQL"
+    category: "Relational Database"
+    signatures:
+      imports:
+        - "org.postgresql.*"
+        - "import psycopg2"
+        - "from 'pg'"
+      keywords:
+        - "postgresql://"
+        - "jdbc:postgresql"
+      files:
+        - "postgresql.conf"
+    confidence: 0.95
+
+  - name: "MySQL"
+    category: "Relational Database"
+    signatures:
+      imports:
+        - "com.mysql.*"
+        - "import mysql.connector"
+        - "from 'mysql'"
+      keywords:
+        - "mysql://"
+        - "jdbc:mysql"
+      files:
+        - "my.cnf"
+        - "my.ini"
+    confidence: 0.95
+
+  - name: "MongoDB"
+    category: "NoSQL Database"
+    signatures:
+      imports:
+        - "org.mongodb.*"
+        - "import pymongo"
+        - "from 'mongodb'"
+      keywords:
+        - "mongodb://"
+        - "MongoClient"
+      files:
+        - "mongod.conf"
+    confidence: 0.95
+
+  - name: "Redis"
+    category: "Cache Database"
+    signatures:
+      imports:
+        - "redis.clients.jedis.*"
+        - "import redis"
+        - "from 'redis'"
+      keywords:
+        - "redis://"
+        - "RedisClient"
+      files:
+        - "redis.conf"
+    confidence: 0.90
+
+  - name: "Elasticsearch"
+    category: "Search Engine"
+    signatures:
+      imports:
+        - "org.elasticsearch.*"
+        - "co.elastic.clients.*"
+        - "from '@elastic/elasticsearch'"
+      keywords:
+        - "ElasticsearchClient"
+        - "RestHighLevelClient"
+    confidence: 0.90
+
+  - name: "Cassandra"
+    category: "NoSQL Database"
+    signatures:
+      imports:
+        - "com.datastax.driver.*"
+        - "com.datastax.oss.driver.*"
+      keywords:
+        - "CqlSession"
+        - "Cluster.builder"
+    confidence: 0.90
+
+  - name: "Oracle Database"
+    category: "Relational Database"
+    signatures:
+      imports:
+        - "oracle.jdbc.*"
+      keywords:
+        - "jdbc:oracle"
+        - "OracleDriver"
+    confidence: 0.95
+
+  - name: "Microsoft SQL Server"
+    category: "Relational Database"
+    signatures:
+      imports:
+        - "com.microsoft.sqlserver.*"
+      keywords:
+        - "jdbc:sqlserver"
+        - "SQLServerDriver"
+    confidence: 0.95
+
+  - name: "SQLite"
+    category: "Embedded Database"
+    signatures:
+      imports:
+        - "org.sqlite.*"
+        - "import sqlite3"
+        - "from 'sqlite3'"
+      keywords:
+        - "jdbc:sqlite"
+      files:
+        - "*.db"
+        - "*.sqlite"
+    confidence: 0.90
+
+  - name: "MariaDB"
+    category: "Relational Database"
+    signatures:
+      imports:
+        - "org.mariadb.jdbc.*"
+      keywords:
+        - "jdbc:mariadb"
+    confidence: 0.90
+
+  - name: "DynamoDB"
+    category: "NoSQL Database"
+    signatures:
+      imports:
+        - "com.amazonaws.services.dynamodbv2.*"
+        - "software.amazon.awssdk.services.dynamodb.*"
+      keywords:
+        - "DynamoDbClient"
+        - "AmazonDynamoDB"
+    confidence: 0.95
+
+  - name: "Neo4j"
+    category: "Graph Database"
+    signatures:
+      imports:
+        - "org.neo4j.*"
+        - "from neo4j import"
+      keywords:
+        - "neo4j://"
+        - "GraphDatabase.driver"
+    confidence: 0.90
+
+  - name: "CouchDB"
+    category: "NoSQL Database"
+    signatures:
+      imports:
+        - "org.ektorp.*"
+        - "from 'nano'"
+      keywords:
+        - "CouchDbConnector"
+    confidence: 0.85
+
+  - name: "InfluxDB"
+    category: "Time Series Database"
+    signatures:
+      imports:
+        - "com.influxdb.*"
+        - "from influxdb import"
+      keywords:
+        - "InfluxDBClient"
+    confidence: 0.90
+
+  - name: "H2 Database"
+    category: "Embedded Database"
+    signatures:
+      imports:
+        - "org.h2.*"
+      keywords:
+        - "jdbc:h2"
+      files:
+        - "*.h2.db"
+    confidence: 0.90
+
+  - name: "Firebase"
+    category: "Cloud Database"
+    signatures:
+      imports:
+        - "com.google.firebase.*"
+        - "from 'firebase'"
+      keywords:
+        - "FirebaseApp"
+        - "Firestore"
+    confidence: 0.95
+
+  - name: "Supabase"
+    category: "Cloud Database"
+    signatures:
+      imports:
+        - "from '@supabase/supabase-js'"
+      keywords:
+        - "createClient"
+        - "supabase.from"
+    confidence: 0.95

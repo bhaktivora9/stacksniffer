@@ -1,0 +1,353 @@
+frameworks:
+  - name: "Spring Boot"
+    category: "Backend Framework"
+    signatures:
+      imports:
+        - "org.springframework.boot.*"
+        - "org.springframework.web.*"
+        - "org.springframework.context.*"
+      annotations:
+        - "@SpringBootApplication"
+        - "@RestController"
+        - "@Service"
+        - "@Repository"
+        - "@Component"
+        - "@Autowired"
+      files:
+        - "application.properties"
+        - "application.yml"
+        - "application.yaml"
+      keywords:
+        - "SpringApplication"
+    confidence: 0.95
+
+  - name: "React"
+    category: "Frontend Framework"
+    signatures:
+      imports:
+        - "import React"
+        - "from 'react'"
+        - "from \"react\""
+      keywords:
+        - "ReactDOM.render"
+        - "useState"
+        - "useEffect"
+        - "useContext"
+        - "createRoot"
+      files:
+        - "package.json"
+    confidence: 0.90
+
+  - name: "Angular"
+    category: "Frontend Framework"
+    signatures:
+      imports:
+        - "from '@angular/core'"
+        - "from '@angular/common'"
+        - "from '@angular/platform-browser'"
+      annotations:
+        - "@Component"
+        - "@NgModule"
+        - "@Injectable"
+        - "@Directive"
+      files:
+        - "angular.json"
+        - "tsconfig.json"
+      keywords:
+        - "platformBrowserDynamic"
+    confidence: 0.95
+
+  - name: "Vue.js"
+    category: "Frontend Framework"
+    signatures:
+      imports:
+        - "from 'vue'"
+        - "from \"vue\""
+      keywords:
+        - "createApp"
+        - "Vue.createApp"
+        - "new Vue"
+      files:
+        - "vue.config.js"
+        - "package.json"
+    confidence: 0.90
+
+  - name: "Express.js"
+    category: "Backend Framework"
+    signatures:
+      imports:
+        - "from 'express'"
+        - "require('express')"
+      keywords:
+        - "express()"
+        - "app.listen"
+        - "app.get"
+        - "app.post"
+      files:
+        - "package.json"
+    confidence: 0.85
+
+  - name: "Django"
+    category: "Backend Framework"
+    signatures:
+      imports:
+        - "from django."
+        - "import django"
+      keywords:
+        - "django.setup"
+        - "INSTALLED_APPS"
+      files:
+        - "settings.py"
+        - "manage.py"
+        - "wsgi.py"
+    confidence: 0.95
+
+  - name: "Flask"
+    category: "Backend Framework"
+    signatures:
+      imports:
+        - "from flask import"
+        - "import flask"
+      keywords:
+        - "Flask(__name__)"
+        - "app.route"
+      files:
+        - "requirements.txt"
+    confidence: 0.90
+
+  - name: "FastAPI"
+    category: "Backend Framework"
+    signatures:
+      imports:
+        - "from fastapi import"
+        - "import fastapi"
+      keywords:
+        - "FastAPI()"
+        - "@app.get"
+        - "@app.post"
+      files:
+        - "requirements.txt"
+    confidence: 0.90
+
+  - name: "Nest.js"
+    category: "Backend Framework"
+    signatures:
+      imports:
+        - "from '@nestjs/core'"
+        - "from '@nestjs/common'"
+      annotations:
+        - "@Module"
+        - "@Controller"
+        - "@Injectable"
+      files:
+        - "nest-cli.json"
+        - "tsconfig.json"
+    confidence: 0.95
+
+  - name: "Next.js"
+    category: "Full-Stack Framework"
+    signatures:
+      imports:
+        - "from 'next'"
+        - "from 'next/app'"
+        - "from 'next/router'"
+      keywords:
+        - "getServerSideProps"
+        - "getStaticProps"
+      files:
+        - "next.config.js"
+        - "package.json"
+    confidence: 0.95
+
+  - name: "Quarkus"
+    category: "Backend Framework"
+    signatures:
+      imports:
+        - "io.quarkus.*"
+        - "javax.ws.rs.*"
+      annotations:
+        - "@Path"
+        - "@GET"
+        - "@POST"
+        - "@ApplicationScoped"
+      files:
+        - "application.properties"
+    confidence: 0.90
+
+  - name: "Micronaut"
+    category: "Backend Framework"
+    signatures:
+      imports:
+        - "io.micronaut.*"
+      annotations:
+        - "@Controller"
+        - "@Get"
+        - "@Post"
+        - "@Singleton"
+      files:
+        - "application.yml"
+    confidence: 0.90
+
+  - name: "Hibernate"
+    category: "ORM Framework"
+    signatures:
+      imports:
+        - "org.hibernate.*"
+        - "javax.persistence.*"
+        - "jakarta.persistence.*"
+      annotations:
+        - "@Entity"
+        - "@Table"
+        - "@Id"
+        - "@Column"
+      files:
+        - "hibernate.cfg.xml"
+    confidence: 0.90
+
+  - name: "JPA"
+    category: "ORM Framework"
+    signatures:
+      imports:
+        - "javax.persistence.*"
+        - "jakarta.persistence.*"
+      annotations:
+        - "@Entity"
+        - "@Table"
+        - "@Id"
+        - "@GeneratedValue"
+        - "@ManyToOne"
+        - "@OneToMany"
+    confidence: 0.85
+
+  - name: "MyBatis"
+    category: "ORM Framework"
+    signatures:
+      imports:
+        - "org.apache.ibatis.*"
+      annotations:
+        - "@Mapper"
+        - "@Select"
+        - "@Insert"
+      files:
+        - "mybatis-config.xml"
+    confidence: 0.90
+
+  - name: "Spring Security"
+    category: "Security Framework"
+    signatures:
+      imports:
+        - "org.springframework.security.*"
+      annotations:
+        - "@EnableWebSecurity"
+        - "@PreAuthorize"
+        - "@Secured"
+      keywords:
+        - "SecurityConfig"
+        - "WebSecurityConfigurerAdapter"
+    confidence: 0.95
+
+  - name: "Spring Data"
+    category: "Data Access Framework"
+    signatures:
+      imports:
+        - "org.springframework.data.*"
+      annotations:
+        - "@EnableJpaRepositories"
+      keywords:
+        - "JpaRepository"
+        - "CrudRepository"
+    confidence: 0.90
+
+  - name: "Laravel"
+    category: "Backend Framework"
+    signatures:
+      keywords:
+        - "use Illuminate\\"
+        - "namespace App\\"
+      files:
+        - "artisan"
+        - "composer.json"
+        - "routes/web.php"
+    confidence: 0.95
+
+  - name: "Ruby on Rails"
+    category: "Backend Framework"
+    signatures:
+      keywords:
+        - "Rails.application"
+        - "class.*< ApplicationController"
+        - "ActiveRecord"
+      files:
+        - "Gemfile"
+        - "config/routes.rb"
+        - "config/application.rb"
+    confidence: 0.95
+
+  - name: "ASP.NET Core"
+    category: "Backend Framework"
+    signatures:
+      imports:
+        - "using Microsoft.AspNetCore"
+      keywords:
+        - "WebApplication.CreateBuilder"
+        - "UseRouting"
+        - "MapControllers"
+      files:
+        - "Program.cs"
+        - "Startup.cs"
+        - "appsettings.json"
+    confidence: 0.95
+
+  - name: "Svelte"
+    category: "Frontend Framework"
+    signatures:
+      keywords:
+        - "<script>"
+        - "$:"
+      files:
+        - "svelte.config.js"
+        - "package.json"
+    confidence: 0.85
+
+  - name: "Gin"
+    category: "Backend Framework"
+    signatures:
+      imports:
+        - "github.com/gin-gonic/gin"
+      keywords:
+        - "gin.Default"
+        - "gin.New"
+        - "router.GET"
+    confidence: 0.90
+
+  - name: "Echo"
+    category: "Backend Framework"
+    signatures:
+      imports:
+        - "github.com/labstack/echo"
+      keywords:
+        - "echo.New"
+        - "e.GET"
+        - "e.POST"
+    confidence: 0.90
+
+  - name: "Actix Web"
+    category: "Backend Framework"
+    signatures:
+      imports:
+        - "use actix_web::"
+      keywords:
+        - "HttpServer::new"
+        - "App::new"
+    confidence: 0.90
+
+  - name: "Rocket"
+    category: "Backend Framework"
+    signatures:
+      imports:
+        - "use rocket::"
+      annotations:
+        - "#[get"
+        - "#[post"
+        - "#[launch]"
+    confidence: 0.90
