@@ -1,0 +1,34 @@
+{
+  "_meta": "Definitive filename signals only. Package classification is handled by Gemini.",
+  "_version": "3.0",
+
+  "languages": [
+    {"name": "Go",         "detection_files": ["go.mod"],          "keywords": [], "confidence": 1.0},
+    {"name": "Rust",       "detection_files": ["Cargo.toml"],      "keywords": [], "confidence": 1.0},
+    {"name": "Scala",      "detection_files": [".scalafmt.conf", "build.sbt"], "keywords": [], "confidence": 1.0},
+    {"name": "Ruby",       "detection_files": ["Gemfile"],         "keywords": [], "confidence": 1.0},
+    {"name": "PHP",        "detection_files": ["composer.json"],   "keywords": [], "confidence": 1.0}
+  ],
+
+  "frameworks": [
+    {"name": "Django",     "detection_files": ["manage.py"],       "keywords": [], "confidence": 1.0},
+    {"name": "Angular",    "detection_files": ["angular.json"],    "keywords": [], "confidence": 1.0},
+    {"name": "Next.js",    "detection_files": ["next.config.js", "next.config.ts"], "keywords": [], "confidence": 1.0}
+  ],
+
+  "infra": [
+    {"name": "Docker",         "detection_files": ["Dockerfile", "docker-compose.yml", "docker-compose.yaml"], "keywords": [], "confidence": 1.0},
+    {"name": "Kubernetes",     "detection_files": ["Chart.yaml"],  "keywords": [], "confidence": 1.0},
+    {"name": "GitHub Actions", "detection_files": [".github/workflows/"], "keywords": [], "confidence": 1.0}
+  ],
+
+  "languages_by_extension": [
+    {"name": "Go",         "extensions": [".go"],     "confidence": 0.99},
+    {"name": "Rust",       "extensions": [".rs"],     "confidence": 0.99},
+    {"name": "Java",       "extensions": [".java"],   "confidence": 0.99},
+    {"name": "Kotlin",     "extensions": [".kt"],     "confidence": 0.99},
+    {"name": "Swift",      "extensions": [".swift"],  "confidence": 0.99},
+    {"name": "Ruby",       "extensions": [".rb"],     "confidence": 0.99},
+    {"name": "C",          "extensions": [".c", ".h"],"confidence": 0.95}
+  ]
+}
