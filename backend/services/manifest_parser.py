@@ -650,13 +650,60 @@ def _canonicalize(normalized: str) -> tuple[str, str]:
 
 
 def _is_self_dependency(canonical_name: str, self_names: set[str]) -> bool:
+    """
+    Return True if canonical_name refers to the repo being analyzed.
+    Uses token-boundary matching — 'ray' must not match 'array'.
+
+    canonical_name: tech display name e.g. "HuggingFace", "Apache Kafka"
+    self_names:     normalized repo path tokens + project name tokens
+                    e.g. {"huggingface", "transformers"} for huggingface/transformers
+    """
     if not self_names:
         return False
+    # Normalize canonical name to hyphen-separated tokens
     normalized = canonical_name.lower().replace("_", "-").replace(" ", "-")
-    return normalized in self_names or any(
-        name and (name in normalized or normalized in name)
-        for name in self_names
-    )
+    # Exact match: "transformers" == "transformers"
+    if normalized in self_names:
+        return True
+    # Token-level match: split on hyphens and check token overlap
+    # "apache-kafka" tokens {"apache","kafka"} ∩ {"apache","kafka"} → True
+    # "array" tokens {"array"} ∩ {"ray"} → empty → False (correct)
+    canonical_tokens = set(normalized.split("-"))
+    for name in self_names:
+        if not name:
+            continue
+        name_tokens = set(name.split("-"))
+        # Both directions: canonical contains self-name token, or vice versa
+        if canonical_tokens & name_tokens:
+            return True
+    return False
+
+
+def filter_self_references_from_inferences(
+    ai_inferred_techs: list[dict],
+    repo_full_name: str,
+    parsed_project_names: set[str] = None,
+) -> tuple[list[dict], list[str]]:
+    """
+    Remove self-referencing techs from Gemini ai_inferred_techs.
+    Gemini re-injects self-references (e.g. HuggingFace for huggingface/transformers)
+    that manifest_parser already excluded. This filter is called in analyze.py
+    after run_full_ai_pipeline() returns.
+
+    Returns (filtered_inferences, excluded_names).
+    """
+    repo_names = _repo_names(repo_full_name)
+    self_names = repo_names | {n for n in (parsed_project_names or set()) if n}
+
+    filtered = []
+    excluded = []
+    for tech in ai_inferred_techs:
+        name = tech.get("tech") or tech.get("name", "")
+        if _is_self_dependency(name, self_names):
+            excluded.append(name)
+        else:
+            filtered.append(tech)
+    return filtered, excluded
 
 
 def _confidence(scope: str, origin: str) -> float:
