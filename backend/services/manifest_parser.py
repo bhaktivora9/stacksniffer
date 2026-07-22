@@ -1,3 +1,40 @@
+"""
+backend/services/manifest_parser.py
+
+Phase 1 of the new detection pipeline: PURE STRUCTURAL EXTRACTION.
+
+Responsibility:
+  - Parse manifests (pyproject.toml, package.json, pom.xml, go.mod, etc.)
+  - Extract raw dependency names with scope, origin, version_spec
+  - Exclude self-references (repo declaring its own package as a dependency)
+  - Return unclassified dep list for Phase 2 (Gemini classification)
+
+What this file does NOT do:
+  - Classify packages into tech categories (that is Phase 2 — Gemini)
+  - Map package names to canonical tech names (Gemini knows psycopg2 = PostgreSQL)
+  - Score confidence (Gemini assigns confidence based on package + scope + context)
+  - Emit DetectedTech objects (Phase 2 output, not Phase 1)
+
+Output of parse_manifest_dependencies():
+  {
+    "raw_deps": [
+      {
+        "name":         "fastapi",          # normalized package name
+        "raw_name":     "fastapi>=0.95.0",  # original string from manifest
+        "scope":        "required",         # required | optional | dev | test
+        "origin":       "product",          # product | build | test | example
+        "matched_file": "pyproject.toml",   # which manifest declared it
+        "version_spec": ">=0.95.0",         # version constraint
+      },
+      ...
+    ],
+    "project_names":      {"fastapi"},           # repo's own package name(s)
+    "manifests_selected": [{path, origin, parsed}],
+    "flags":              ["PARTIAL_MANIFEST_COVERAGE"],
+  }
+
+Java equivalent: ContentAnalyzerService + PatternDetectionService (extraction only)
+"""
 from __future__ import annotations
 
 import ast
@@ -9,17 +46,9 @@ import xml.etree.ElementTree as ET
 from collections import defaultdict
 from pathlib import Path
 
-from backend.models.schemas import DetectedTech, PatternMatch
+# ── Manifest identification ───────────────────────────────────────────────────
 
 MANIFEST_LIMIT = 25
-
-_SOURCE_ROOTS = {"packages", "libs", "crates", "src", "modules", "plugins"}
-_EXAMPLE_ROOTS = {
-    "examples", "example", "bench", "evals", "samples", "templates",
-    "docs_src", "demo",
-}
-_TEST_ROOTS = {"qa"}
-_BUILD_ROOTS = {"distribution", "docker", ".github", ".buildkite", "ci", "scripts"}
 
 _RECOGNIZED_EXACT = {
     "pyproject.toml", "setup.py", "setup.cfg", "package.json",
@@ -27,91 +56,100 @@ _RECOGNIZED_EXACT = {
     "build.gradle.kts", "Gemfile", "composer.json",
 }
 _REQUIREMENTS_RE = re.compile(r"^requirements.*\.txt$", re.IGNORECASE)
+
+# ── Origin classification ─────────────────────────────────────────────────────
+# Determines whether a manifest belongs to the product, tests, build, or examples.
+# "product" manifests feed Phase 2. Others are lower-confidence context.
+
+_SOURCE_ROOTS  = {"packages", "libs", "crates", "src", "modules", "plugins"}
+_EXAMPLE_ROOTS = {"examples", "example", "bench", "evals", "samples",
+                  "templates", "docs_src", "demo"}
+_TEST_ROOTS    = {"qa"}
+_BUILD_ROOTS   = {"distribution", "docker", ".github", ".buildkite", "ci", "scripts"}
+
+# ── Parsing regexes ───────────────────────────────────────────────────────────
+
 _GRADLE_DEP_RE = re.compile(
     r"\b(implementation|api|testImplementation|compileOnly|runtimeOnly|testCompileOnly)\s+"
     r"['\"]([^:'\"]+):([^:'\"]+):?([^'\"]*)['\"]"
 )
-_DEP_NAME_RE = re.compile(r"^\s*([A-Za-z0-9_.@/\-]+)")
-_VERSION_SPLIT_RE = re.compile(r"\s*(===|==|~=|!=|<=|>=|<|>|=|@)\s*")
+_DEP_NAME_RE      = re.compile(r"^\s*(@?[A-Za-z0-9_.@/\-]+)")
+_VERSION_SPLIT_RE = re.compile(r"\s*(===|==|~=|!=|<=|>=|<|>|=)\s*")
 
-_CANONICAL = {
-    "fastapi": ("FastAPI", "frameworks"),
-    "starlette": ("Starlette", "frameworks"),
-    "pydantic": ("Pydantic", "library"),
-    "django": ("Django", "frameworks"),
-    "flask": ("Flask", "frameworks"),
-    "react": ("React", "frameworks"),
-    "next": ("Next.js", "frameworks"),
-    "next.js": ("Next.js", "frameworks"),
-    "vue": ("Vue", "frameworks"),
-    "express": ("Express", "frameworks"),
-    "@nestjs/core": ("NestJS", "frameworks"),
-    "@nestjs/common": ("NestJS", "frameworks"),
-    "spring-boot-starter": ("Spring Boot", "frameworks"),
-    "spring-boot-starter-web": ("Spring Boot", "frameworks"),
-    "org.springframework.boot": ("Spring Boot", "frameworks"),
-    "torch": ("PyTorch", "ai_ml"),
-    "torchvision": ("PyTorch", "ai_ml"),
-    "torchaudio": ("PyTorch", "ai_ml"),
-    "tensorflow": ("TensorFlow", "ai_ml"),
-    "transformers": ("HuggingFace", "ai_ml"),
-    "huggingface-hub": ("HuggingFace", "ai_ml"),
-    "langchain": ("LangChain", "ai_ml"),
-    "langchain-core": ("LangChain", "ai_ml"),
-    "llama-index": ("LlamaIndex", "ai_ml"),
-    "openai": ("OpenAI", "ai_ml"),
-    "anthropic": ("Anthropic Claude", "ai_ml"),
-    "google-generativeai": ("Gemini", "ai_ml"),
-    "psycopg": ("PostgreSQL", "databases"),
-    "psycopg2": ("PostgreSQL", "databases"),
-    "asyncpg": ("PostgreSQL", "databases"),
-    "pg": ("PostgreSQL", "databases"),
-    "org.postgresql": ("PostgreSQL", "databases"),
-    "pymongo": ("MongoDB", "databases"),
-    "motor": ("MongoDB", "databases"),
-    "mongoose": ("MongoDB", "databases"),
-    "redis": ("Redis", "databases"),
-    "ioredis": ("Redis", "databases"),
-    "elasticsearch": ("Elasticsearch", "databases"),
-    "mysql": ("MySQL", "databases"),
-    "mysqlclient": ("MySQL", "databases"),
-    "sqlite3": ("SQLite", "databases"),
-    "chromadb": ("ChromaDB", "databases"),
-    "weaviate-client": ("Weaviate", "databases"),
-    "pinecone": ("Pinecone", "databases"),
-    "kafka-python": ("Apache Kafka", "messaging"),
-    "confluent-kafka": ("Apache Kafka", "messaging"),
-    "org.apache.kafka": ("Apache Kafka", "messaging"),
-    "pika": ("RabbitMQ", "messaging"),
-    "celery": ("Celery", "messaging"),
-    "pytest": ("pytest", "testing"),
-    "jest": ("Jest", "testing"),
-    "@playwright/test": ("Playwright", "testing"),
-    "vitest": ("Vitest", "testing"),
-    "junit": ("JUnit", "testing"),
-    "junit-jupiter": ("JUnit", "testing"),
-    "uvicorn": ("Uvicorn", "infra"),
-    "sqlmodel": ("SQLModel", "library"),
-    "black": ("Black", "testing"),
-    "ruff": ("Ruff", "testing"),
-    "mypy": ("mypy", "testing"),
-    "pytest-asyncio": ("pytest", "testing"),
-    "pytest-cov": ("pytest", "testing"),
-    "pytest-xdist": ("pytest", "testing"),
-    "pytest-timeout": ("pytest", "testing"),
-    "pytest-sugar": ("pytest", "testing"),
-}
 
-_CANONICAL_PREFIXES = {
-    "langchain-": ("LangChain", "ai_ml"),
-    "llama-index-": ("LlamaIndex", "ai_ml"),
-    "pytest-": ("pytest", "testing"),
-    "jest-": ("Jest", "testing"),
-    "@jest/": ("Jest", "testing"),
-    "eslint-": ("ESLint", "testing"),
-    "@eslint/": ("ESLint", "testing"),
-}
+# ── Self-reference detection ──────────────────────────────────────────────────
 
+def _repo_names(repo_full_name: str) -> set[str]:
+    """Extract normalized name tokens from repo path (e.g. tiangolo/fastapi → {fastapi, tiangolo})."""
+    names = set()
+    for part in repo_full_name.split("/"):
+        norm = _normalize_name(part)
+        if norm:
+            names.add(norm)
+    return names
+
+
+def is_self_reference(package_name: str, self_names: set[str]) -> bool:
+    """
+    Return True if package_name refers to the repo being analyzed.
+    Uses token-boundary matching — 'ray' must not match 'array'.
+
+    package_name: normalized package name e.g. 'fastapi', 'langchain-core'
+    self_names:   normalized repo path tokens + project name tokens
+    """
+    if not self_names or not package_name:
+        return False
+
+    normalized = package_name.lower().replace("_", "-").replace(" ", "-")
+
+    # Exact match
+    if normalized in self_names:
+        return True
+
+    # Token-level match — split on hyphens
+    # "apache-kafka" ∩ {"apache","kafka"} → True
+    # "array" ∩ {"ray"} → {} → False (correct)
+    pkg_tokens = set(normalized.split("-"))
+    for name in self_names:
+        if not name:
+            continue
+        name_tokens = set(name.split("-"))
+        if pkg_tokens & name_tokens:
+            return True
+
+    return False
+
+
+def filter_self_references_from_inferences(
+    ai_inferred_techs: list[dict],
+    repo_full_name: str,
+    parsed_project_names: set[str] = None,
+) -> tuple[list[dict], list[str]]:
+    """
+    Remove self-referencing techs from Gemini ai_inferred_techs.
+
+    Gemini re-injects self-references (e.g. HuggingFace for huggingface/transformers)
+    that Phase 1 already excluded. Called in analyze.py after run_full_ai_pipeline().
+
+    Returns (filtered_inferences, excluded_names).
+    """
+    repo_names = _repo_names(repo_full_name)
+    self_names = repo_names | {n for n in (parsed_project_names or set()) if n}
+
+    filtered: list[dict] = []
+    excluded: list[str]  = []
+
+    for tech in ai_inferred_techs:
+        name = tech.get("tech") or tech.get("name", "")
+        if is_self_reference(name, self_names):
+            excluded.append(name)
+        else:
+            filtered.append(tech)
+
+    return filtered, excluded
+
+
+# ── Manifest selection ────────────────────────────────────────────────────────
 
 def is_recognized_manifest(path: str) -> bool:
     basename = Path(path).name
@@ -119,14 +157,18 @@ def is_recognized_manifest(path: str) -> bool:
 
 
 def manifest_origin(path: str) -> str:
-    parts = Path(path).as_posix().split("/")
+    """Classify a manifest path as product | build | test | example."""
+    parts  = Path(path).as_posix().split("/")
     lowered = [p.lower() for p in parts]
-    first = lowered[0] if lowered else ""
-    joined = "/".join(lowered)
+    first   = lowered[0] if lowered else ""
+    joined  = "/".join(lowered)
 
     if first in _BUILD_ROOTS:
         return "build"
-    if first in _TEST_ROOTS or first.startswith("test") or "fixture" in joined or "testfixtures" in joined:
+    if (first in _TEST_ROOTS
+            or first.startswith("test")
+            or "fixture" in joined
+            or "testfixtures" in joined):
         return "test"
     if first in _EXAMPLE_ROOTS or first.startswith("benchmark"):
         return "example"
@@ -135,19 +177,27 @@ def manifest_origin(path: str) -> str:
     return "product"
 
 
-def select_manifests(file_tree: list[str], limit: int = MANIFEST_LIMIT) -> tuple[list[dict], list[str]]:
+def select_manifests(
+    file_tree: list[str],
+    limit: int = MANIFEST_LIMIT,
+) -> tuple[list[dict], list[str]]:
+    """
+    Select manifests to parse from the file tree.
+    Prioritises product manifests (root + one per top-level dir).
+    Returns (manifest_list, flags).
+    """
     manifests = [
         {"path": path, "origin": manifest_origin(path), "parsed": False}
         for path in file_tree
         if is_recognized_manifest(path)
     ]
-    product = [m for m in manifests if m["origin"] == "product"]
+    product  = [m for m in manifests if m["origin"] == "product"]
     selected = product
     flags: list[str] = []
 
     if len(product) > limit:
         flags.append("PARTIAL_MANIFEST_COVERAGE")
-        root = [m for m in product if "/" not in m["path"]]
+        root   = [m for m in product if "/" not in m["path"]]
         by_top: dict[str, dict] = {}
         for item in product:
             parts = item["path"].split("/")
@@ -163,27 +213,50 @@ def select_manifests(file_tree: list[str], limit: int = MANIFEST_LIMIT) -> tuple
     return manifests, flags
 
 
-def selected_product_manifest_paths(file_tree: list[str], limit: int = MANIFEST_LIMIT) -> list[str]:
+def selected_product_manifest_paths(
+    file_tree: list[str],
+    limit: int = MANIFEST_LIMIT,
+) -> list[str]:
     manifests, _ = select_manifests(file_tree, limit)
     return [m["path"] for m in manifests if m["origin"] == "product" and m["parsed"]]
 
+
+# ── Main extraction function ──────────────────────────────────────────────────
 
 def parse_manifest_dependencies(
     file_contents: dict[str, str],
     file_tree: list[str],
     repo_full_name: str = "",
 ) -> dict:
+    """
+    Phase 1: Pure structural extraction.
+
+    Parses all recognized manifests and returns a flat list of raw dependencies
+    with scope, origin, and source file. No classification, no canonical names,
+    no DetectedTech objects.
+
+    The output feeds Phase 2 (classify_dependencies in ai_pipeline.py) where
+    Gemini maps package names to tech categories.
+
+    Returns:
+      raw_deps:           list of dep dicts (name, scope, origin, matched_file, version_spec)
+      project_names:      set of this repo's own package names (for self-ref exclusion)
+      manifests_selected: list of {path, origin, parsed} for UI audit
+      flags:              parse warnings (MANIFEST_PARSE_FAILED, PARTIAL_MANIFEST_COVERAGE, etc.)
+    """
     manifests_selected, flags = select_manifests(file_tree)
     selected_paths = {
         m["path"] for m in manifests_selected
         if m["origin"] == "product" and m["parsed"]
     }
+
     parsed_project_names: set[str] = set()
-    raw_deps: list[dict] = []
+    raw_deps_all: list[dict] = []
 
     for path in selected_paths:
         content = file_contents.get(path)
         if content is None:
+            # Try loose key match (path may differ in prefix)
             for key, value in file_contents.items():
                 if key == path:
                     content = value
@@ -192,84 +265,39 @@ def parse_manifest_dependencies(
             continue
 
         deps, project_names, parse_flags = _parse_by_type(path, content)
-        parsed_project_names.update(_normalize_name(name) for name in project_names if name)
+        parsed_project_names.update(
+            _normalize_name(name) for name in project_names if name
+        )
         flags.extend(parse_flags)
-        raw_deps.extend({**dep, "origin": "product", "matched_file": path} for dep in deps)
 
+        for dep in deps:
+            raw_deps_all.append({
+                **dep,
+                "origin":       "product",
+                "matched_file": path,
+            })
+
+    # Self-reference exclusion
     repo_names = _repo_names(repo_full_name)
-    self_names = {name for name in parsed_project_names if name} | repo_names
-    aggregated: dict[str, dict] = {}
-    frequency: dict[str, set[str]] = defaultdict(set)
-    matched_keywords: dict[str, set[str]] = defaultdict(set)
-    excluded_self_refs: list[str] = []
+    self_names = {n for n in parsed_project_names if n} | repo_names
 
-    for dep in raw_deps:
-        original_name = dep.get("raw_name") or dep["name"]
-        original_normalized = _normalize_name(original_name)
-        if not original_normalized:
+    excluded_self_refs: list[str] = []
+    raw_deps: list[dict] = []
+
+    for dep in raw_deps_all:
+        pkg = dep.get("name", "")
+        if not pkg:
             continue
         if _is_internal_spec(dep.get("version_spec", "")):
             continue
-
-        normalized = _normalize_name(dep["name"])
-        if not normalized:
+        if is_self_reference(pkg, self_names):
+            excluded_self_refs.append(pkg)
             continue
-        canonical_name, category = _canonicalize(normalized)
-        confidence = _confidence(dep["scope"], dep["origin"])
-        if _is_self_dependency(canonical_name, self_names):
-            excluded_self_refs.append(canonical_name)
-            continue
-        if category == "library" and canonical_name == normalized and confidence < 0.80:
-            continue
-
-        aggregate_key = canonical_name.lower()
-        candidate = {
-            "normalized": normalized,
-            "name": canonical_name,
-            "category": category,
-            "scope": dep["scope"],
-            "origin": dep["origin"],
-            "matched_file": dep["matched_file"],
-            "version_spec": dep.get("version_spec", ""),
-            "confidence": confidence,
-        }
-        frequency[aggregate_key].add(dep["matched_file"])
-        matched_keywords[aggregate_key].add(original_normalized)
-        if aggregate_key not in aggregated or confidence > aggregated[aggregate_key]["confidence"]:
-            aggregated[aggregate_key] = candidate
-
-    detections: dict[str, list[DetectedTech]] = defaultdict(list)
-    matches: list[PatternMatch] = []
-    for aggregate_key, dep in aggregated.items():
-        manifest_frequency = len(frequency[aggregate_key])
-        keyword_list = ", ".join(sorted(matched_keywords[aggregate_key]))
-        tech = DetectedTech(
-            name=dep["name"],
-            confidence=dep["confidence"],
-            detection_source="manifest",
-            category=dep["category"],
-            scope=dep["scope"],
-            origin=dep["origin"],
-            matched_file=dep["matched_file"],
-            version_spec=dep["version_spec"],
-            manifest_frequency=manifest_frequency,
-        )
-        detections[dep["category"]].append(tech)
-        matches.append(PatternMatch(
-            tech=dep["name"],
-            category=dep["category"],
-            matched_file=dep["matched_file"],
-            matched_keyword=keyword_list,
-            confidence=dep["confidence"],
-            scope=dep["scope"],
-            origin=dep["origin"],
-            version_spec=dep["version_spec"],
-            manifest_frequency=manifest_frequency,
-        ))
+        raw_deps.append(dep)
 
     return {
-        "detections": dict(detections),
-        "pattern_matches": matches,
+        "raw_deps":           raw_deps,
+        "project_names":      parsed_project_names,
         "manifests_selected": manifests_selected,
         "flags": sorted(set([
             *flags,
@@ -278,30 +306,25 @@ def parse_manifest_dependencies(
     }
 
 
-def _parse_by_type(path: str, content: str) -> tuple[list[dict], set[str], list[str]]:
+# ── Parser implementations ────────────────────────────────────────────────────
+
+def _parse_by_type(
+    path: str,
+    content: str,
+) -> tuple[list[dict], set[str], list[str]]:
     basename = Path(path).name
-    if basename == "pyproject.toml":
-        return _parse_pyproject(content)
-    if basename == "package.json":
-        return _parse_package_json(content)
-    if basename == "Cargo.toml":
-        return _parse_cargo_toml(content)
-    if basename == "go.mod":
-        return _parse_go_mod(content)
-    if basename == "pom.xml":
-        return _parse_pom(content)
+    if basename == "pyproject.toml":     return _parse_pyproject(content)
+    if basename == "package.json":       return _parse_package_json(content)
+    if basename == "Cargo.toml":         return _parse_cargo_toml(content)
+    if basename == "go.mod":             return _parse_go_mod(content)
+    if basename == "pom.xml":            return _parse_pom(content)
     if basename in ("build.gradle", "build.gradle.kts"):
-        return _parse_gradle(content)
-    if _REQUIREMENTS_RE.match(basename):
-        return _parse_requirements(path, content)
-    if basename == "setup.py":
-        return _parse_setup_py(content)
-    if basename == "setup.cfg":
-        return _parse_setup_cfg(content)
-    if basename == "Gemfile":
-        return _parse_gemfile(content)
-    if basename == "composer.json":
-        return _parse_composer_json(content)
+                                         return _parse_gradle(content)
+    if _REQUIREMENTS_RE.match(basename): return _parse_requirements(path, content)
+    if basename == "setup.py":           return _parse_setup_py(content)
+    if basename == "setup.cfg":          return _parse_setup_cfg(content)
+    if basename == "Gemfile":            return _parse_gemfile(content)
+    if basename == "composer.json":      return _parse_composer_json(content)
     return [], set(), []
 
 
@@ -310,13 +333,20 @@ def _parse_pyproject(content: str) -> tuple[list[dict], set[str], list[str]]:
         data = tomllib.loads(content)
     except tomllib.TOMLDecodeError:
         return [], set(), ["MANIFEST_PARSE_FAILED"]
-    deps = []
+
+    deps: list[dict] = []
     project = data.get("project", {})
     project_names = {project.get("name", "")}
+
+    # [project] dependencies → required
     deps.extend(_dep_strings(project.get("dependencies", []), "required"))
+
+    # [project.optional-dependencies] → optional or test/dev by group name
     for group, values in project.get("optional-dependencies", {}).items():
         scope = _group_scope(group, default="optional")
         deps.extend(_dep_strings(values, scope))
+
+    # [dependency-groups] (uv / PEP 735) — include-group resolved
     dependency_groups = data.get("dependency-groups", {})
     for group in dependency_groups:
         deps.extend(_pyproject_group_values(
@@ -325,16 +355,27 @@ def _parse_pyproject(content: str) -> tuple[list[dict], set[str], list[str]]:
             _group_scope(group, default="dev"),
             seen=set(),
         ))
+
+    # [tool.poetry]
     poetry = data.get("tool", {}).get("poetry", {})
     if poetry.get("name"):
         project_names.add(poetry["name"])
-    deps.extend(_poetry_deps(poetry.get("dependencies", {}), "required"))
+    deps.extend(_poetry_deps(poetry.get("dependencies", {}),     "required"))
     deps.extend(_poetry_deps(poetry.get("dev-dependencies", {}), "dev"))
+    for group_data in poetry.get("group", {}).values():
+        group_deps = group_data.get("dependencies", {})
+        deps.extend(_poetry_deps(group_deps, "dev"))
+
     return deps, project_names, []
 
 
-def _pyproject_group_values(groups: dict, group: str, scope: str, seen: set[str]) -> list[dict]:
-    deps = []
+def _pyproject_group_values(
+    groups: dict,
+    group: str,
+    scope: str,
+    seen: set[str],
+) -> list[dict]:
+    deps: list[dict] = []
     if group in seen:
         return deps
     seen.add(group)
@@ -359,17 +400,20 @@ def _parse_package_json(content: str) -> tuple[list[dict], set[str], list[str]]:
         data = json.loads(content)
     except json.JSONDecodeError:
         return [], set(), ["MANIFEST_PARSE_FAILED"]
-    deps = []
+
+    deps: list[dict] = []
     for key, scope in [
-        ("dependencies", "required"),
-        ("peerDependencies", "required"),
+        ("dependencies",         "required"),
+        ("peerDependencies",     "required"),
         ("optionalDependencies", "optional"),
-        ("devDependencies", "dev"),
+        ("devDependencies",      "dev"),
     ]:
         for name, spec in (data.get(key) or {}).items():
             if _is_internal_spec(str(spec)):
                 continue
-            deps.append({"name": name, "scope": scope, "version_spec": str(spec)})
+            deps.append({"name": name, "raw_name": name,
+                         "scope": scope, "version_spec": str(spec)})
+
     return deps, {data.get("name", "")}, []
 
 
@@ -378,20 +422,23 @@ def _parse_cargo_toml(content: str) -> tuple[list[dict], set[str], list[str]]:
         data = tomllib.loads(content)
     except tomllib.TOMLDecodeError:
         return [], set(), ["MANIFEST_PARSE_FAILED"]
-    deps = []
+
+    deps: list[dict] = []
     for key, scope in [
-        ("dependencies", "required"),
-        ("dev-dependencies", "test"),
+        ("dependencies",       "required"),
+        ("dev-dependencies",   "test"),
         ("build-dependencies", "dev"),
     ]:
         deps.extend(_toml_table_deps(data.get(key, {}), scope))
+
     return deps, {data.get("package", {}).get("name", "")}, []
 
 
 def _parse_go_mod(content: str) -> tuple[list[dict], set[str], list[str]]:
-    deps = []
-    project_names = set()
+    deps: list[dict] = []
+    project_names: set[str] = set()
     in_require = False
+
     for line in content.splitlines():
         stripped = line.strip()
         if stripped.startswith("module "):
@@ -403,68 +450,94 @@ def _parse_go_mod(content: str) -> tuple[list[dict], set[str], list[str]]:
             in_require = False
             continue
         if in_require or stripped.startswith("require "):
-            raw = stripped.replace("require ", "", 1).split("//")[0].strip()
+            raw   = stripped.replace("require ", "", 1).split("//")[0].strip()
             parts = raw.split()
             if len(parts) >= 2:
+                scope = "optional" if "// indirect" in line else "required"
                 deps.append({
-                    "name": parts[0],
-                    "scope": "optional" if "// indirect" in line else "required",
+                    "name":         parts[0],
+                    "raw_name":     parts[0],
+                    "scope":        scope,
                     "version_spec": parts[1],
                 })
+
     return deps, project_names, []
 
 
 def _parse_pom(content: str) -> tuple[list[dict], set[str], list[str]]:
-    deps = []
     try:
         root = ET.fromstring(content)
     except ET.ParseError:
         return [], set(), ["MANIFEST_PARSE_FAILED"]
-    ns = {"m": root.tag.split("}")[0].strip("{")} if "}" in root.tag else {}
+
+    ns     = {"m": root.tag.split("}")[0].strip("{")} if "}" in root.tag else {}
     prefix = "m:" if ns else ""
     project_names = {
         (root.findtext(f"{prefix}artifactId", default="", namespaces=ns) or "").strip()
     }
+    deps: list[dict] = []
+
     for node in root.findall(f".//{prefix}dependency", ns):
-        group = (node.findtext(f"{prefix}groupId", default="", namespaces=ns) or "").strip()
+        group    = (node.findtext(f"{prefix}groupId",    default="", namespaces=ns) or "").strip()
         artifact = (node.findtext(f"{prefix}artifactId", default="", namespaces=ns) or "").strip()
-        scope_value = (node.findtext(f"{prefix}scope", default="", namespaces=ns) or "").strip().lower()
-        version = (node.findtext(f"{prefix}version", default="", namespaces=ns) or "").strip()
+        scope_v  = (node.findtext(f"{prefix}scope",      default="", namespaces=ns) or "").strip().lower()
+        version  = (node.findtext(f"{prefix}version",    default="", namespaces=ns) or "").strip()
         if not artifact:
             continue
-        scope = "test" if scope_value == "test" else "dev" if scope_value in {"provided", "system"} else "required"
-        deps.append({"name": f"{group}:{artifact}" if group else artifact, "scope": scope, "version_spec": version})
+        scope    = ("test" if scope_v == "test"
+                    else "dev" if scope_v in {"provided", "system"}
+                    else "required")
+        raw_name = f"{group}:{artifact}" if group else artifact
+        deps.append({
+            "name":         raw_name,   # group:artifact — _normalize_name takes group
+            "raw_name":     raw_name,
+            "scope":        scope,
+            "version_spec": version,
+        })
+
     return deps, project_names, []
 
 
 def _parse_gradle(content: str) -> tuple[list[dict], set[str], list[str]]:
-    deps = []
+    deps: list[dict] = []
     for conf, group, artifact, version in _GRADLE_DEP_RE.findall(content):
-        scope = "test" if conf.lower().startswith("test") else "dev" if conf == "compileOnly" else "required"
-        deps.append({"name": f"{group}:{artifact}", "scope": scope, "version_spec": version})
-    return deps, set(), ["HEURISTIC_MANIFEST_PARSE"] if deps else []
+        scope    = ("test"     if conf.lower().startswith("test")
+                    else "dev" if conf == "compileOnly"
+                    else "required")
+        raw_name = f"{group}:{artifact}"
+        deps.append({
+            "name":         raw_name,
+            "raw_name":     raw_name,
+            "scope":        scope,
+            "version_spec": version,
+        })
+    flags = ["HEURISTIC_MANIFEST_PARSE"] if deps else []
+    return deps, set(), flags
 
 
 def _parse_requirements(path: str, content: str) -> tuple[list[dict], set[str], list[str]]:
     basename = Path(path).name.lower()
-    scope = "dev" if any(word in basename for word in ("dev", "lint", "docs", "build")) else "test" if "test" in basename else "required"
-    deps = []
+    scope    = ("dev"  if any(w in basename for w in ("dev", "lint", "docs", "build"))
+                else "test" if "test" in basename
+                else "required")
+    deps: list[dict] = []
     for line in content.splitlines():
         stripped = line.strip()
-        if not stripped or stripped.startswith("#") or stripped.startswith(("-", "--")):
+        if not stripped or stripped.startswith(("#", "-", "--")):
             continue
         deps.append(_dep(stripped.split("#", 1)[0].strip(), scope))
     return deps, set(), []
 
 
 def _parse_setup_py(content: str) -> tuple[list[dict], set[str], list[str]]:
-    flags = []
-    deps = []
-    project_names = set()
+    flags: list[str]  = []
+    deps: list[dict]  = []
+    project_names: set[str] = set()
     try:
         tree = ast.parse(content)
     except SyntaxError:
         return [], set(), ["MANIFEST_PARSE_FAILED"]
+
     variables = _static_assignments(tree, flags)
     for call in [node for node in ast.walk(tree) if isinstance(node, ast.Call)]:
         func_name = getattr(call.func, "id", "") or getattr(call.func, "attr", "")
@@ -476,11 +549,16 @@ def _parse_setup_py(content: str) -> tuple[list[dict], set[str], list[str]]:
                 if name:
                     project_names.add(name)
             elif kw.arg == "install_requires":
-                deps.extend(_dep_strings(_literal_list(kw.value, variables, flags), "required"))
+                deps.extend(_dep_strings(
+                    _literal_list(kw.value, variables, flags), "required"
+                ))
             elif kw.arg == "extras_require":
                 extras = _literal_dict(kw.value, variables, flags)
                 for group, values in extras.items():
-                    deps.extend(_dep_strings(values, _group_scope(group, default="optional")))
+                    deps.extend(_dep_strings(
+                        values, _group_scope(group, default="optional")
+                    ))
+
     return deps, project_names, sorted(set(flags))
 
 
@@ -490,22 +568,36 @@ def _parse_setup_cfg(content: str) -> tuple[list[dict], set[str], list[str]]:
         parser.read_string(content)
     except configparser.Error:
         return [], set(), ["MANIFEST_PARSE_FAILED"]
-    deps = []
-    project_names = {parser.get("metadata", "name", fallback="")}
+
+    deps: list[dict] = []
+    project_names    = {parser.get("metadata", "name", fallback="")}
+
     if parser.has_option("options", "install_requires"):
-        deps.extend(_dep_strings(parser.get("options", "install_requires").splitlines(), "required"))
+        deps.extend(_dep_strings(
+            parser.get("options", "install_requires").splitlines(), "required"
+        ))
     if parser.has_section("options.extras_require"):
         for group, value in parser.items("options.extras_require"):
-            deps.extend(_dep_strings(value.splitlines(), _group_scope(group, default="optional")))
+            deps.extend(_dep_strings(
+                value.splitlines(), _group_scope(group, default="optional")
+            ))
+
     return deps, project_names, []
 
 
 def _parse_gemfile(content: str) -> tuple[list[dict], set[str], list[str]]:
-    deps = []
+    deps: list[dict] = []
     for line in content.splitlines():
-        match = re.match(r"\s*gem\s+['\"]([^'\"]+)['\"](?:,\s*['\"]([^'\"]+)['\"])?", line)
-        if match:
-            deps.append({"name": match.group(1), "scope": "required", "version_spec": match.group(2) or ""})
+        m = re.match(
+            r"\s*gem\s+['\"]([^'\"]+)['\"](?:,\s*['\"]([^'\"]+)['\"])?", line
+        )
+        if m:
+            deps.append({
+                "name":         m.group(1),
+                "raw_name":     m.group(1),
+                "scope":        "required",
+                "version_spec": m.group(2) or "",
+            })
     return deps, set(), []
 
 
@@ -514,18 +606,27 @@ def _parse_composer_json(content: str) -> tuple[list[dict], set[str], list[str]]
         data = json.loads(content)
     except json.JSONDecodeError:
         return [], set(), ["MANIFEST_PARSE_FAILED"]
-    deps = []
+
+    deps: list[dict] = []
     for key, scope in [("require", "required"), ("require-dev", "dev")]:
         for name, spec in (data.get(key) or {}).items():
             if name.lower() == "php":
                 continue
-            deps.append({"name": name, "scope": scope, "version_spec": str(spec)})
+            deps.append({
+                "name":         name,
+                "raw_name":     name,
+                "scope":        scope,
+                "version_spec": str(spec),
+            })
+
     return deps, {data.get("name", "").split("/")[-1]}, []
 
 
+# ── Helper utilities ──────────────────────────────────────────────────────────
+
 def _static_assignments(tree: ast.AST, flags: list[str]) -> dict[str, object]:
-    values = {}
-    for node in tree.body if isinstance(tree, ast.Module) else []:
+    values: dict[str, object] = {}
+    for node in (tree.body if isinstance(tree, ast.Module) else []):
         if isinstance(node, ast.Assign):
             try:
                 value = ast.literal_eval(node.value)
@@ -547,7 +648,11 @@ def _literal_string(node: ast.AST, variables: dict[str, object]) -> str:
     return ""
 
 
-def _literal_list(node: ast.AST, variables: dict[str, object], flags: list[str]) -> list[str]:
+def _literal_list(
+    node: ast.AST,
+    variables: dict[str, object],
+    flags: list[str],
+) -> list[str]:
     if isinstance(node, ast.Name):
         value = variables.get(node.id)
         return value if isinstance(value, list) else []
@@ -559,7 +664,11 @@ def _literal_list(node: ast.AST, variables: dict[str, object], flags: list[str])
     return value if isinstance(value, list) else []
 
 
-def _literal_dict(node: ast.AST, variables: dict[str, object], flags: list[str]) -> dict:
+def _literal_dict(
+    node: ast.AST,
+    variables: dict[str, object],
+    flags: list[str],
+) -> dict:
     if isinstance(node, ast.Name):
         value = variables.get(node.id)
         return value if isinstance(value, dict) else {}
@@ -571,160 +680,78 @@ def _literal_dict(node: ast.AST, variables: dict[str, object], flags: list[str])
     return value if isinstance(value, dict) else {}
 
 
-def _dep_strings(values, scope: str) -> list[dict]:
+def _dep_strings(values: object, scope: str) -> list[dict]:
     if not isinstance(values, list):
         return []
-    return [_dep(value, scope) for value in values if isinstance(value, str)]
+    return [_dep(v, scope) for v in values if isinstance(v, str)]
 
 
-def _poetry_deps(values, scope: str) -> list[dict]:
-    deps = []
+def _poetry_deps(values: object, scope: str) -> list[dict]:
     if not isinstance(values, dict):
-        return deps
-    for name, spec in values.items():
-        if name.lower() == "python":
-            continue
-        deps.append({"name": name, "scope": scope, "version_spec": str(spec)})
-    return deps
+        return []
+    return [
+        {"name": name, "raw_name": name, "scope": scope, "version_spec": str(spec)}
+        for name, spec in values.items()
+        if name.lower() != "python"
+    ]
 
 
-def _toml_table_deps(values, scope: str) -> list[dict]:
-    deps = []
+def _toml_table_deps(values: object, scope: str) -> list[dict]:
     if not isinstance(values, dict):
-        return deps
-    for name, spec in values.items():
-        if isinstance(spec, dict) and ("path" in spec or "git" in spec):
-            continue
-        deps.append({"name": name, "scope": scope, "version_spec": str(spec)})
-    return deps
+        return []
+    return [
+        {"name": name, "raw_name": name, "scope": scope, "version_spec": str(spec)}
+        for name, spec in values.items()
+        if not (isinstance(spec, dict) and ("path" in spec or "git" in spec))
+    ]
 
 
 def _dep(value: str, scope: str) -> dict:
+    """Parse a raw dep string into {name, raw_name, scope, version_spec}."""
     cleaned = value.strip().strip(",")
-    name = _normalize_name(cleaned)
-    version = cleaned[len(name):].strip() if cleaned.lower().startswith(name.lower()) else cleaned
-    return {"name": name, "raw_name": cleaned, "scope": scope, "version_spec": version}
+    name    = _normalize_name(cleaned)
+    return {"name": name, "raw_name": cleaned, "scope": scope, "version_spec": cleaned}
 
 
 def _group_scope(group: str, default: str) -> str:
     lower = group.lower()
-    if any(token in lower for token in ("test", "tests")):
+    if any(t in lower for t in ("test", "tests")):
         return "test"
-    if any(token in lower for token in ("dev", "doc", "docs", "lint", "build", "bench")):
+    if any(t in lower for t in ("dev", "doc", "docs", "lint", "build", "bench")):
         return "dev"
     return default
 
 
 def _normalize_name(value: str) -> str:
+    """
+    Normalize a raw package name to a stable lookup key.
+
+    - Strip version specifiers, extras, env markers
+    - Lowercase, replace _ with -
+    - Preserve @ prefix for scoped npm: @nestjs/core → @nestjs/core
+    - For Java group:artifact[:version] → take GROUP (first colon segment)
+      Rationale: group identifies the library family for Gemini classification.
+      org.springframework.boot:spring-boot-starter-web → org.springframework.boot
+    """
     text = value.strip()
-    text = text.split(";", 1)[0].strip()
-    text = text.split("[", 1)[0].strip()
-    text = _VERSION_SPLIT_RE.split(text, 1)[0].strip()
+    text = text.split(";", 1)[0].strip()    # strip env markers
+    text = text.split("[", 1)[0].strip()    # strip extras
+    text = _VERSION_SPLIT_RE.split(text, 1)[0].strip()  # strip version
+
+    if not text:
+        return ""
+
+    # Java group:artifact[:version] → take group only
+    if ":" in text and not text.startswith("@"):
+        return text.split(":")[0].lower().replace("_", "-")
+
+    # Standard package name (including scoped npm @scope/pkg)
     match = _DEP_NAME_RE.match(text)
     if not match:
         return ""
-    name = match.group(1).lower().replace("_", "-")
-    if ":" in name:
-        name = name.split(":")[-1]
-    return name
-
-
-# Token-boundary match — AND the match token must be the primary name token,
-# not just a component of a compound package name like types-redis or jest-redis
-def _canonicalize(normalized: str) -> tuple[str, str]:
-    if normalized in _CANONICAL:
-        return _CANONICAL[normalized]
-
-    parts = normalized.split("-")
-
-    # Only match if the canonical key equals the FIRST token of the package name
-    # types-redis → first token is "types" not "redis" → no match
-    # redis-py    → first token is "redis" → match
-    # ray-serve   → first token is "ray" → match (intentional — Ray extension)
-    # array       → first token is "array" → no match against "ray"
-    for key, value in _CANONICAL.items():
-        if key == parts[0]:
-            return value
-
-    return normalized, "library"
-
-
-def _is_self_dependency(canonical_name: str, self_names: set[str]) -> bool:
-    """
-    Return True if canonical_name refers to the repo being analyzed.
-    Uses token-boundary matching — 'ray' must not match 'array'.
-
-    canonical_name: tech display name e.g. "HuggingFace", "Apache Kafka"
-    self_names:     normalized repo path tokens + project name tokens
-                    e.g. {"huggingface", "transformers"} for huggingface/transformers
-    """
-    if not self_names:
-        return False
-    # Normalize canonical name to hyphen-separated tokens
-    normalized = canonical_name.lower().replace("_", "-").replace(" ", "-")
-    # Exact match: "transformers" == "transformers"
-    if normalized in self_names:
-        return True
-    # Token-level match: split on hyphens and check token overlap
-    # "apache-kafka" tokens {"apache","kafka"} ∩ {"apache","kafka"} → True
-    # "array" tokens {"array"} ∩ {"ray"} → empty → False (correct)
-    canonical_tokens = set(normalized.split("-"))
-    for name in self_names:
-        if not name:
-            continue
-        name_tokens = set(name.split("-"))
-        # Both directions: canonical contains self-name token, or vice versa
-        if canonical_tokens & name_tokens:
-            return True
-    return False
-
-
-def filter_self_references_from_inferences(
-    ai_inferred_techs: list[dict],
-    repo_full_name: str,
-    parsed_project_names: set[str] = None,
-) -> tuple[list[dict], list[str]]:
-    """
-    Remove self-referencing techs from Gemini ai_inferred_techs.
-    Gemini re-injects self-references (e.g. HuggingFace for huggingface/transformers)
-    that manifest_parser already excluded. This filter is called in analyze.py
-    after run_full_ai_pipeline() returns.
-
-    Returns (filtered_inferences, excluded_names).
-    """
-    repo_names = _repo_names(repo_full_name)
-    self_names = repo_names | {n for n in (parsed_project_names or set()) if n}
-
-    filtered = []
-    excluded = []
-    for tech in ai_inferred_techs:
-        name = tech.get("tech") or tech.get("name", "")
-        if _is_self_dependency(name, self_names):
-            excluded.append(name)
-        else:
-            filtered.append(tech)
-    return filtered, excluded
-
-
-def _confidence(scope: str, origin: str) -> float:
-    base = {
-        "required": 0.95,
-        "optional": 0.80,
-        "test": 0.70,
-        "dev": 0.60,
-    }.get(scope, 0.60)
-    return round(base if origin == "product" else base * 0.3, 3)
+    return match.group(1).lower().replace("_", "-")
 
 
 def _is_internal_spec(spec: str) -> bool:
     lower = str(spec).strip().lower()
     return lower.startswith(("workspace:", "file:", "link:"))
-
-
-def _repo_names(repo_full_name: str) -> set[str]:
-    names = set()
-    for part in repo_full_name.split("/"):
-        norm = _normalize_name(part)
-        if norm:
-            names.add(norm)
-    return names

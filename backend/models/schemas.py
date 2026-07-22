@@ -13,6 +13,10 @@ class DetectedTech(BaseModel):
     matched_file: Optional[str] = None
     version_spec: Optional[str] = None
     manifest_frequency: Optional[int] = None
+    file_count: Optional[int] = None
+    emergent_category: Optional[str] = None
+    byte_count: Optional[int] = None
+    byte_share: Optional[float] = None
 
 
 class PatternMatch(BaseModel):
@@ -113,6 +117,7 @@ class AnalysisResult(BaseModel):
 
 class AnalyzeRequest(BaseModel):
     repo_url: str
+    hard_refresh: bool = False
 
 
 class ExplainabilityReport(BaseModel):

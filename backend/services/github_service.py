@@ -25,10 +25,13 @@ from dotenv import load_dotenv
 
 from backend.models.schemas import RepoData
 from backend.services.manifest_parser import is_recognized_manifest, selected_product_manifest_paths
+from backend.services.repo_key import parse_repo_key
 
 load_dotenv()
 
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
+_HEAD_SHA_CACHE: dict[tuple[str, str | None], dict[str, str]] = {}
+_LANGUAGES_CACHE: dict[str, dict] = {}
 
 if not GITHUB_TOKEN:
     warnings.warn(
@@ -57,6 +60,7 @@ _FILTER_PATTERNS = (
     ".git/",
     "__pycache__/",
     "*.png", "*.jpg", "*.svg", "*.ico", "*.woff",
+    ".github/"
 )
 
 # Fetch these from repo root even if not in 200-file tree
@@ -158,11 +162,87 @@ def _parse_repo_url(repo_url: str) -> tuple[str, str]:
     raise ValueError(f"Invalid GitHub repo URL or identifier: {repo_url!r}")
 
 
-def _build_headers(accept: str = "application/vnd.github.v3+json") -> dict:
-    headers = {"Accept": accept}
+def _build_headers(accept: str = "application/vnd.github+json") -> dict:
+    headers = {
+        "Accept": accept,
+        "X-GitHub-Api-Version": "2026-03-10",
+    }
     if GITHUB_TOKEN:
         headers["Authorization"] = f"Bearer {GITHUB_TOKEN}"
     return headers
+
+
+async def get_languages(repo_key: str) -> dict[str, int]:
+    """Fetch GitHub Linguist byte totals without ever sinking an analysis."""
+    try:
+        provider, owner, repo = parse_repo_key(repo_key)
+        if provider != "github":
+            return {}
+
+        headers = _build_headers()
+        cached = _LANGUAGES_CACHE.get(repo_key)
+        if cached and cached.get("etag"):
+            headers["If-None-Match"] = cached["etag"]
+
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.get(
+                f"https://api.github.com/repos/{owner}/{repo}/languages",
+                headers=headers,
+            )
+
+        if resp.status_code == 304 and cached:
+            return dict(cached.get("languages", {}))
+        if resp.status_code == 404 or _is_rate_limited(resp):
+            return {}
+        resp.raise_for_status()
+
+        languages = {
+            str(name): int(byte_count)
+            for name, byte_count in resp.json().items()
+            if int(byte_count) > 0
+        }
+        _LANGUAGES_CACHE[repo_key] = {
+            "etag": resp.headers.get("ETag"),
+            "languages": languages,
+        }
+        return languages
+    except Exception:
+        return {}
+
+
+_LANGUAGE_ALIASES = {"SCSS": "CSS"}
+_NON_LANGUAGES = {"Dockerfile", "MDX", "Makefile"}
+_LANGUAGE_NOISE_FLOOR = 0.001
+
+
+def canonicalize_languages(raw: dict[str, int]) -> list[dict]:
+    """Fold Linguist aliases and return byte-ranked, UI-ready languages."""
+    folded: dict[str, int] = {}
+    for raw_name, raw_bytes in raw.items():
+        name = _LANGUAGE_ALIASES.get(raw_name, raw_name)
+        byte_count = int(raw_bytes or 0)
+        if name in _NON_LANGUAGES or byte_count <= 0:
+            continue
+        folded[name] = folded.get(name, 0) + byte_count
+
+    total = sum(folded.values())
+    if not total:
+        return []
+
+    ranked = sorted(folded.items(), key=lambda item: (-item[1], item[0]))
+    return [
+        {
+            "name": name,
+            "category": "languages",
+            "confidence": 1.0,
+            "detection_source": "github_linguist",
+            "byte_count": byte_count,
+            "byte_share": byte_count / total,
+            "is_primary": index == 0,
+            "below_noise_floor": byte_count / total < _LANGUAGE_NOISE_FLOOR,
+        }
+        for index, (name, byte_count) in enumerate(ranked)
+    ]
 
 
 def _retry_after(resp: httpx.Response, default: int = 60) -> int:
@@ -191,6 +271,51 @@ def _is_rate_limited(resp: httpx.Response) -> bool:
     except Exception:
         message = resp.text.lower()
     return "rate limit" in message
+
+
+async def get_head_sha(repo_key: str, branch: str | None = None) -> str:
+    """1 API call. Use ETag caching (If-None-Match -> 304 costs no rate
+    limit). Falls back to default_branch when branch is None."""
+    provider, owner, repo = parse_repo_key(repo_key)
+    if provider != "github":
+        raise ValueError(f"Unsupported provider for GitHub fetch: {provider}")
+
+    cache_key = (repo_key, branch)
+    headers = _build_headers()
+    cached = _HEAD_SHA_CACHE.get(cache_key)
+    if cached and cached.get("etag"):
+        headers["If-None-Match"] = cached["etag"]
+
+    if branch:
+        url = f"https://api.github.com/repos/{owner}/{repo}/commits/{branch}"
+        params = None
+    else:
+        url = f"https://api.github.com/repos/{owner}/{repo}/commits"
+        params = {"per_page": "1"}
+
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        resp = await client.get(url, headers=headers, params=params)
+
+    if resp.status_code == 304 and cached and cached.get("sha"):
+        return cached["sha"]
+    if resp.status_code == 404:
+        raise RepoNotFoundError(f"Repository {owner}/{repo} not found")
+    if _is_rate_limited(resp):
+        raise GitHubRateLimitError(retry_after=_retry_after(resp))
+    resp.raise_for_status()
+
+    payload = resp.json()
+    if branch:
+        sha = payload.get("sha")
+    else:
+        sha = payload[0].get("sha") if payload else None
+    if not sha:
+        raise ValueError(f"Could not resolve head SHA for {repo_key}")
+
+    etag = resp.headers.get("ETag")
+    if etag:
+        _HEAD_SHA_CACHE[cache_key] = {"etag": etag, "sha": sha}
+    return sha
 
 
 async def _fetch_file(
@@ -294,18 +419,30 @@ async def fetch_repo(repo_url: str) -> RepoData:
             if p.startswith(".github/workflows/") and p.endswith(".yml")
         ])[:3]
 
-        files_to_fetch = list(_KEY_FILES & tree_set) + workflow_files
-        files_to_fetch.extend(
-            path for path in selected_product_manifest_paths(file_tree)
-            if path not in files_to_fetch
-        )
+        # Build the fetch list DETERMINISTICALLY and manifest-first.
+        #
+        # This used to be `list(_KEY_FILES & tree_set)` — a set. Python
+        # randomises string hashing per process (PYTHONHASHSEED), so set
+        # iteration order changed on every uvicorn restart. Combined with the
+        # MAX_FILES_TO_FETCH truncation below, a DIFFERENT subset of files was
+        # analysed run to run for identical input. That is a source of "fixed in
+        # one run, regressed in the next" — the detection code was never the
+        # variable.
+        #
+        # Order is priority, because the tail gets truncated:
+        #   1. product manifests  — the authoritative detection layer
+        #   2. key files in tree  — tier-sorted (manifests, locks, config)
+        #   3. root fallbacks     — not in tree; most 404 on any given repo
+        #   4. CI workflows       — weakest evidence, first to be cut
+        product_manifests = list(selected_product_manifest_paths(file_tree))
+        key_files_in_tree = sorted(_KEY_FILES & tree_set, key=lambda p: (_path_tier(p), p))
+        root_fallbacks = [f for f in ALWAYS_TRY_ROOT if f not in tree_set]
 
-        # Always attempt root manifests even if not in tree
-        # (handles very large repos where even priority-sorted tree misses root)
-        for f in ALWAYS_TRY_ROOT:
-            if f not in files_to_fetch:
-                files_to_fetch.append(f)
-
+        files_to_fetch: list[str] = []
+        for group in (product_manifests, key_files_in_tree, root_fallbacks, workflow_files):
+            for path in group:
+                if path not in files_to_fetch:
+                    files_to_fetch.append(path)
         files_to_fetch = files_to_fetch[:MAX_FILES_TO_FETCH]
 
         # ── Fetch file contents ───────────────────────────────────────────────
@@ -331,3 +468,28 @@ async def fetch_repo(repo_url: str) -> RepoData:
         file_tree=file_tree,
         file_contents=file_contents,
     )
+def to_repo_metadata(repo: RepoData) -> dict:
+    """
+    RepoData -> the `repo` sub-document stored on analyses_result.
+
+    Takes RepoData, NOT the raw GitHub API payload: fetch_repo() already
+    normalised the payload and is the only caller. Passing the RepoData model
+    straight into Mongo raises InvalidDocument (bson cannot encode a pydantic
+    model), so this must produce a plain dict.
+
+    full_name comes from the API's own response, which follows renames, so a
+    repo that moved (tiangolo/fastapi -> fastapi/fastapi) reports its current
+    name here even though repo_key still reflects the URL the user pasted.
+    """
+    return {
+        "full_name":      repo.full_name,
+        "description":    repo.description,
+        "stars":          repo.stars,
+        "forks":          repo.forks,
+        "default_branch": repo.default_branch,
+        "html_url":       f"https://github.com/{repo.full_name}",
+        "topics":         list(repo.topics or []),
+        "license":        repo.license,
+        "created_at":     repo.created_at,
+        "updated_at":     repo.updated_at,
+    }

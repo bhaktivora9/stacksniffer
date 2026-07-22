@@ -7,6 +7,7 @@ from fastapi.responses import StreamingResponse
 
 from backend.models.schemas import ChatRequest
 from backend.services import chat_service, storage_service
+from backend.services.repo_key import is_repo_key
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
@@ -15,7 +16,13 @@ chat_sessions: dict[str, dict] = {}
 
 @router.post("/")
 async def chat(request: ChatRequest):
-    analysis = await storage_service.get_analysis(request.analysis_id)
+    repo_key = request.analysis_id
+    if not is_repo_key(repo_key):
+        repo_key = await storage_service.request_to_repo_key(request.analysis_id)
+    if not repo_key:
+        raise HTTPException(404, f"unknown request id: {request.analysis_id}")
+
+    analysis = await storage_service.get_repo(repo_key)
     if not analysis:
         raise HTTPException(404, "Analysis not found. Analyze a repo first.")
 
@@ -24,6 +31,7 @@ async def chat(request: ChatRequest):
         chat_sessions[session_id] = {
             "session_id": session_id,
             "analysis_id": request.analysis_id,
+            "repo_key": repo_key,
             "messages": [],
             "created_at": datetime.utcnow().isoformat(),
         }

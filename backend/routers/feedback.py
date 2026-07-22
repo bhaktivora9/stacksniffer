@@ -8,13 +8,14 @@ Collects human preference signal on domain classification correctness.
 Signal flows to learning_service.py for pattern confidence updates.
 Mirrors UsageTrackingEvent → IngestionEventListener in stacksniffer-learning.
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
 
 from backend.services import storage_service as storage_service
 from backend.services.learning_service import penalize_patterns, reward_patterns
+from backend.routers.deps import resolve_repo_key
 
 router = APIRouter(prefix="/api/feedback", tags=["feedback"])
 
@@ -31,12 +32,17 @@ class FeedbackRequest(BaseModel):
 class FeedbackResponse(BaseModel):
     accepted: bool
     analysis_id: str
+    repo_key: str
     patterns_updated: int
     message: str
 
 
-@router.post("/{analysis_id}", response_model=FeedbackResponse)
-async def submit_feedback(analysis_id: str, feedback: FeedbackRequest):
+@router.post("/{id}", response_model=FeedbackResponse)
+async def submit_feedback(
+    id: str,
+    feedback: FeedbackRequest,
+    repo_key: str = Depends(resolve_repo_key),
+):
     """
     Submit domain-level correctness signal.
 
@@ -49,23 +55,37 @@ async def submit_feedback(analysis_id: str, feedback: FeedbackRequest):
     Java equivalent: UsageTrackingService.trackBatchUsages()
     triggered by UsageTrackingEvent in IngestionEventListener.
     """
-    analysis = await storage_service.get_analysis(analysis_id)
-    if not analysis:
-        raise HTTPException(404, "Analysis not found")
+    doc = await storage_service.get_repo(repo_key)
+    if not doc:
+        raise HTTPException(404, "no analysis for this repo")
+    stack = doc["stack"]
+    if not feedback.domain_correct:
+        if not feedback.correct_domain:
+            raise HTTPException(422, "correct_domain is required when domain_correct is false")
+        if not await storage_service.is_valid_domain(feedback.correct_domain):
+            raise HTTPException(422, f"invalid domain: {feedback.correct_domain}")
 
-    await storage_service.store_feedback(analysis_id, {
+    feedback_doc = {
         "domain_correct":        feedback.domain_correct,
         "correct_domain":        feedback.correct_domain,
         "confidence_felt":       feedback.confidence_felt,
         "techs_wrong":           feedback.techs_wrong or [],
         "techs_missing":         feedback.techs_missing or [],
         "notes":                 feedback.notes,
-        "detected_domain":       analysis["stack"]["domain"],
-        "ai_classification_used": analysis["stack"]["ai_classification_used"],
+        "detected_domain":       stack["domain"],
+        "ai_classification_used": stack["ai_classification_used"],
         "created_at":            datetime.utcnow().isoformat(),
-    })
+    }
+    await storage_service.store_feedback(
+        repo_key=repo_key,
+        commit_sha=doc["commit_sha"],
+        pipeline_version=doc["pipeline_version"],
+        rated_output=stack,
+        rated_embedding=doc.get("stack_embedding"),
+        feedback=feedback_doc,
+    )
 
-    pattern_matches = analysis["stack"].get("pattern_matches", [])
+    pattern_matches = stack.get("pattern_matches", [])
     patterns_updated = 0
 
     if feedback.domain_correct and not feedback.techs_wrong:
@@ -78,7 +98,8 @@ async def submit_feedback(analysis_id: str, feedback: FeedbackRequest):
 
     return FeedbackResponse(
         accepted=True,
-        analysis_id=analysis_id,
+        analysis_id=id,
+        repo_key=repo_key,
         patterns_updated=patterns_updated,
         message=(
             f"Feedback recorded. {patterns_updated} pattern confidence scores updated. "

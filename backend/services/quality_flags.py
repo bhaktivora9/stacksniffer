@@ -87,12 +87,16 @@ def _get_framework_names(stack: dict) -> set[str]:
 
 def _get_all_tech_sources(stack: dict) -> list[str]:
     sources = []
-    for cat in ["languages", "frameworks", "databases", "messaging", "ai_ml", "library"]:
-        for t in stack.get(cat, []):
+    for techs in stack.values():
+        if not isinstance(techs, list):
+            continue
+        for t in techs:
             if isinstance(t, dict):
-                sources.append(t.get("detection_source", ""))
+                source = t.get("detection_source")
             else:
-                sources.append(getattr(t, "detection_source", ""))
+                source = getattr(t, "detection_source", None)
+            if source:
+                sources.append(source)
     return sources
 
 

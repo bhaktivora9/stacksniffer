@@ -136,7 +136,7 @@ export default function HomePage() {
       const result = await res.json();
       setCurrentStep(STEPS.length - 1);
       setTimeout(() => {
-        navigate(`/results/${result.analysis_id}`, { state: { result } });
+        navigate(`/results/${result.request_id || result.analysis_id}`, { state: { result } });
       }, 400);
     } catch (err) {
       clearInterval(stepTimerRef.current);

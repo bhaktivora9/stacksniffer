@@ -13,13 +13,14 @@ Verdict types:
   false_positive → penalize patterns (tech shown but not actually used)
   false_negative → register for pattern discovery (tech used but not detected)
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
 
 from backend.services import storage_service as storage_service
 from backend.services import stack_feedback_service
+from backend.routers.deps import resolve_repo_key
 
 router = APIRouter(prefix="/api/stack-feedback", tags=["stack-feedback"])
 
@@ -39,17 +40,26 @@ class StackFeedbackRequest(BaseModel):
     notes: Optional[str] = None
 
 
+class PrimaryLanguageCorrection(BaseModel):
+    primary_language: str
+
+
 class StackFeedbackResponse(BaseModel):
     accepted: bool
     analysis_id: str
+    repo_key: str
     evaluations_processed: int
     patterns_updated: int
     new_patterns_discovered: int
     summary: dict
 
 
-@router.post("/{analysis_id}", response_model=StackFeedbackResponse)
-async def submit_stack_feedback(analysis_id: str, feedback: StackFeedbackRequest):
+@router.post("/{id}", response_model=StackFeedbackResponse)
+async def submit_stack_feedback(
+    id: str,
+    feedback: StackFeedbackRequest,
+    repo_key: str = Depends(resolve_repo_key),
+):
     """
     Submit per-technology verdicts for an analysis.
 
@@ -62,11 +72,12 @@ async def submit_stack_feedback(analysis_id: str, feedback: StackFeedbackRequest
       false_positive → penalize_tech() → confidence -= 0.040 per keyword
       false_negative → register_missing_tech() → adds to patterns.json with empty keywords
     """
-    analysis = await storage_service.get_analysis(analysis_id)
-    if not analysis:
-        raise HTTPException(404, "Analysis not found")
+    doc = await storage_service.get_repo(repo_key)
+    if not doc:
+        raise HTTPException(404, "no analysis for this repo")
+    stack = doc["stack"]
 
-    pattern_matches = analysis["stack"].get("pattern_matches", [])
+    pattern_matches = stack.get("pattern_matches", [])
     patterns_updated = 0
     discovered = 0
     update_log = []
@@ -97,13 +108,13 @@ async def submit_stack_feedback(analysis_id: str, feedback: StackFeedbackRequest
         category  = missing.get("category", "infra")
         if tech_name:
             result = await stack_feedback_service.register_missing_tech(
-                tech_name, category, analysis_id
+                tech_name, category, repo_key
             )
             if result["action"] == "pattern_discovered":
                 discovered += 1
             update_log.append(result)
 
-    await storage_service.store_stack_feedback(analysis_id, {
+    feedback_doc = {
         "tech_evaluations":    [ev.model_dump() for ev in feedback.tech_evaluations],
         "missing_techs":       feedback.missing_techs or [],
         "overall_stack_correct": feedback.overall_stack_correct,
@@ -111,11 +122,21 @@ async def submit_stack_feedback(analysis_id: str, feedback: StackFeedbackRequest
         "patterns_updated_count": patterns_updated,
         "new_patterns_discovered": discovered,
         "created_at":          datetime.utcnow().isoformat(),
-    })
+    }
+    await storage_service.store_feedback(
+        repo_key=repo_key,
+        commit_sha=doc["commit_sha"],
+        pipeline_version=doc["pipeline_version"],
+        rated_output=stack,
+        rated_embedding=doc.get("stack_embedding"),
+        feedback={"type": "stack_feedback", **feedback_doc},
+    )
+    await storage_service.store_stack_feedback(repo_key, feedback_doc)
 
     return StackFeedbackResponse(
         accepted=True,
-        analysis_id=analysis_id,
+        analysis_id=id,
+        repo_key=repo_key,
         evaluations_processed=len(feedback.tech_evaluations),
         patterns_updated=patterns_updated,
         new_patterns_discovered=discovered,
@@ -130,20 +151,34 @@ async def submit_stack_feedback(analysis_id: str, feedback: StackFeedbackRequest
     )
 
 
-@router.post("/{analysis_id}/tech/{tech_name}/correct")
-async def mark_tech_correct(analysis_id: str, tech_name: str):
+@router.post("/{id}/tech/{tech_name}/correct")
+async def mark_tech_correct(
+    id: str,
+    tech_name: str,
+    repo_key: str = Depends(resolve_repo_key),
+):
     """Quick endpoint — mark single tech as correctly detected."""
-    analysis = await storage_service.get_analysis(analysis_id)
-    if not analysis:
-        raise HTTPException(404, "Analysis not found")
+    doc = await storage_service.get_repo(repo_key)
+    if not doc:
+        raise HTTPException(404, "no analysis for this repo")
+    stack = doc["stack"]
     result = await stack_feedback_service.reward_tech(
-        tech_name, analysis["stack"].get("pattern_matches", [])
+        tech_name, stack.get("pattern_matches", [])
     )
-    await storage_service.store_stack_feedback(analysis_id, {
+    feedback_doc = {
         "tech_evaluations": [{"tech_name": tech_name, "verdict": "correct"}],
         "quick_feedback": True,
         "created_at": datetime.utcnow().isoformat(),
-    })
+    }
+    await storage_service.store_feedback(
+        repo_key=repo_key,
+        commit_sha=doc["commit_sha"],
+        pipeline_version=doc["pipeline_version"],
+        rated_output=stack,
+        rated_embedding=doc.get("stack_embedding"),
+        feedback={"type": "stack_feedback", **feedback_doc},
+    )
+    await storage_service.store_stack_feedback(repo_key, feedback_doc)
     return {
         "accepted": True, "tech": tech_name,
         "patterns_updated": len(result["keywords_updated"]),
@@ -151,23 +186,38 @@ async def mark_tech_correct(analysis_id: str, tech_name: str):
     }
 
 
-@router.post("/{analysis_id}/tech/{tech_name}/wrong")
-async def mark_tech_wrong(analysis_id: str, tech_name: str, reason: Optional[str] = None):
+@router.post("/{id}/tech/{tech_name}/wrong")
+async def mark_tech_wrong(
+    id: str,
+    tech_name: str,
+    reason: Optional[str] = None,
+    repo_key: str = Depends(resolve_repo_key),
+):
     """Quick endpoint — mark single tech as false positive."""
-    analysis = await storage_service.get_analysis(analysis_id)
-    if not analysis:
-        raise HTTPException(404, "Analysis not found")
+    doc = await storage_service.get_repo(repo_key)
+    if not doc:
+        raise HTTPException(404, "no analysis for this repo")
+    stack = doc["stack"]
     result = await stack_feedback_service.penalize_tech(
         tech_name,
-        analysis["stack"].get("pattern_matches", []),
+        stack.get("pattern_matches", []),
         reason or "marked wrong by user"
     )
-    await storage_service.store_stack_feedback(analysis_id, {
+    feedback_doc = {
         "tech_evaluations": [{"tech_name": tech_name, "verdict": "false_positive",
                                "reason": reason}],
         "quick_feedback": True,
         "created_at": datetime.utcnow().isoformat(),
-    })
+    }
+    await storage_service.store_feedback(
+        repo_key=repo_key,
+        commit_sha=doc["commit_sha"],
+        pipeline_version=doc["pipeline_version"],
+        rated_output=stack,
+        rated_embedding=doc.get("stack_embedding"),
+        feedback={"type": "stack_feedback", **feedback_doc},
+    )
+    await storage_service.store_stack_feedback(repo_key, feedback_doc)
     return {
         "accepted": True, "tech": tech_name,
         "patterns_penalized": len(result["keywords_updated"]),
@@ -175,18 +225,75 @@ async def mark_tech_wrong(analysis_id: str, tech_name: str, reason: Optional[str
     }
 
 
-@router.post("/{analysis_id}/tech/{tech_name}/missing")
-async def mark_tech_missing(analysis_id: str, tech_name: str, category: str = "infra"):
+@router.post("/{id}/tech/{tech_name}/missing")
+async def mark_tech_missing(
+    id: str,
+    tech_name: str,
+    category: str = "infra",
+    repo_key: str = Depends(resolve_repo_key),
+):
     """Report a technology present in repo but not detected."""
+    doc = await storage_service.get_repo(repo_key)
+    if not doc:
+        raise HTTPException(404, "no analysis for this repo")
     result = await stack_feedback_service.register_missing_tech(
-        tech_name, category, analysis_id
+        tech_name, category, repo_key
     )
-    await storage_service.store_stack_feedback(analysis_id, {
+    feedback_doc = {
         "missing_techs": [{"tech_name": tech_name, "category": category}],
         "quick_feedback": True,
         "created_at": datetime.utcnow().isoformat(),
-    })
+    }
+    await storage_service.store_feedback(
+        repo_key=repo_key,
+        commit_sha=doc["commit_sha"],
+        pipeline_version=doc["pipeline_version"],
+        rated_output=doc["stack"],
+        rated_embedding=doc.get("stack_embedding"),
+        feedback={"type": "stack_feedback", **feedback_doc},
+    )
+    await storage_service.store_stack_feedback(repo_key, feedback_doc)
     return {"accepted": True, **result}
+
+
+@router.post("/{id}/primary-language")
+async def correct_primary_language(
+    id: str,
+    correction: PrimaryLanguageCorrection,
+    repo_key: str = Depends(resolve_repo_key),
+):
+    """Save a corrected primary language as a durable analysis override."""
+    language = correction.primary_language.strip()
+    if not language:
+        raise HTTPException(422, "primary_language must not be empty")
+
+    doc = await storage_service.get_repo(repo_key)
+    if not doc:
+        raise HTTPException(404, "no analysis for this repo")
+
+    previous = doc.get("stack", {}).get("primary_language", "")
+    await storage_service.upsert_correction(repo_key, "primary_language", language)
+    feedback_doc = {
+        "primary_language_correction": {
+            "previous": previous,
+            "corrected": language,
+        },
+        "created_at": datetime.utcnow().isoformat(),
+    }
+    await storage_service.store_feedback(
+        repo_key=repo_key,
+        commit_sha=doc["commit_sha"],
+        pipeline_version=doc["pipeline_version"],
+        rated_output=doc["stack"],
+        rated_embedding=doc.get("stack_embedding"),
+        feedback={"type": "stack_feedback", **feedback_doc},
+    )
+    await storage_service.store_stack_feedback(repo_key, feedback_doc)
+    return {
+        "accepted": True,
+        "previous_primary_language": previous,
+        "primary_language": language,
+    }
 
 
 @router.get("/accuracy")

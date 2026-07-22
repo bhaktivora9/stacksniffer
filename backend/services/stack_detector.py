@@ -3,16 +3,14 @@ import sys
 from pathlib import Path
 from backend.models.schemas import DetectedTech, PatternMatch
 from backend.services.manifest_parser import is_recognized_manifest, parse_manifest_dependencies
+from backend.services.storage_service import BUILTIN_CATEGORIES
 
 _patterns_path = Path(__file__).parent.parent / "config" / "patterns.json"
 
 with _patterns_path.open() as _f:
     _PATTERNS: dict = json.load(_f)
 
-_CATEGORIES = [
-    "languages", "frameworks", "databases",
-    "messaging", "ai_ml", "infra", "testing", "library"
-]
+_CATEGORIES = BUILTIN_CATEGORIES
 
 _COMPLEXITY_MAP = {1: 2, 2: 3, 3: 4, 4: 5, 5: 6, 6: 7, 7: 8, 8: 9}
 

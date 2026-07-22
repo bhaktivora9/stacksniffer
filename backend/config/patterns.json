@@ -1,868 +1,258 @@
 {
-  "_meta": {
-    "version": "2.0",
-    "updated": "2026-07-06",
-    "rules": [
-      "detection_files with empty keywords: only for filenames that ARE the technology (Dockerfile, Chart.yaml, go.mod)",
-      "requirements.txt/package.json/pom.xml/build.gradle: NEVER in detection_files without a keyword \u00e2\u20ac\u201d they prove language not framework",
-      "keywords must be specific enough to not match normal English prose in CI YAML files",
-      "LangChain appears in ai_ml only \u00e2\u20ac\u201d not in frameworks",
-      "Google ADK appears in frameworks only \u00e2\u20ac\u201d not duplicated in ai_ml"
-    ]
-  },
+  "_meta": "Definitive filename signals only. Package classification is handled by Gemini.",
+  "_version": "3.0",
   "languages": [
     {
-      "name": "Java",
-      "confidence": 0.99,
-      "detection_files": [
-        "pom.xml",
-        "build.gradle",
-        "build.gradle.kts"
-      ],
-      "extensions": [
-        ".java"
-      ],
-      "keywords": []
-    },
-    {
-      "name": "Scala",
-      "confidence": 0.99,
-      "detection_files": [
-        "build.sbt",
-        ".scalafmt.conf"
-      ],
-      "extensions": [
-        ".scala"
-      ],
-      "keywords": []
-    },
-    {
-      "name": "Python",
-      "confidence": 0.99,
-      "detection_files": [
-        "requirements.txt",
-        "setup.py",
-        "pyproject.toml",
-        "Pipfile"
-      ],
-      "extensions": [
-        ".py"
-      ],
-      "keywords": []
-    },
-    {
-      "name": "TypeScript",
-      "confidence": 0.99,
-      "detection_files": [
-        "tsconfig.json"
-      ],
-      "extensions": [
-        ".ts",
-        ".tsx"
-      ],
-      "keywords": []
-    },
-    {
-      "name": "JavaScript",
-      "confidence": 0.9,
-      "detection_files": [
-        "package.json"
-      ],
-      "extensions": [
-        ".js",
-        ".jsx",
-        ".mjs"
-      ],
-      "keywords": []
-    },
-    {
       "name": "Go",
-      "confidence": 0.99,
       "detection_files": [
         "go.mod"
       ],
-      "extensions": [
-        ".go"
-      ],
-      "keywords": []
+      "keywords": [],
+      "confidence": 1.0
     },
     {
       "name": "Rust",
-      "confidence": 0.99,
       "detection_files": [
         "Cargo.toml"
       ],
-      "extensions": [
-        ".rs"
-      ],
-      "keywords": []
+      "keywords": [],
+      "confidence": 1.0
     },
     {
-      "name": "HCL",
-      "confidence": 0.99,
-      "detection_files": [],
-      "extensions": [
-        ".tf",
-        ".tfvars",
-        ".hcl"
-      ],
-      "keywords": []
-    },
-    {
-      "name": "C#",
-      "confidence": 0.99,
-      "detection_files": [],
-      "extensions": [
-        ".cs",
-        ".csproj"
-      ],
-      "keywords": []
-    },
-    {
-      "name": "Kotlin",
-      "confidence": 0.99,
+      "name": "Scala",
       "detection_files": [
-        "build.gradle.kts"
+        ".scalafmt.conf",
+        "build.sbt"
       ],
-      "extensions": [
-        ".kt",
-        ".kts"
-      ],
-      "keywords": []
-    }
-  ],
-  "frameworks": [
-    {
-      "name": "Spring Boot",
-      "confidence": 0.95,
-      "detection_files": [],
-      "keywords": [
-        "spring-boot-starter",
-        "spring-boot-starter-web",
-        "spring-boot-starter-data",
-        "org.springframework.boot"
-      ]
+      "keywords": [],
+      "confidence": 1.0
     },
     {
-      "name": "FastAPI",
-      "confidence": 0.99,
-      "detection_files": [],
-      "keywords": [
-        "fastapi"
-      ]
-    },
-    {
-      "name": "Django",
-      "confidence": 0.95,
+      "name": "Ruby",
       "detection_files": [
-        "manage.py"
+        "Gemfile"
       ],
-      "keywords": [
-        "django"
-      ]
+      "keywords": [],
+      "confidence": 1.0
     },
     {
-      "name": "Flask",
-      "confidence": 0.99,
-      "detection_files": [],
-      "keywords": [
-        "flask",
-        "Flask==",
-        "Flask>="
-      ]
-    },
-    {
-      "name": "React",
-      "confidence": 0.94,
-      "detection_files": [],
-      "keywords": [
-        "\"react\"",
-        "react-dom",
-        "react-scripts"
-      ]
-    },
-    {
-      "name": "Next.js",
-      "confidence": 0.97,
+      "name": "PHP",
       "detection_files": [
-        "next.config.js",
-        "next.config.ts",
-        "next.config.mjs"
+        "composer.json"
       ],
-      "keywords": [
-        "\"next\"",
-        "next/router",
-        "next/image"
-      ]
+      "keywords": [],
+      "confidence": 1.0
     },
     {
-      "name": "Vue",
-      "confidence": 0.92,
-      "detection_files": [],
-      "keywords": [
-        "\"vue\"",
-        "vue-router",
-        "@vue/core"
-      ]
-    },
-    {
-      "name": "Express",
-      "confidence": 0.9,
-      "detection_files": [],
-      "keywords": [
-        "\"express\"",
-        "expressjs",
-        "require('express')"
-      ]
-    },
-    {
-      "name": "NestJS",
-      "confidence": 0.93,
-      "detection_files": [],
-      "keywords": [
-        "@nestjs/core",
-        "@nestjs/common",
-        "@nestjs/platform-express"
-      ]
-    },
-    {
-      "name": "Angular",
-      "confidence": 0.92,
-      "detection_files": [
-        "angular.json"
-      ],
-      "keywords": [
-        "@angular/core",
-        "@angular/common"
-      ]
-    },
-    {
-      "name": "Svelte",
-      "confidence": 0.92,
-      "detection_files": [
-        "svelte.config.js"
-      ],
-      "keywords": [
-        "\"svelte\"",
-        "svelte/store"
-      ]
-    },
-    {
-      "name": "Google ADK",
-      "confidence": 0.93,
-      "detection_files": [],
-      "keywords": [
-        "google-adk",
-        "google.adk",
-        "com.google.adk",
-        "google-cloud-aiplatform",
-        "vertexai.preview.extensions"
-      ]
-    },
-    {
-      "name": "Gin",
-      "confidence": 0.92,
-      "detection_files": [],
-      "keywords": [
-        "github.com/gin-gonic/gin"
-      ]
-    },
-    {
-      "name": "Fiber",
-      "confidence": 0.9,
-      "detection_files": [],
-      "keywords": [
-        "github.com/gofiber/fiber"
-      ]
-    },
-    {
-      "name": "Echo",
-      "confidence": 0.9,
-      "detection_files": [],
-      "keywords": [
-        "github.com/labstack/echo"
-      ]
-    },
-    {
-      "name": "Actix",
-      "confidence": 0.92,
-      "detection_files": [],
-      "keywords": [
-        "actix-web",
-        "actix-rt"
-      ]
-    },
-    {
-      "name": "FastHTTP",
-      "confidence": 0.88,
-      "detection_files": [],
-      "keywords": [
-        "github.com/valyala/fasthttp"
-      ]
-    },
-    {
-      "name": "starlette",
+      "name": "Python",
       "confidence": 0.5,
       "detection_files": [],
       "keywords": [],
       "_status": "discovered_via_feedback",
-      "_discovered_in": "8a49e74e-d926-4be6-986c-9ace807f2557",
-      "_discovered_at": "2026-07-10T07:36:58.870350",
+      "_discovered_in": "github:langchain-ai/langchain",
+      "_discovered_at": "2026-07-16T22:24:19.505471",
+      "_note": "Add keywords after inspecting the repo's dependency files"
+    },
+    {
+      "name": "React",
+      "confidence": 0.5,
+      "detection_files": [],
+      "keywords": [],
+      "_status": "discovered_via_feedback",
+      "_discovered_in": "github:supabase/supabase",
+      "_discovered_at": "2026-07-22T03:26:17.953283",
+      "_note": "Add keywords after inspecting the repo's dependency files"
+    },
+    {
+      "name": "HCL",
+      "confidence": 0.5,
+      "detection_files": [],
+      "keywords": [],
+      "_status": "discovered_via_feedback",
+      "_discovered_in": "github:hashicorp/terraform",
+      "_discovered_at": "2026-07-22T03:28:40.442779",
       "_note": "Add keywords after inspecting the repo's dependency files"
     }
   ],
-  "databases": [
+  "frameworks": [
     {
-      "name": "PostgreSQL",
-      "confidence": 0.9,
-      "detection_files": [],
-      "keywords": [
-        "psycopg2",
-        "psycopg",
-        "asyncpg",
-        "pg8000",
-        "spring-data-jpa",
-        "postgresql",
-        "postgres://",
-        "org.postgresql",
-        "r2dbc-postgresql"
-      ]
+      "name": "Django",
+      "detection_files": [
+        "manage.py"
+      ],
+      "keywords": [],
+      "confidence": 1.0
     },
     {
-      "name": "MongoDB",
-      "confidence": 0.92,
-      "detection_files": [],
-      "keywords": [
-        "pymongo",
-        "motor",
-        "mongoose",
-        "spring-data-mongodb",
-        "mongodb://",
-        "org.mongodb.driver"
-      ]
+      "name": "Angular",
+      "detection_files": [
+        "angular.json"
+      ],
+      "keywords": [],
+      "confidence": 1.0
     },
     {
-      "name": "Redis",
-      "confidence": 0.94,
-      "detection_files": [],
-      "keywords": [
-        "redis",
-        "ioredis",
-        "jedis",
-        "spring-data-redis",
-        "aioredis",
-        "lettuce-core",
-        "upstash-redis"
-      ]
+      "name": "Next.js",
+      "detection_files": [
+        "next.config.js",
+        "next.config.ts"
+      ],
+      "keywords": [],
+      "confidence": 1.0
     },
     {
-      "name": "Elasticsearch",
-      "confidence": 0.92,
+      "name": "Turbopack",
+      "confidence": 0.5,
       "detection_files": [],
-      "keywords": [
-        "elasticsearch",
-        "spring-data-elasticsearch",
-        "elasticsearch-py",
-        "elastic-transport",
-        "co.elastic.clients",
-        "org.elasticsearch"
-      ]
+      "keywords": [],
+      "_status": "discovered_via_feedback",
+      "_discovered_in": "49f081b4-509b-441a-9824-9e3f9fa29e3e",
+      "_discovered_at": "2026-07-14T06:57:23.867855",
+      "_note": "Add keywords after inspecting the repo's dependency files"
     },
     {
-      "name": "MySQL",
-      "confidence": 0.9,
+      "name": "Jest",
+      "confidence": 0.5,
       "detection_files": [],
-      "keywords": [
-        "mysql-connector",
-        "pymysql",
-        "mysqlclient",
-        "mysql://",
-        "com.mysql.cj",
-        "spring-data-jpa"
-      ]
-    },
-    {
-      "name": "SQLite",
-      "confidence": 0.88,
-      "detection_files": [],
-      "keywords": [
-        "sqlite3",
-        "aiosqlite",
-        "sqlite://"
-      ]
-    },
-    {
-      "name": "Cassandra",
-      "confidence": 0.9,
-      "detection_files": [],
-      "keywords": [
-        "cassandra-driver",
-        "spring-data-cassandra",
-        "com.datastax.oss"
-      ]
-    },
-    {
-      "name": "InfluxDB",
-      "confidence": 0.9,
-      "detection_files": [],
-      "keywords": [
-        "influxdb",
-        "influxdb-client",
-        "influxdb3-python"
-      ]
-    },
-    {
-      "name": "Pinecone",
-      "confidence": 0.92,
-      "detection_files": [],
-      "keywords": [
-        "pinecone",
-        "pinecone-client",
-        "pinecone-python"
-      ]
-    },
-    {
-      "name": "ChromaDB",
-      "confidence": 0.99,
-      "detection_files": [],
-      "keywords": [
-        "chromadb",
-        "chroma-hnswlib"
-      ]
-    },
-    {
-      "name": "Weaviate",
-      "confidence": 0.9,
-      "detection_files": [],
-      "keywords": [
-        "weaviate-client",
-        "weaviate"
-      ]
-    },
-    {
-      "name": "Neo4j",
-      "confidence": 0.9,
-      "detection_files": [],
-      "keywords": [
-        "neo4j",
-        "spring-data-neo4j",
-        "py2neo"
-      ]
-    }
-  ],
-  "messaging": [
-    {
-      "name": "Apache Kafka",
-      "confidence": 0.91,
-      "detection_files": [],
-      "keywords": [
-        "kafka-python",
-        "spring-kafka",
-        "confluent-kafka",
-        "org.apache.kafka",
-        "kafka-clients",
-        "kafka-streams",
-        "kafka-connect",
-        "faust-streaming"
-      ]
-    },
-    {
-      "name": "RabbitMQ",
-      "confidence": 0.9,
-      "detection_files": [],
-      "keywords": [
-        "pika",
-        "spring-amqp",
-        "spring-rabbit",
-        "amqplib",
-        "aio-pika",
-        "amqp://"
-      ]
-    },
-    {
-      "name": "Celery",
-      "confidence": 0.9,
-      "detection_files": [],
-      "keywords": [
-        "celery",
-        "kombu",
-        "celery[redis]",
-        "celery[rabbitmq]"
-      ]
-    },
-    {
-      "name": "Apache Pulsar",
-      "confidence": 0.9,
-      "detection_files": [],
-      "keywords": [
-        "pulsar-client",
-        "apache-pulsar",
-        "org.apache.pulsar"
-      ]
-    },
-    {
-      "name": "NATS",
-      "confidence": 0.88,
-      "detection_files": [],
-      "keywords": [
-        "nats-py",
-        "github.com/nats-io/nats.go",
-        "nats.js"
-      ]
-    },
-    {
-      "name": "Apache Flink",
-      "confidence": 0.92,
-      "detection_files": [],
-      "keywords": [
-        "org.apache.flink",
-        "pyflink",
-        "apache-flink",
-        "flink-streaming-java"
-      ]
-    },
-    {
-      "name": "Apache Spark",
-      "confidence": 0.92,
-      "detection_files": [],
-      "keywords": [
-        "pyspark",
-        "org.apache.spark",
-        "spark-core",
-        "spark-sql"
-      ]
-    }
-  ],
-  "ai_ml": [
-    {
-      "name": "Vertex AI",
-      "confidence": 0.95,
-      "detection_files": [],
-      "keywords": [
-        "google-cloud-aiplatform",
-        "vertexai",
-        "com.google.cloud:google-cloud-aiplatform",
-        "aiplatform.gapic"
-      ]
-    },
-    {
-      "name": "LangChain",
-      "confidence": 0.88,
-      "detection_files": [],
-      "keywords": [
-        "langchain",
-        "langchain-core",
-        "langchain-community",
-        "langchain4j",
-        "dev.langchain4j",
-        "langchain-openai",
-        "langchain-anthropic"
-      ]
-    },
-    {
-      "name": "LlamaIndex",
-      "confidence": 0.93,
-      "detection_files": [],
-      "keywords": [
-        "llama-index",
-        "llama_index",
-        "llama-index-core",
-        "llama-index-llms"
-      ]
-    },
-    {
-      "name": "Anthropic Claude",
-      "confidence": 0.99,
-      "detection_files": [],
-      "keywords": [
-        "anthropic",
-        "com.anthropic"
-      ]
-    },
-    {
-      "name": "OpenAI",
-      "confidence": 0.99,
-      "detection_files": [],
-      "keywords": [
-        "openai",
-        "com.openai",
-        "azure-openai",
-        "openai4j"
-      ]
-    },
-    {
-      "name": "Gemini",
-      "confidence": 0.93,
-      "detection_files": [],
-      "keywords": [
-        "google-generativeai",
-        "generativeai",
-        "com.google.genai",
-        "gemini-pro"
-      ]
-    },
-    {
-      "name": "HuggingFace",
-      "confidence": 0.99,
-      "detection_files": [],
-      "keywords": [
-        "transformers",
-        "huggingface-hub",
-        "diffusers",
-        "datasets",
-        "sentence-transformers"
-      ]
-    },
-    {
-      "name": "PyTorch",
-      "confidence": 0.99,
-      "detection_files": [],
-      "keywords": [
-        "torch",
-        "torchvision",
-        "torchaudio",
-        "torch-geometric",
-        "pytorch-lightning"
-      ]
-    },
-    {
-      "name": "TensorFlow",
-      "confidence": 0.95,
-      "detection_files": [],
-      "keywords": [
-        "tensorflow",
-        "tf-keras",
-        "keras",
-        "tensorflow-hub"
-      ]
-    },
-    {
-      "name": "Ray",
-      "confidence": 0.88,
-      "detection_files": [],
-      "keywords": [
-        "ray",
-        "ray[serve]",
-        "ray[tune]",
-        "ray[rllib]",
-        "ray[data]"
-      ]
-    },
-    {
-      "name": "Dask",
-      "confidence": 0.9,
-      "detection_files": [],
-      "keywords": [
-        "dask",
-        "dask[dataframe]",
-        "dask-ml"
-      ]
-    },
-    {
-      "name": "MLflow",
-      "confidence": 0.9,
-      "detection_files": [],
-      "keywords": [
-        "mlflow",
-        "mlflow-skinny"
-      ]
-    },
-    {
-      "name": "LiteLLM",
-      "confidence": 0.9,
-      "detection_files": [],
-      "keywords": [
-        "litellm",
-        "litellm[proxy]"
-      ]
+      "keywords": [],
+      "_status": "discovered_via_feedback",
+      "_discovered_in": "github:nestjs/nest",
+      "_discovered_at": "2026-07-22T03:31:26.444882",
+      "_note": "Add keywords after inspecting the repo's dependency files"
     }
   ],
   "infra": [
     {
       "name": "Docker",
-      "confidence": 0.99,
       "detection_files": [
         "Dockerfile",
         "docker-compose.yml",
         "docker-compose.yaml"
       ],
-      "keywords": []
+      "keywords": [],
+      "confidence": 1.0
     },
     {
       "name": "Kubernetes",
-      "confidence": 0.93,
       "detection_files": [
         "Chart.yaml"
       ],
-      "keywords": [
-        "kind: Deployment",
-        "kind: Service",
-        "kind: Ingress",
-        "kind: StatefulSet",
-        "apiVersion: apps/v1"
-      ]
-    },
-    {
-      "name": "Helm",
-      "confidence": 0.95,
-      "detection_files": [
-        "Chart.yaml",
-        "values.yaml"
-      ],
-      "keywords": []
+      "keywords": [],
+      "confidence": 1.0
     },
     {
       "name": "GitHub Actions",
-      "confidence": 0.99,
       "detection_files": [
         ".github/workflows/"
       ],
-      "keywords": []
+      "keywords": [],
+      "confidence": 1.0
     },
     {
-      "name": "Terraform",
-      "confidence": 0.92,
+      "name": "Buildkite",
+      "confidence": 0.5,
       "detection_files": [],
-      "extensions": [
-        ".tf"
-      ],
-      "keywords": [
-        "terraform {",
-        "provider \"",
-        "resource \"",
-        "module \""
-      ]
-    },
-    {
-      "name": "Prometheus",
-      "confidence": 0.9,
-      "detection_files": [],
-      "keywords": [
-        "prometheus_client",
-        "prometheus-client",
-        "micrometer-registry-prometheus",
-        "io.prometheus"
-      ]
-    },
-    {
-      "name": "Grafana",
-      "confidence": 0.86,
-      "detection_files": [],
-      "keywords": [
-        "grafana",
-        "grafana-client",
-        "grafana/grafana"
-      ]
-    },
-    {
-      "name": "Istio",
-      "confidence": 0.9,
-      "detection_files": [],
-      "keywords": [
-        "istio",
-        "VirtualService",
-        "DestinationRule",
-        "istio-proxy"
-      ]
-    },
-    {
-      "name": "Skaffold",
-      "confidence": 0.9,
-      "detection_files": [
-        "skaffold.yaml"
-      ],
-      "keywords": []
+      "keywords": [],
+      "_status": "discovered_via_feedback",
+      "_discovered_in": "github:elastic/elasticsearch",
+      "_discovered_at": "2026-07-22T03:02:27.419545",
+      "_note": "Add keywords after inspecting the repo's dependency files"
     }
   ],
-  "testing": [
+  "languages_by_extension": [
     {
-      "name": "pytest",
-      "confidence": 0.99,
-      "detection_files": [
-        "pytest.ini",
-        "conftest.py"
+      "name": "Go",
+      "extensions": [
+        ".go"
       ],
-      "keywords": [
-        "pytest",
-        "pytest-asyncio",
-        "pytest-cov"
-      ]
+      "confidence": 0.99
     },
     {
-      "name": "Jest",
-      "confidence": 0.95,
-      "detection_files": [
-        "jest.config.js",
-        "jest.config.ts"
+      "name": "Rust",
+      "extensions": [
+        ".rs"
       ],
-      "keywords": [
-        "jest",
-        "@jest/core",
-        "jest-environment"
-      ]
+      "confidence": 0.99
     },
     {
-      "name": "JUnit",
-      "confidence": 0.955,
+      "name": "Java",
+      "extensions": [
+        ".java"
+      ],
+      "confidence": 0.99
+    },
+    {
+      "name": "Kotlin",
+      "extensions": [
+        ".kt"
+      ],
+      "confidence": 0.99
+    },
+    {
+      "name": "Swift",
+      "extensions": [
+        ".swift"
+      ],
+      "confidence": 0.99
+    },
+    {
+      "name": "Ruby",
+      "extensions": [
+        ".rb"
+      ],
+      "confidence": 0.99
+    },
+    {
+      "name": "C",
+      "extensions": [
+        ".c",
+        ".h"
+      ],
+      "confidence": 0.95
+    }
+  ],
+  "ai_ml": [
+    {
+      "name": "tokenizers",
+      "confidence": 0.5,
       "detection_files": [],
-      "keywords": [
-        "junit",
-        "junit-jupiter",
-        "org.junit.jupiter",
-        "spring-boot-starter-test"
-      ]
-    },
+      "keywords": [],
+      "_status": "discovered_via_feedback",
+      "_discovered_in": "github:huggingface/transformers",
+      "_discovered_at": "2026-07-20T07:56:42.780225",
+      "_note": "Add keywords after inspecting the repo's dependency files"
+    }
+  ],
+  "library": [
     {
-      "name": "Vitest",
-      "confidence": 0.93,
-      "detection_files": [
-        "vitest.config.ts",
-        "vitest.config.js"
-      ],
-      "keywords": [
-        "vitest"
-      ]
-    },
-    {
-      "name": "Cypress",
-      "confidence": 0.92,
-      "detection_files": [
-        "cypress.config.js",
-        "cypress.config.ts"
-      ],
-      "keywords": [
-        "cypress"
-      ]
-    },
-    {
-      "name": "Playwright",
-      "confidence": 0.98,
-      "detection_files": [
-        "playwright.config.ts",
-        "playwright.config.js"
-      ],
-      "keywords": [
-        "@playwright/test",
-        "playwright"
-      ]
-    },
-    {
-      "name": "Mockito",
-      "confidence": 0.99,
+      "name": "safetensors",
+      "confidence": 0.5,
       "detection_files": [],
-      "keywords": [
-        "mockito-core",
-        "org.mockito"
-      ]
+      "keywords": [],
+      "_status": "discovered_via_feedback",
+      "_discovered_in": "github:huggingface/transformers",
+      "_discovered_at": "2026-07-20T07:57:13.720436",
+      "_note": "Add keywords after inspecting the repo's dependency files"
     },
     {
-      "name": "Testcontainers",
-      "confidence": 0.92,
+      "name": "huggingface-hub",
+      "confidence": 0.5,
       "detection_files": [],
-      "keywords": [
-        "testcontainers",
-        "org.testcontainers"
-      ]
+      "keywords": [],
+      "_status": "discovered_via_feedback",
+      "_discovered_in": "github:huggingface/transformers",
+      "_discovered_at": "2026-07-20T07:57:31.063566",
+      "_note": "Add keywords after inspecting the repo's dependency files"
+    },
+    {
+      "name": "Celery",
+      "confidence": 0.5,
+      "detection_files": [],
+      "keywords": [],
+      "_status": "discovered_via_feedback",
+      "_discovered_in": "github:apache/airflow",
+      "_discovered_at": "2026-07-22T03:08:37.860504",
+      "_note": "Add keywords after inspecting the repo's dependency files"
     }
   ]
 }

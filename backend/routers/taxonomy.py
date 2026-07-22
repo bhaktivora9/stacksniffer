@@ -127,32 +127,24 @@ async def list_domains():
     Java equivalent: domain-definitions.yml loaded by DomainDefinition.java
     via DynamicPatternConfigService.
     """
-    domains = await storage_service.get_all_domains()
+    domains = await storage_service.get_domains()
+    return {"domains": [
+        {
+            "id": domain["_id"],
+            "label": domain.get("label", domain["_id"]),
+            "sentinel": domain.get("sentinel", False),
+        }
+        for domain in domains
+    ]}
 
-    if not domains:
-        # Return defaults when MongoDB domains collection is empty
-        defaults = [
-                {"domain_id": "web_api",      "label": "Web API",              "source": "default"},
-                {"domain_id": "web_app",      "label": "Web Application",      "source": "default"},
-                {"domain_id": "cli_tool",     "label": "CLI Tool",             "source": "default"},
-                {"domain_id": "library",      "label": "Library / Framework",  "source": "default"},
-                {"domain_id": "database",     "label": "Database / Storage",   "source": "default"},
-                {"domain_id": "data_pipeline","label": "Data Pipeline",        "source": "default"},
-                {"domain_id": "ml_platform",  "label": "ML Platform",          "source": "default"},
-                {"domain_id": "infra_tool",   "label": "Infrastructure Tool",  "source": "default"},
-                {"domain_id": "mobile_app",   "label": "Mobile App",           "source": "default"},
-                {"domain_id": "desktop_app",  "label": "Desktop App",          "source": "default"},
-                {"domain_id": "language",     "label": "Programming Language", "source": "default"},
-                {"domain_id": "unknown",      "label": "Unknown",              "source": "default"},
-        ]
-        return {"domains": defaults, "total": len(defaults), "source": "defaults"}
 
-    return {
-        "domains":      domains,
-        "total":        len(domains),
-        "has_emergent": any(d.get("source") == "emergent_clustering" for d in domains),
-        "has_manual":   any(d.get("source") == "manual" for d in domains),
-    }
+@router.get("/categories")
+async def list_categories():
+    categories = await storage_service.get_categories()
+    return {"categories": [
+        {"id": category["_id"], "label": category.get("label", category["_id"])}
+        for category in categories
+    ]}
 
 
 @router.post("/domains")
@@ -252,20 +244,7 @@ async def get_domain_prompt_fragment():
     New domains discovered by DBSCAN appear here automatically after approval.
     Java equivalent: DomainDefinition.getAllDomainIds() used by GeminiServiceImpl.
     """
-    domains = await storage_service.get_all_domains()
-
-    if not domains:
-        domain_ids = [
-            "web_api", "data_pipeline", "ml_platform", "microservice",
-            "fullstack", "cli_tool", "library", "infra", "unknown"
-        ]
-    else:
-        domain_ids = [
-            d["domain_id"] for d in domains
-            if d.get("status", "active") == "active"
-        ]
-        if "unknown" not in domain_ids:
-            domain_ids.append("unknown")
+    domain_ids = [domain["_id"] for domain in await storage_service.get_domains()]
 
     return {
         "fragment":     " | ".join(domain_ids),

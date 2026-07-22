@@ -114,8 +114,13 @@ async def reembed_corpus():
                 }
                 new_embedding = await embed_stack(enriched_stack)
                 if is_valid_embedding(new_embedding):
-                    await storage_service.store_analysis_with_embedding(
-                        a["analysis_id"], a, new_embedding
+                    repo_key = a.get("repo_key") or a.get("analysis_id")
+                    await storage_service.upsert_repo_analysis(
+                        repo_key,
+                        stack,
+                        new_embedding,
+                        a["commit_sha"],
+                        a["pipeline_version"],
                     )
                     updated += 1
                     await asyncio.sleep(0.5)  # rate limit Gemini embeddings

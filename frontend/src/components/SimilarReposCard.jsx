@@ -6,7 +6,12 @@ function getNested(item, path, fallback = "") {
 }
 
 function repoName(item) {
-  return getNested(item, "repo.full_name") || item.repo_name || item.full_name || "unknown/repo";
+  const repoKey = item.repo_key || item.analysis_id || "";
+  return getNested(item, "repo.full_name")
+    || item.repo_name
+    || item.full_name
+    || repoKey.replace(/^[^:]+:/, "")
+    || "unknown/repo";
 }
 
 function domain(item) {

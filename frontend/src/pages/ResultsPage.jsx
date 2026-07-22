@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useLocation, useNavigate, Link } from "react-router-dom";
-import { GitFork as Github } from "lucide-react";
+import { GitFork as Github, RefreshCw } from "lucide-react";
 import StackPanel from "../components/StackPanel";
 import ExplainabilityDrawer from "../components/ExplainabilityDrawer";
 import ChatPanel from "../components/ChatPanel";
@@ -9,11 +9,11 @@ import FeedbackToast from "../components/FeedbackToast";
 import LearningStatsDrawer from "../components/LearningStatsDrawer";
 import SimilarReposCard from "../components/SimilarReposCard";
 import StackAccuracyPanel from "../components/StackAccuracyPanel";
+import PendingCategoryReview from "../components/PendingCategoryReview";
 import { API_BASE } from "../config/api";
 import { DEMO_RESULT } from "../data/demoResult";
 
 const DEMO_ID = "demo-stacksniffer-v1";
-const STACK_CATEGORIES = ["languages", "frameworks", "databases", "messaging", "ai_ml", "infra", "testing"];
 
 const SNIPPETS = {
   curl: (id) => `curl ${API_BASE}/api/analyze/${id}`,
@@ -58,6 +58,7 @@ export default function ResultsPage() {
   const [idCopied, setIdCopied] = useState(false);
   const [snippetLang, setSnippetLang] = useState("curl");
   const [snippetCopied, setSnippetCopied] = useState(false);
+  const [hardRefreshing, setHardRefreshing] = useState(false);
 
   useEffect(() => {
     if (isDemo || result) return;
@@ -78,13 +79,15 @@ export default function ResultsPage() {
   useEffect(() => {
     if (!result?.stack) return;
     const nextState = {};
-    for (const category of STACK_CATEGORIES) {
-      for (const tech of result.stack[category] ?? []) {
+    for (const techs of Object.values(result.stack)) {
+      if (!Array.isArray(techs)) continue;
+      for (const tech of techs) {
+        if (!tech?.name) continue;
         nextState[tech.name] = null;
       }
     }
     setFeedbackState(nextState);
-  }, [result?.analysis_id]);
+  }, [result?.request_id, result?.repo_key, result?.stack]);
 
   async function copyJson() {
     try {
@@ -108,6 +111,46 @@ export default function ResultsPage() {
       setSnippetCopied(true);
       setTimeout(() => setSnippetCopied(false), 2000);
     } catch {}
+  }
+
+  function repoUrlForRefresh() {
+    if (result?.repo?.html_url) return result.repo.html_url;
+    if (result?.repo_key?.startsWith("github:")) {
+      return `https://github.com/${result.repo_key.slice("github:".length)}`;
+    }
+    return null;
+  }
+
+  async function handleHardRefresh() {
+    const repoUrl = repoUrlForRefresh();
+    if (!repoUrl) {
+      showToast("Repo URL unavailable for hard refresh", "error");
+      return;
+    }
+
+    setHardRefreshing(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/analyze`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ repo_url: repoUrl, hard_refresh: true }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.detail || `Hard refresh failed (${res.status})`);
+      }
+      const data = await res.json();
+      setResult(data);
+      navigate(`/results/${data.request_id || data.analysis_id}`, {
+        replace: true,
+        state: { result: data },
+      });
+      showToast("Analysis refreshed", "success");
+    } catch (err) {
+      showToast(err.message || "Hard refresh failed", "error");
+    } finally {
+      setHardRefreshing(false);
+    }
   }
 
   function showToast(message, type = "success") {
@@ -164,15 +207,36 @@ export default function ResultsPage() {
     }
   }
 
-  async function handleMissingTech(techName, category) {
+  async function handleMissingTech(missingTechs) {
     try {
       await postStackFeedback(
-        `${API_BASE}/api/stack-feedback/${analysisId}/tech/${encodeURIComponent(techName)}/missing?category=${encodeURIComponent(category)}`
+        `${API_BASE}/api/stack-feedback/${analysisId}`,
+        { body: JSON.stringify({ tech_evaluations: [], missing_techs: missingTechs }) }
       );
-      showToast(`${techName} reported as missing`, "success");
+      showToast(
+        `${missingTechs.length} missing technolog${missingTechs.length === 1 ? "y" : "ies"} reported`,
+        "success"
+      );
       return true;
     } catch (err) {
       showToast(err.message || "Missing tech report failed", "error");
+      return false;
+    }
+  }
+
+  async function handlePrimaryLanguageChange(primaryLanguage) {
+    try {
+      await postStackFeedback(`${API_BASE}/api/stack-feedback/${analysisId}/primary-language`, {
+        body: JSON.stringify({ primary_language: primaryLanguage }),
+      });
+      setResult((current) => ({
+        ...current,
+        stack: { ...current.stack, primary_language: primaryLanguage },
+      }));
+      showToast(`Primary language corrected to ${primaryLanguage}`, "success");
+      return true;
+    } catch (err) {
+      showToast(err.message || "Primary language correction failed", "error");
       return false;
     }
   }
@@ -234,6 +298,16 @@ export default function ResultsPage() {
           <span className="text-xs text-muted font-mono hidden sm:block">
             {stack.processing_time_ms}ms
           </span>
+          {!isDemo && (
+            <button
+              onClick={handleHardRefresh}
+              disabled={hardRefreshing}
+              className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-text disabled:opacity-60 disabled:cursor-wait transition-colors font-sans"
+            >
+              <RefreshCw size={14} className={hardRefreshing ? "animate-spin" : ""} />
+              {hardRefreshing ? "Refreshing" : "Hard refresh"}
+            </button>
+          )}
           <button
             onClick={() => navigate("/")}
             className="text-sm text-muted hover:text-text transition-colors font-sans"
@@ -285,6 +359,7 @@ export default function ResultsPage() {
           onTechCorrect={handleTechCorrect}
           onTechWrong={handleTechWrong}
           onMissingTech={handleMissingTech}
+          onPrimaryLanguageChange={handlePrimaryLanguageChange}
           afterInsights={
             <>
               <DomainFeedbackBar
@@ -300,6 +375,11 @@ export default function ResultsPage() {
               <SimilarReposCard analysisId={analysisId} />
             </>
           }
+        />
+
+        <PendingCategoryReview
+          triggered={result.emergent_categories ?? stack.emergent_categories ?? []}
+          onToast={showToast}
         />
 
         <div>
@@ -390,7 +470,7 @@ export default function ResultsPage() {
 
             <div className="flex items-center justify-between">
               <p className="text-xs text-muted font-sans">
-                Pass this analysis_id to genREADME or any tool that needs stack context
+                Pass this request_id to genREADME or any tool that needs stack context
               </p>
               {!isDemo && (
                 health?.storage === "memory" ? (

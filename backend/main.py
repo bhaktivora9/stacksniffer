@@ -25,6 +25,7 @@ from backend.routers import insights_feedback #GET /api/insights-feedback/stats 
 from backend.routers import discovery
 
 from backend.services import storage_service
+from backend.routers import dep_categories
 
 load_dotenv()
 
@@ -37,6 +38,7 @@ async def lifespan(app: FastAPI):
     Java equivalent: ApplicationRunner + @PreDestroy in StackSnifferApplication.java
     """
     await storage_service.init_db()
+    await storage_service.seed_builtin_categories()
     yield
     await storage_service.close_db()
 
@@ -65,7 +67,7 @@ app.add_middleware(
 # ── Router registration ───────────────────────────────────────────────────────
 # Java equivalent: @RestController auto-detection via @SpringBootApplication
 # Python requires explicit include_router() calls — 404 means router not registered
-
+app.include_router(dep_categories.router)
 app.include_router(discovery.router)
 app.include_router(analyze.router, prefix="/api")
 app.include_router(chat.router)

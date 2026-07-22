@@ -1,16 +1,15 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Check, X } from "lucide-react";
 import { API_BASE } from "../config/api";
 
-const DOMAINS = [
-  "web_api",
-  "data_pipeline",
-  "ml_platform",
-  "microservice",
-  "fullstack",
-  "cli_tool",
-  "library",
-  "unknown",
+const FALLBACK_DOMAINS = [
+  { id: "database", label: "Database" },
+  { id: "data_pipeline", label: "Data Pipeline" },
+  { id: "ml_platform", label: "ML Platform" },
+  { id: "infra_tool", label: "Infra Tool" },
+  { id: "web_app", label: "Web App" },
+  { id: "library", label: "Library" },
+  { id: "unknown", label: "Unknown", sentinel: true },
 ];
 
 const DOMAIN_STYLES = {
@@ -62,6 +61,18 @@ export default function DomainFeedbackBar({
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [corrected, setCorrected] = useState(false);
+  const [domainOptions, setDomainOptions] = useState(FALLBACK_DOMAINS);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${API_BASE}/api/taxonomy/domains`)
+      .then((response) => response.ok ? response.json() : Promise.reject(response.status))
+      .then((data) => {
+        if (!cancelled && data.domains?.length) setDomainOptions(data.domains);
+      })
+      .catch(() => { if (!cancelled) setDomainOptions(FALLBACK_DOMAINS); });
+    return () => { cancelled = true; };
+  }, []);
 
   const confidencePct = Math.round((domainConfidence ?? 0) * 100);
   const domainClass = corrected
@@ -198,24 +209,44 @@ export default function DomainFeedbackBar({
         </div>
 
         <div
-          className="transition-all duration-300 overflow-hidden"
-          style={{ maxHeight: formOpen ? "120px" : "0px", opacity: formOpen ? 1 : 0 }}
+          className="overflow-y-auto transition-all duration-300"
+          style={{ maxHeight: formOpen ? "280px" : "0px", opacity: formOpen ? 1 : 0 }}
         >
-          <div className="pt-3 mt-3 border-t border-border flex flex-wrap items-center gap-2">
-            <select
-              value={selectedDomain}
-              onChange={(e) => setSelectedDomain(e.target.value)}
-              disabled={submitted || submitting}
-              className="h-8 rounded border border-border bg-bg px-2 text-xs font-mono text-text outline-none focus:border-accent disabled:opacity-60"
-            >
-              {DOMAINS.map((domain) => (
-                <option key={domain} value={domain}>
-                  {domain}
-                </option>
-              ))}
-            </select>
+          <div className="pt-3 mt-3 border-t border-border space-y-3">
+            <div className="flex flex-wrap items-end gap-2">
+              <label className="block shrink-0">
+                <span className="mb-1 block text-[10px] font-mono uppercase tracking-wider text-muted">
+                  Correct domain
+                </span>
+                <select
+                  value={selectedDomain}
+                  onChange={(e) => setSelectedDomain(e.target.value)}
+                  disabled={submitted || submitting}
+                  className="block h-8 w-44 appearance-auto rounded border border-border bg-bg px-2 text-xs font-mono text-text outline-none focus:border-accent disabled:opacity-60"
+                  style={{ width: "11rem", backgroundColor: "#0d1117", color: "#e6edf3" }}
+                >
+                  {domainOptions.map((domain) => (
+                    <option key={domain.id} value={domain.id}>
+                      {domain.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button
+                type="button"
+                onClick={handleSubmitCorrection}
+                disabled={submitted || submitting}
+                className="h-8 rounded border border-amber/30 bg-amber/10 px-3 text-xs font-mono text-amber transition-colors hover:bg-amber/15 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {submitting ? "Submitting..." : submitted ? "Recorded" : "Submit correction"}
+              </button>
+            </div>
 
-            <div className="flex min-w-0 flex-1 flex-wrap gap-1.5">
+            <div>
+              <div className="mb-1.5 text-[10px] font-mono uppercase tracking-wider text-muted">
+                Incorrect technologies (optional)
+              </div>
+              <div className="flex flex-wrap gap-1.5">
               {techOptions.map((tech) => (
                 <button
                   key={tech}
@@ -231,16 +262,8 @@ export default function DomainFeedbackBar({
                   {tech}
                 </button>
               ))}
+              </div>
             </div>
-
-            <button
-              type="button"
-              onClick={handleSubmitCorrection}
-              disabled={submitted || submitting}
-              className="h-8 rounded border border-amber/30 bg-amber/10 px-3 text-xs font-mono text-amber transition-colors hover:bg-amber/15 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {submitting ? "Submitting..." : submitted ? "Recorded" : "Submit correction"}
-            </button>
           </div>
         </div>
       </div>

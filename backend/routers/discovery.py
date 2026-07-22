@@ -11,6 +11,7 @@ Exposes:
   GET  /api/discovery/frequent-keywords — all frequent keywords in corpus
   GET  /api/discovery/associations — tech co-occurrence rules (used by UI dropdown)
 """
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional
@@ -25,10 +26,10 @@ _patterns_path = Path(__file__).parent.parent / "config" / "patterns.json"
 
 
 class ApplyPatternRequest(BaseModel):
-    tech_name:   str
-    category:    str
-    keywords:    list[str]
-    confidence:  float = 0.75
+    tech_name: str
+    category: str
+    keywords: list[str]
+    confidence: float = 0.75
     detection_files: list[str] = []
 
 
@@ -50,19 +51,20 @@ async def get_associations():
         return {
             "rules": [],
             "total_analyses": 0,
-            "message": "No analyses in corpus yet. Seed repos to populate."
+            "message": "No analyses in corpus yet. Seed repos to populate.",
         }
 
     # Extract stack_pattern values and domains from corpus
     from collections import defaultdict, Counter
 
-    pattern_counts   = Counter()
-    domain_patterns  = defaultdict(Counter)
-    tech_by_pattern  = defaultdict(list)
+    pattern_counts = Counter()
+    domain_patterns = defaultdict(Counter)
+    tech_by_pattern = defaultdict(list)
+    categories = await storage_service.get_valid_categories()
 
     for a in analyses:
         stack = a.get("stack", {})
-        sp    = stack.get("stack_pattern", "")
+        sp = stack.get("stack_pattern", "")
         domain = stack.get("domain", "unknown")
 
         if not sp or sp in ("Custom", "MVC", ""):
@@ -73,9 +75,11 @@ async def get_associations():
 
         # Collect tech names for this pattern
         techs = []
-        for cat in ["languages", "frameworks", "databases", "messaging", "ai_ml"]:
+        for cat in categories:
             for t in stack.get(cat, []):
-                name = t.get("name") if isinstance(t, dict) else getattr(t, "name", None)
+                name = (
+                    t.get("name") if isinstance(t, dict) else getattr(t, "name", None)
+                )
                 if name:
                     techs.append(name)
         if techs:
@@ -93,15 +97,17 @@ async def get_associations():
         tech_counter = Counter(all_techs)
         top_techs = [t for t, _ in tech_counter.most_common(3)]
 
-        rules.append({
-            "stack_pattern": pattern,
-            "domain":        top_domain,
-            "tech_combo":    top_techs,
-            "count":         count,
-        })
+        rules.append(
+            {
+                "stack_pattern": pattern,
+                "domain": top_domain,
+                "tech_combo": top_techs,
+                "count": count,
+            }
+        )
 
     return {
-        "rules":          rules,
+        "rules": rules,
         "total_analyses": len(analyses),
         "unique_patterns": len(pattern_counts),
     }
@@ -119,18 +125,25 @@ async def frequent_keywords(min_count: int = 2):
         return {"keywords": []}
 
     from collections import Counter
+
     keyword_counts = Counter()
 
     for a in analyses:
         stack = a.get("stack", {})
         for pm in stack.get("pattern_matches", []):
-            kw = pm.get("matched_keyword") if isinstance(pm, dict) else getattr(pm, "matched_keyword", None)
+            kw = (
+                pm.get("matched_keyword")
+                if isinstance(pm, dict)
+                else getattr(pm, "matched_keyword", None)
+            )
             if kw and len(kw) > 2:
                 keyword_counts[kw] += 1
 
         # Also count ai_inferred tech names — these are candidates for new patterns
         for inf in stack.get("ai_inferences", []):
-            name = inf.get("tech") if isinstance(inf, dict) else getattr(inf, "tech", None)
+            name = (
+                inf.get("tech") if isinstance(inf, dict) else getattr(inf, "tech", None)
+            )
             if name:
                 keyword_counts[f"[ai] {name}"] += 1
 
@@ -141,9 +154,9 @@ async def frequent_keywords(min_count: int = 2):
     ]
 
     return {
-        "keywords":       frequent,
-        "total_unique":   len(keyword_counts),
-        "min_count":      min_count,
+        "keywords": frequent,
+        "total_unique": len(keyword_counts),
+        "min_count": min_count,
     }
 
 
@@ -162,7 +175,7 @@ async def run_discovery():
     if len(analyses) < 5:
         return {
             "candidates": [],
-            "message":    f"Need at least 5 analyses, have {len(analyses)}. Seed more repos."
+            "message": f"Need at least 5 analyses, have {len(analyses)}. Seed more repos.",
         }
 
     from collections import Counter
@@ -186,32 +199,38 @@ async def run_discovery():
     for a in analyses:
         stack = a.get("stack", {})
         for inf in stack.get("ai_inferences", []):
-            name = inf.get("tech") if isinstance(inf, dict) else getattr(inf, "tech", None)
-            cat  = inf.get("category") if isinstance(inf, dict) else getattr(inf, "category", None)
+            name = (
+                inf.get("tech") if isinstance(inf, dict) else getattr(inf, "tech", None)
+            )
+            cat = (
+                inf.get("category")
+                if isinstance(inf, dict)
+                else getattr(inf, "category", None)
+            )
             if name and name.lower() not in known_techs:
                 inferred_counts[name] += 1
                 inferred_categories[name] = cat
 
     candidates = [
         {
-            "tech_name":  tech,
-            "category":   inferred_categories.get(tech, "infra"),
-            "seen_in":    count,
+            "tech_name": tech,
+            "category": inferred_categories.get(tech, "infra"),
+            "seen_in": count,
             "suggested_keyword": tech.lower().replace(" ", "-"),
-            "action":     "review",
+            "action": "review",
         }
         for tech, count in inferred_counts.most_common(20)
         if count >= 2
     ]
 
     return {
-        "candidates":     candidates,
-        "total_found":    len(candidates),
-        "corpus_size":    len(analyses),
+        "candidates": candidates,
+        "total_found": len(candidates),
+        "corpus_size": len(analyses),
         "message": (
             f"Found {len(candidates)} technology candidates appearing in 2+ analyses. "
             f"Review and POST /api/discovery/apply to add to patterns.json."
-        )
+        ),
     }
 
 
@@ -224,29 +243,31 @@ async def apply_pattern(request: ApplyPatternRequest):
     if not request.tech_name or not request.category:
         raise HTTPException(400, "tech_name and category required")
 
-    valid_categories = {
-        "languages", "frameworks", "databases",
-        "messaging", "ai_ml", "infra", "testing"
-    }
-    if request.category not in valid_categories:
-        raise HTTPException(400, f"category must be one of: {valid_categories}")
+    from backend.services.category_registry import valid_categories
+    valid = await valid_categories()
+    if request.category not in valid:
+        raise HTTPException(400, f"category must be one of: {valid}")
 
     with _patterns_path.open() as f:
         patterns = json.load(f)
 
     # Check not already present
     existing = [
-        e for e in patterns.get(request.category, [])
-        if isinstance(e, dict) and e.get("name", "").lower() == request.tech_name.lower()
+        e
+        for e in patterns.get(request.category, [])
+        if isinstance(e, dict)
+        and e.get("name", "").lower() == request.tech_name.lower()
     ]
     if existing:
-        raise HTTPException(409, f"{request.tech_name} already exists in {request.category}")
+        raise HTTPException(
+            409, f"{request.tech_name} already exists in {request.category}"
+        )
 
     new_entry = {
-        "name":            request.tech_name,
-        "confidence":      request.confidence,
+        "name": request.tech_name,
+        "confidence": request.confidence,
         "detection_files": request.detection_files,
-        "keywords":        request.keywords,
+        "keywords": request.keywords,
     }
 
     if request.category not in patterns:
@@ -257,9 +278,20 @@ async def apply_pattern(request: ApplyPatternRequest):
         json.dump(patterns, f, indent=2)
 
     return {
-        "applied":   True,
+        "applied": True,
         "tech_name": request.tech_name,
-        "category":  request.category,
-        "entry":     new_entry,
-        "message":   f"Added {request.tech_name} to patterns.json [{request.category}]. Restart not required — patterns reload on next analysis."
+        "category": request.category,
+        "entry": new_entry,
+        "message": f"Added {request.tech_name} to patterns.json [{request.category}]. Restart not required — patterns reload on next analysis.",
     }
+
+
+# In backend/routers/discovery.py
+@router.get("/dep-categories")
+async def get_dep_categories():
+    """
+    All known dependency categories — standard + emergent from Gemini.
+    Used by frontend to render tech pills for non-standard categories
+    like 'bundler', 'state_management', 'css_framework'.
+    """
+    return await storage_service.get_dep_categories()
