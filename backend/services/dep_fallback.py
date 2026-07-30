@@ -30,6 +30,17 @@ CONFIDENCE TIERS
 Passthrough matters most. An unrecognised dep is still DECLARED IN A MANIFEST,
 which is stronger evidence than anything the AI layer infers from a file tree.
 Emitting it at 0.40 in `library` is honest. Dropping it is not.
+
+STEP (a) KNOWLEDGE-STORE INDIRECTION
+------------------------------------
+The five ecosystem tables below are now the SEED DATA the KnowledgeStore loads.
+They are still defined here as in-code dicts (step a). Step (b) moves them to a
+seed file; step (c) to Mongo. The functions in this module read the assembled
+tables via _ecosystem_tables(), which sources them from the store — so the
+later data-source swaps touch load() only, not this module's logic.
+
+Nothing about classification behavior changes in step (a): same entries, same
+_seed_table shape, same tiers, same confidences.
 """
 
 from __future__ import annotations
@@ -43,12 +54,14 @@ __all__ = [
     "assert_deps_survived",
 ]
 
-# ── Ecosystem tables ─────────────────────────────────────────────────────
+# ── Ecosystem seed tables ────────────────────────────────────────────────
 # Not exhaustive by design — the heuristic and passthrough tiers catch the
 # tail. Only add entries you are confident about; a wrong table entry is
 # worse than a passthrough, because it looks authoritative.
+#
+# These are SEED DATA. The KnowledgeStore loads them via _raw_seed_tables().
 
-_NPM = {
+_RAW_NPM = {
     # frameworks
     "react": "frameworks", "react-dom": "frameworks", "next": "frameworks",
     "vue": "frameworks", "svelte": "frameworks", "@angular/core": "frameworks",
@@ -90,7 +103,7 @@ _NPM = {
     "tailwindcss": "library", "styled-components": "library",
 }
 
-_PYPI = {
+_RAW_PYPI = {
     # frameworks
     "fastapi": "frameworks", "django": "frameworks", "flask": "frameworks",
     "starlette": "frameworks", "sanic": "frameworks", "tornado": "frameworks",
@@ -128,7 +141,7 @@ _PYPI = {
 
 # Maven: keyed on GROUP ID, not artifact. org.apache.kafka:kafka-clients is
 # Kafka; the artifact alone ("kafka-clients") is ambiguous across ecosystems.
-_MAVEN_GROUP = {
+_RAW_MAVEN_GROUP = {
     "org.springframework": "frameworks",
     "org.springframework.boot": "frameworks",
     "io.quarkus": "frameworks", "io.micronaut": "frameworks",
@@ -148,7 +161,7 @@ _MAVEN_GROUP = {
     "com.google.guava": "library", "org.projectlombok": "library",
 }
 
-_CARGO = {
+_RAW_CARGO = {
     "actix-web": "frameworks", "axum": "frameworks", "rocket": "frameworks",
     "warp": "frameworks", "tide": "frameworks", "poem": "frameworks",
     "tokio": "infra", "async-std": "infra", "rayon": "infra",
@@ -161,7 +174,7 @@ _CARGO = {
     "swc_core": "infra", "criterion": "testing", "proptest": "testing",
 }
 
-_GO = {
+_RAW_GO = {
     "github.com/gin-gonic/gin": "frameworks",
     "github.com/labstack/echo": "frameworks",
     "github.com/gofiber/fiber": "frameworks",
@@ -178,15 +191,105 @@ _GO = {
     "github.com/spf13/cobra": "library",
 }
 
-_ECOSYSTEM_TABLES = {
-    "npm": _NPM, "package.json": _NPM,
-    "pypi": _PYPI, "pyproject.toml": _PYPI, "requirements.txt": _PYPI,
-    "setup.py": _PYPI, "setup.cfg": _PYPI, "Pipfile": _PYPI,
-    "maven": _MAVEN_GROUP, "pom.xml": _MAVEN_GROUP,
-    "gradle": _MAVEN_GROUP, "build.gradle": _MAVEN_GROUP,
-    "cargo": _CARGO, "Cargo.toml": _CARGO,
-    "go": _GO, "go.mod": _GO,
+# Deliberately small: these technologies legitimately serve different roles
+# across repositories. The current layer remains the non-regressing default;
+# S2.4 can resolve a primary/secondary role from repository context later.
+_MULTI_ROLE = {
+    "redis": ("cache", "messaging"),
+    "ioredis": ("cache", "messaging"),
+    "aioredis": ("cache", "messaging"),
+    "redis.clients": ("cache", "messaging"),
+    "github.com/redis/go-redis": ("cache", "messaging"),
+    "elasticsearch": ("search", "analytics"),
+    "@elastic/elasticsearch": ("search", "analytics"),
+    "co.elastic.clients": ("search", "analytics"),
+    "org.elasticsearch": ("search", "analytics"),
+    "vite": ("build_tooling", "dev_server"),
 }
+
+
+def _seed_table(entries: dict[str, str]) -> dict[str, dict]:
+    """Attach certainty metadata to every deterministic seed entry."""
+    return {
+        tech: {
+            "layer": layer,
+            "multi_role": tech in _MULTI_ROLE,
+            "secondary": list(_MULTI_ROLE.get(tech, ())),
+        }
+        for tech, layer in entries.items()
+    }
+
+
+def _raw_seed_tables() -> dict[str, dict[str, dict]]:
+    """Step (a) seed source for KnowledgeStore.
+
+    Returns the five ecosystem tables in their POST-_seed_table shape, keyed by
+    a canonical ecosystem name. The store holds this; _ecosystem_tables() below
+    expands it into the alias-keyed lookup this module uses.
+
+    Step (b) replaces the body of this function with a seed-file read; the
+    return shape stays identical so nothing downstream changes.
+    """
+    return {
+        "npm": _NPM,
+        "pypi": _PYPI,
+        "maven": _MAVEN_GROUP,
+        "cargo": _CARGO,
+        "go": _GO,
+    }
+
+
+# Preserve the module's historical post-seed table exports. Tests and any
+# external importers see the same shape they did before KnowledgeStore.
+_NPM = _seed_table(_RAW_NPM)
+_PYPI = _seed_table(_RAW_PYPI)
+_MAVEN_GROUP = _seed_table(_RAW_MAVEN_GROUP)
+_CARGO = _seed_table(_RAW_CARGO)
+_GO = _seed_table(_RAW_GO)
+
+
+# ── Ecosystem alias map (MECHANISM — stays in code) ──────────────────────
+# Multiple manifest/ecosystem keys point at one canonical table. This is
+# routing logic, not knowledge, so it stays here rather than moving to seeds.
+_ECOSYSTEM_ALIASES = {
+    "npm": "npm", "package.json": "npm",
+    "pypi": "pypi", "pyproject.toml": "pypi", "requirements.txt": "pypi",
+    "setup.py": "pypi", "setup.cfg": "pypi", "Pipfile": "pypi",
+    "maven": "maven", "pom.xml": "maven",
+    "gradle": "maven", "build.gradle": "maven",
+    "cargo": "cargo", "Cargo.toml": "cargo",
+    "go": "go", "go.mod": "go",
+}
+
+# Lazily-built alias-keyed lookup. Built on first use from the store's tables,
+# NOT at import time — that would create a dep_fallback <-> knowledge_store
+# import cycle. Cached after first build.
+_ECOSYSTEM_TABLES_CACHE: dict[str, dict] | None = None
+
+
+def _ecosystem_tables() -> dict[str, dict]:
+    """Alias-keyed ecosystem->table lookup, sourced from the KnowledgeStore.
+
+    Identical in content to the old module-level _ECOSYSTEM_TABLES literal;
+    only the source (store) and the build timing (lazy) changed.
+    """
+    global _ECOSYSTEM_TABLES_CACHE
+    if _ECOSYSTEM_TABLES_CACHE is None:
+        from backend.services.knowledge_store import store
+        canonical = store.dep_tables()  # {"npm": {...}, "pypi": {...}, ...}
+        _ECOSYSTEM_TABLES_CACHE = {
+            alias: canonical[canon]
+            for alias, canon in _ECOSYSTEM_ALIASES.items()
+        }
+    return _ECOSYSTEM_TABLES_CACHE
+
+
+# Canonical-table references for the cross-ecosystem fallback and identity
+# checks used below. Sourced from the store, same shape as before.
+def _canonical_tables() -> dict[str, dict]:
+    from backend.services.knowledge_store import store
+    return store.dep_tables()
+
 
 # ── Heuristics (tier 2) ──────────────────────────────────────────────────
 # Ordered: first match wins. Deliberately conservative — a wrong heuristic is
@@ -257,35 +360,47 @@ def classify_dep(
     if not raw:
         return "library", 0.40, "passthrough"
 
-    table = _ECOSYSTEM_TABLES.get(ecosystem or "", {})
+    ecosystem_tables = _ecosystem_tables()
+    canonical_tables = _canonical_tables()
+    maven_table = canonical_tables["maven"]
+    go_table = canonical_tables["go"]
+
+    table = ecosystem_tables.get(ecosystem or "", {})
 
     # Ecosystem-specific key shaping
     lookup = raw
-    if table is _MAVEN_GROUP or ":" in raw:
+    if table is maven_table or ":" in raw:
         lookup = _norm(_maven_group(raw))
-    elif table is _GO or raw.startswith("github.com/"):
+    elif table is go_table or raw.startswith("github.com/"):
         lookup = _norm(_go_module_root(raw))
 
     # Dev tooling — declared, but not part of the product stack.
     if lookup in _DEV_TOOLING or raw in _DEV_TOOLING:
         return "library", 0.30, "dev_tool"
 
+    def table_result(entry: dict, confidence: float) -> tuple[str, float, str]:
+        return (
+            entry["layer"],
+            confidence if not entry["multi_role"] else min(confidence, 0.65),
+            "provisional" if entry["multi_role"] else "table",
+        )
+
     # Tier 1: exact table hit
     if lookup in table:
-        return table[lookup], 0.85, "table"
+        return table_result(table[lookup], 0.85)
 
     # Tier 1b: try every table when the ecosystem is unknown. Lower confidence:
     # a cross-ecosystem hit is a weaker signal than one we expected to find.
     if not table:
-        for candidate in (_NPM, _PYPI, _MAVEN_GROUP, _CARGO, _GO):
+        for candidate in canonical_tables.values():
             if lookup in candidate:
-                return candidate[lookup], 0.70, "table"
+                return table_result(candidate[lookup], 0.70)
 
     # Scoped npm: @scope/pkg -> try the bare package name
     if raw.startswith("@") and "/" in raw:
         bare = raw.split("/", 1)[1]
         if bare in table:
-            return table[bare], 0.70, "table"
+            return table_result(table[bare], 0.70)
 
     # Tier 2: name heuristics
     for pattern, category in _HEURISTICS:
@@ -304,6 +419,11 @@ def build_base_detections(raw_deps: list[dict]) -> list[dict]:
 
     raw_deps items: {name, scope, origin, matched_file, version_spec, ecosystem}
     """
+    ecosystem_tables = _ecosystem_tables()
+    canonical_tables = _canonical_tables()
+    maven_table = canonical_tables["maven"]
+    go_table = canonical_tables["go"]
+
     out: list[dict] = []
     seen: set[str] = set()
 
@@ -319,6 +439,22 @@ def build_base_detections(raw_deps: list[dict]) -> list[dict]:
         ecosystem = dep.get("ecosystem") or dep.get("matched_file")
         scope = dep.get("scope")
         category, confidence, tier = classify_dep(name, ecosystem, scope)
+        table = ecosystem_tables.get(ecosystem or "", {})
+        lookup = key
+        if table is maven_table or ":" in key:
+            lookup = _norm(_maven_group(key))
+        elif table is go_table or key.startswith("github.com/"):
+            lookup = _norm(_go_module_root(key))
+        seed = table.get(lookup)
+        if seed is None and not table:
+            seed = next(
+                (candidate[lookup] for candidate in canonical_tables.values()
+                 if lookup in candidate),
+                None,
+            )
+        if seed is None and key.startswith("@") and "/" in key:
+            seed = table.get(key.split("/", 1)[1])
+        multi_role = bool(seed and seed.get("multi_role"))
 
         # Test-scoped deps are testing regardless of what the name suggests.
         # Scope comes from the manifest and outranks the name every time.
@@ -336,6 +472,12 @@ def build_base_detections(raw_deps: list[dict]) -> list[dict]:
             "matched_file": dep.get("matched_file"),
             "version_spec": dep.get("version_spec"),
             "fallback_tier": tier,
+            "assignment_method": (
+                "provisional" if multi_role else
+                "deterministic" if tier == "table" else tier
+            ),
+            "multi_role": multi_role,
+            "secondary_roles": list(seed.get("secondary", [])) if seed else [],
         })
     return out
 
@@ -377,6 +519,9 @@ def enrich_with_classifications(
                 "matched_file": None,
                 "version_spec": None,
                 "fallback_tier": "ai_classified",
+                "assignment_method": "inference",
+                "multi_role": False,
+                "secondary_roles": [],
             }
             continue
 
@@ -388,7 +533,9 @@ def enrich_with_classifications(
             existing["confidence"], cls.get("confidence", 0.0)
         )
         existing["detection_source"] = "manifest"
-        existing["fallback_tier"] = "ai_classified"
+        if existing["fallback_tier"] not in ("table", "provisional"):
+            existing["fallback_tier"] = "ai_classified"
+            existing["assignment_method"] = "inference"
 
     return list(by_name.values())
 
