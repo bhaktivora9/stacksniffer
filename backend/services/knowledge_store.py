@@ -27,6 +27,11 @@ the later data-source swaps touch one method, not every call site.
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
+_SEED_PATH = Path(__file__).parent.parent / "config" / "dependency_knowledge.json"
+
 
 class KnowledgeStore:
     """Serves deterministic dependency knowledge from an in-memory projection.
@@ -42,15 +47,13 @@ class KnowledgeStore:
 
     @classmethod
     def load(cls) -> "KnowledgeStore":
-        """Step (a): seed from the existing in-code dicts in dep_fallback.
-
-        Imported lazily inside the method to avoid an import cycle: dep_fallback
-        imports the store singleton, so the store must not import dep_fallback at
-        module load time. Lazy import here breaks the cycle.
-        """
-        from backend.services import dep_fallback
-
-        return cls(dep_tables=dep_fallback._raw_seed_tables())
+        """Load the versioned, read-only dependency seed."""
+        with _SEED_PATH.open(encoding="utf-8") as seed_file:
+            payload = json.load(seed_file)
+        tables = payload.get("ecosystems")
+        if not isinstance(tables, dict) or not tables:
+            raise ValueError("dependency knowledge seed has no ecosystems")
+        return cls(dep_tables=tables)
 
     def dep_tables(self) -> dict[str, dict[str, dict]]:
         """The five seeded ecosystem tables, keyed by ecosystem name.

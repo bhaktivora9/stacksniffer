@@ -1,4 +1,4 @@
-"""
+﻿"""
 backend/services/dep_fallback.py
 
 Deterministic dependency classification. No AI, no network, no I/O.
@@ -6,7 +6,7 @@ Deterministic dependency classification. No AI, no network, no I/O.
 WHY THIS EXISTS
 ---------------
 Phase 2a (Gemini dep classification) was a GATE: raw deps flowed through it and
-if the call failed they were discarded. Two consecutive runs proved the cost —
+if the call failed they were discarded. Two consecutive runs proved the cost â€”
 fastapi and vercel/next.js both returned DEP_CLASSIFICATION_FAILED, and both
 produced a stack with every category empty except languages. next.js declares
 100+ dependencies in its root package.json. Phase 1 extracted all of them.
@@ -19,13 +19,13 @@ The fix is not "a better table". It is an invariant:
 Classification decides HOW a dep is labelled. It never decides WHETHER it
 exists. build_base_detections() is an identity transform over raw_deps: it
 always returns one record per dep, whatever happens upstream. Gemini then
-enriches that base — it can relabel and raise confidence, but it cannot delete.
+enriches that base â€” it can relabel and raise confidence, but it cannot delete.
 
 CONFIDENCE TIERS
 ----------------
-    0.85  table       — curated ecosystem map, high precision
-    0.55  heuristic   — name pattern match, plausible but unverified
-    0.40  passthrough — declared in a manifest, category unknown
+    0.85  table       â€” curated ecosystem map, high precision
+    0.55  heuristic   â€” name pattern match, plausible but unverified
+    0.40  passthrough â€” declared in a manifest, category unknown
 
 Passthrough matters most. An unrecognised dep is still DECLARED IN A MANIFEST,
 which is stronger evidence than anything the AI layer infers from a file tree.
@@ -36,7 +36,7 @@ STEP (a) KNOWLEDGE-STORE INDIRECTION
 The five ecosystem tables below are now the SEED DATA the KnowledgeStore loads.
 They are still defined here as in-code dicts (step a). Step (b) moves them to a
 seed file; step (c) to Mongo. The functions in this module read the assembled
-tables via _ecosystem_tables(), which sources them from the store — so the
+tables via _ecosystem_tables(), which sources them from the store â€” so the
 later data-source swaps touch load() only, not this module's logic.
 
 Nothing about classification behavior changes in step (a): same entries, same
@@ -54,203 +54,13 @@ __all__ = [
     "assert_deps_survived",
 ]
 
-# ── Ecosystem seed tables ────────────────────────────────────────────────
-# Not exhaustive by design — the heuristic and passthrough tiers catch the
+# â”€â”€ Ecosystem seed tables â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Not exhaustive by design â€” the heuristic and passthrough tiers catch the
 # tail. Only add entries you are confident about; a wrong table entry is
 # worse than a passthrough, because it looks authoritative.
 #
-# These are SEED DATA. The KnowledgeStore loads them via _raw_seed_tables().
+# Dependency knowledge lives in config/dependency_knowledge.json.
 
-_RAW_NPM = {
-    # frameworks
-    "react": "frameworks", "react-dom": "frameworks", "next": "frameworks",
-    "vue": "frameworks", "svelte": "frameworks", "@angular/core": "frameworks",
-    "express": "frameworks", "fastify": "frameworks", "koa": "frameworks",
-    "@nestjs/core": "frameworks", "remix": "frameworks", "astro": "frameworks",
-    "solid-js": "frameworks", "preact": "frameworks",
-    # testing
-    "jest": "testing", "vitest": "testing", "mocha": "testing",
-    "chai": "testing", "jasmine": "testing", "ava": "testing",
-    "playwright": "testing", "@playwright/test": "testing",
-    "cypress": "testing", "puppeteer": "testing", "supertest": "testing",
-    "@testing-library/react": "testing", "@testing-library/jest-dom": "testing",
-    # infra / build
-    "webpack": "infra", "vite": "infra", "rollup": "infra",
-    "esbuild": "infra", "parcel": "infra", "turbo": "infra",
-    "@swc/core": "infra", "swc": "infra", "babel": "infra",
-    "@babel/core": "infra", "nodemon": "infra", "pm2": "infra",
-    # databases
-    "pg": "databases", "mysql": "databases", "mysql2": "databases",
-    "sqlite3": "databases", "better-sqlite3": "databases",
-    "mongodb": "databases", "mongoose": "databases",
-    "redis": "databases", "ioredis": "databases",
-    "prisma": "databases", "@prisma/client": "databases",
-    "drizzle-orm": "databases", "typeorm": "databases", "sequelize": "databases",
-    "knex": "databases", "@supabase/supabase-js": "databases",
-    "elasticsearch": "databases", "@elastic/elasticsearch": "databases",
-    # messaging
-    "kafkajs": "messaging", "amqplib": "messaging", "bullmq": "messaging",
-    "bull": "messaging", "nats": "messaging", "mqtt": "messaging",
-    "socket.io": "messaging", "ws": "messaging",
-    # ai_ml
-    "openai": "ai_ml", "@anthropic-ai/sdk": "ai_ml", "langchain": "ai_ml",
-    "@google/generative-ai": "ai_ml", "ai": "ai_ml",
-    "@tensorflow/tfjs": "ai_ml", "onnxruntime-node": "ai_ml",
-    # library
-    "lodash": "library", "axios": "library", "zod": "library",
-    "date-fns": "library", "rxjs": "library", "immer": "library",
-    "zustand": "library", "redux": "library", "@reduxjs/toolkit": "library",
-    "tailwindcss": "library", "styled-components": "library",
-}
-
-_RAW_PYPI = {
-    # frameworks
-    "fastapi": "frameworks", "django": "frameworks", "flask": "frameworks",
-    "starlette": "frameworks", "sanic": "frameworks", "tornado": "frameworks",
-    "aiohttp": "frameworks", "litestar": "frameworks", "quart": "frameworks",
-    "bottle": "frameworks", "pyramid": "frameworks",
-    # testing
-    "pytest": "testing", "pytest-asyncio": "testing", "pytest-cov": "testing",
-    "unittest2": "testing", "hypothesis": "testing", "tox": "testing",
-    "nose": "testing", "coverage": "testing", "mock": "testing",
-    # databases
-    "sqlalchemy": "databases", "psycopg2": "databases",
-    "psycopg2-binary": "databases", "psycopg": "databases",
-    "asyncpg": "databases", "pymongo": "databases", "motor": "databases",
-    "redis": "databases", "aioredis": "databases", "alembic": "databases",
-    "peewee": "databases", "elasticsearch": "databases",
-    "chromadb": "databases", "pinecone-client": "databases", "qdrant-client": "databases",
-    # messaging
-    "celery": "messaging", "kombu": "messaging", "kafka-python": "messaging",
-    "confluent-kafka": "messaging", "pika": "messaging", "aiokafka": "messaging",
-    # ai_ml
-    "torch": "ai_ml", "tensorflow": "ai_ml", "transformers": "ai_ml",
-    "scikit-learn": "ai_ml", "numpy": "ai_ml", "pandas": "ai_ml",
-    "scipy": "ai_ml", "langchain": "ai_ml", "openai": "ai_ml",
-    "anthropic": "ai_ml", "google-generativeai": "ai_ml",
-    "tokenizers": "ai_ml", "safetensors": "ai_ml", "huggingface-hub": "ai_ml",
-    "datasets": "ai_ml", "accelerate": "ai_ml", "ray": "ai_ml",
-    # infra
-    "uvicorn": "infra", "gunicorn": "infra", "hypercorn": "infra",
-    "docker": "infra", "kubernetes": "infra", "boto3": "infra",
-    # library
-    "pydantic": "library", "attrs": "library", "click": "library",
-    "typer": "library", "requests": "library", "httpx": "library",
-    "rich": "library", "python-dotenv": "library", "jinja2": "library",
-}
-
-# Maven: keyed on GROUP ID, not artifact. org.apache.kafka:kafka-clients is
-# Kafka; the artifact alone ("kafka-clients") is ambiguous across ecosystems.
-_RAW_MAVEN_GROUP = {
-    "org.springframework": "frameworks",
-    "org.springframework.boot": "frameworks",
-    "io.quarkus": "frameworks", "io.micronaut": "frameworks",
-    "io.vertx": "frameworks", "com.google.inject": "frameworks",
-    "org.junit.jupiter": "testing", "org.junit": "testing",
-    "junit": "testing", "org.mockito": "testing",
-    "org.testcontainers": "testing", "org.assertj": "testing",
-    "org.apache.kafka": "messaging", "org.apache.pulsar": "messaging",
-    "com.rabbitmq": "messaging", "org.apache.activemq": "messaging",
-    "org.postgresql": "databases", "mysql": "databases",
-    "org.hibernate": "databases", "org.mongodb": "databases",
-    "redis.clients": "databases", "co.elastic.clients": "databases",
-    "org.elasticsearch": "databases",
-    "org.apache.spark": "ai_ml", "org.deeplearning4j": "ai_ml",
-    "com.google.cloud": "infra", "software.amazon.awssdk": "infra",
-    "org.slf4j": "library", "com.fasterxml.jackson.core": "library",
-    "com.google.guava": "library", "org.projectlombok": "library",
-}
-
-_RAW_CARGO = {
-    "actix-web": "frameworks", "axum": "frameworks", "rocket": "frameworks",
-    "warp": "frameworks", "tide": "frameworks", "poem": "frameworks",
-    "tokio": "infra", "async-std": "infra", "rayon": "infra",
-    "sqlx": "databases", "diesel": "databases", "sea-orm": "databases",
-    "redis": "databases", "mongodb": "databases",
-    "rdkafka": "messaging", "lapin": "messaging",
-    "candle-core": "ai_ml", "tch": "ai_ml", "ort": "ai_ml",
-    "serde": "library", "serde_json": "library", "clap": "library",
-    "anyhow": "library", "thiserror": "library", "napi": "library",
-    "swc_core": "infra", "criterion": "testing", "proptest": "testing",
-}
-
-_RAW_GO = {
-    "github.com/gin-gonic/gin": "frameworks",
-    "github.com/labstack/echo": "frameworks",
-    "github.com/gofiber/fiber": "frameworks",
-    "github.com/go-chi/chi": "frameworks",
-    "gorm.io/gorm": "databases",
-    "github.com/jackc/pgx": "databases",
-    "go.mongodb.org/mongo-driver": "databases",
-    "github.com/redis/go-redis": "databases",
-    "github.com/IBM/sarama": "messaging",
-    "github.com/Shopify/sarama": "messaging",
-    "github.com/nats-io/nats.go": "messaging",
-    "github.com/stretchr/testify": "testing",
-    "k8s.io/client-go": "infra", "github.com/docker/docker": "infra",
-    "github.com/spf13/cobra": "library",
-}
-
-# Deliberately small: these technologies legitimately serve different roles
-# across repositories. The current layer remains the non-regressing default;
-# S2.4 can resolve a primary/secondary role from repository context later.
-_MULTI_ROLE = {
-    "redis": ("cache", "messaging"),
-    "ioredis": ("cache", "messaging"),
-    "aioredis": ("cache", "messaging"),
-    "redis.clients": ("cache", "messaging"),
-    "github.com/redis/go-redis": ("cache", "messaging"),
-    "elasticsearch": ("search", "analytics"),
-    "@elastic/elasticsearch": ("search", "analytics"),
-    "co.elastic.clients": ("search", "analytics"),
-    "org.elasticsearch": ("search", "analytics"),
-    "vite": ("build_tooling", "dev_server"),
-}
-
-
-def _seed_table(entries: dict[str, str]) -> dict[str, dict]:
-    """Attach certainty metadata to every deterministic seed entry."""
-    return {
-        tech: {
-            "layer": layer,
-            "multi_role": tech in _MULTI_ROLE,
-            "secondary": list(_MULTI_ROLE.get(tech, ())),
-        }
-        for tech, layer in entries.items()
-    }
-
-
-def _raw_seed_tables() -> dict[str, dict[str, dict]]:
-    """Step (a) seed source for KnowledgeStore.
-
-    Returns the five ecosystem tables in their POST-_seed_table shape, keyed by
-    a canonical ecosystem name. The store holds this; _ecosystem_tables() below
-    expands it into the alias-keyed lookup this module uses.
-
-    Step (b) replaces the body of this function with a seed-file read; the
-    return shape stays identical so nothing downstream changes.
-    """
-    return {
-        "npm": _NPM,
-        "pypi": _PYPI,
-        "maven": _MAVEN_GROUP,
-        "cargo": _CARGO,
-        "go": _GO,
-    }
-
-
-# Preserve the module's historical post-seed table exports. Tests and any
-# external importers see the same shape they did before KnowledgeStore.
-_NPM = _seed_table(_RAW_NPM)
-_PYPI = _seed_table(_RAW_PYPI)
-_MAVEN_GROUP = _seed_table(_RAW_MAVEN_GROUP)
-_CARGO = _seed_table(_RAW_CARGO)
-_GO = _seed_table(_RAW_GO)
-
-
-# ── Ecosystem alias map (MECHANISM — stays in code) ──────────────────────
-# Multiple manifest/ecosystem keys point at one canonical table. This is
-# routing logic, not knowledge, so it stays here rather than moving to seeds.
 _ECOSYSTEM_ALIASES = {
     "npm": "npm", "package.json": "npm",
     "pypi": "pypi", "pyproject.toml": "pypi", "requirements.txt": "pypi",
@@ -261,8 +71,17 @@ _ECOSYSTEM_ALIASES = {
     "go": "go", "go.mod": "go",
 }
 
+from backend.services.knowledge_store import store as _KNOWLEDGE_STORE
+
+_CANONICAL_TABLES = _KNOWLEDGE_STORE.dep_tables()
+_NPM = _CANONICAL_TABLES["npm"]
+_PYPI = _CANONICAL_TABLES["pypi"]
+_MAVEN_GROUP = _CANONICAL_TABLES["maven"]
+_CARGO = _CANONICAL_TABLES["cargo"]
+_GO = _CANONICAL_TABLES["go"]
+
 # Lazily-built alias-keyed lookup. Built on first use from the store's tables,
-# NOT at import time — that would create a dep_fallback <-> knowledge_store
+# NOT at import time â€” that would create a dep_fallback <-> knowledge_store
 # import cycle. Cached after first build.
 _ECOSYSTEM_TABLES_CACHE: dict[str, dict] | None = None
 
@@ -291,8 +110,8 @@ def _canonical_tables() -> dict[str, dict]:
     return store.dep_tables()
 
 
-# ── Heuristics (tier 2) ──────────────────────────────────────────────────
-# Ordered: first match wins. Deliberately conservative — a wrong heuristic is
+# â”€â”€ Heuristics (tier 2) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Ordered: first match wins. Deliberately conservative â€” a wrong heuristic is
 # worse than a passthrough because it carries higher confidence.
 
 _HEURISTICS: list[tuple[re.Pattern, str]] = [
@@ -374,13 +193,13 @@ def classify_dep(
     elif table is go_table or raw.startswith("github.com/"):
         lookup = _norm(_go_module_root(raw))
 
-    # Dev tooling — declared, but not part of the product stack.
+    # Dev tooling â€” declared, but not part of the product stack.
     if lookup in _DEV_TOOLING or raw in _DEV_TOOLING:
         return "library", 0.30, "dev_tool"
 
     def table_result(entry: dict, confidence: float) -> tuple[str, float, str]:
         return (
-            entry["layer"],
+            entry["category"],
             confidence if not entry["multi_role"] else min(confidence, 0.65),
             "provisional" if entry["multi_role"] else "table",
         )
@@ -408,7 +227,7 @@ def classify_dep(
             return category, 0.55, "heuristic"
 
     # Tier 3: passthrough. Declared in a manifest, so it exists. We just don't
-    # know what it is — which is a labelling gap, not grounds for deletion.
+    # know what it is â€” which is a labelling gap, not grounds for deletion.
     return "library", 0.40, "passthrough"
 
 
@@ -477,7 +296,7 @@ def build_base_detections(raw_deps: list[dict]) -> list[dict]:
                 "deterministic" if tier == "table" else tier
             ),
             "multi_role": multi_role,
-            "secondary_roles": list(seed.get("secondary", [])) if seed else [],
+            "secondary_roles": list(seed.get("secondary_roles", [])) if seed else [],
         })
     return out
 
@@ -490,7 +309,7 @@ def enrich_with_classifications(
     Overlay Gemini's classifications onto the base.
 
     Enrichment ONLY. It may relabel a category and raise confidence. It may add
-    a tech the base missed. It may NOT remove anything — that is the whole
+    a tech the base missed. It may NOT remove anything â€” that is the whole
     point. If `classifications` is empty, the base passes through untouched and
     the stack survives a total Gemini outage with degraded category precision.
     """
@@ -554,9 +373,10 @@ def assert_deps_survived(raw_deps: list[dict], detections: list[dict]) -> dict |
             "severity": "error",
             "message": (
                 f"Phase 1 extracted {len(raw_deps)} deps but 0 reached the "
-                f"output. Classification cannot delete deps — this is a bug."
+                f"output. Classification cannot delete deps â€” this is a bug."
             ),
             "field": "detections",
             "demote": True,
         }
     return None
+
