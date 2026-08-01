@@ -1,0 +1,57 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+
+import { buildArtifactLayerGroups } from "./layerViewModel.js";
+
+const singleArtifact = {
+  artifact_count: "single",
+  artifacts: [
+    {
+      name: "library",
+      type: "library",
+      path: "/",
+      primary: true,
+      subordinate_to: null,
+    },
+  ],
+};
+
+test("empty analysis does not render an empty layer panel", () => {
+  assert.deepEqual(buildArtifactLayerGroups({}, singleArtifact), []);
+});
+
+test("all-null layer analysis does not render an empty layer panel", () => {
+  const stack = {
+    library: [
+      {
+        name: "utility",
+        architectural_layer: null,
+        belongs_to_artifact: "library",
+      },
+    ],
+  };
+  assert.deepEqual(buildArtifactLayerGroups(stack, singleArtifact), []);
+});
+
+test("single artifact groups its deterministic layers without special casing", () => {
+  const stack = {
+    frameworks: [
+      {
+        name: "FastAPI",
+        belongs_to_artifact: "library",
+        usage_scope: "runtime",
+        architectural_layer: {
+          primary: "backend",
+          assignment_method: "deterministic",
+          confidence: 0.95,
+        },
+      },
+    ],
+  };
+  const groups = buildArtifactLayerGroups(stack, singleArtifact);
+  assert.equal(groups.length, 1);
+  assert.equal(groups[0].artifact.name, "library");
+  assert.equal(groups[0].layers[0].layer, "backend");
+  assert.equal(groups[0].layers[0].techs[0].name, "FastAPI");
+});
+

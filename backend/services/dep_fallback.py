@@ -1,4 +1,4 @@
-﻿"""
+"""
 backend/services/dep_fallback.py
 
 Deterministic dependency classification. No AI, no network, no I/O.
@@ -8,7 +8,7 @@ WHY THIS EXISTS
 Phase 2a (Gemini dep classification) was a GATE: raw deps flowed through it and
 if the call failed they were discarded. Two consecutive runs proved the cost â€”
 fastapi and vercel/next.js both returned DEP_CLASSIFICATION_FAILED, and both
-produced a stack with every category empty except languages. next.js declares
+produced a stack with every technology_role empty except languages. next.js declares
 100+ dependencies in its root package.json. Phase 1 extracted all of them.
 All of them were dropped because one Gemini call died.
 
@@ -25,7 +25,7 @@ CONFIDENCE TIERS
 ----------------
     0.85  table       â€” curated ecosystem map, high precision
     0.55  heuristic   â€” name pattern match, plausible but unverified
-    0.40  passthrough â€” declared in a manifest, category unknown
+    0.40  passthrough â€” declared in a manifest, technology_role unknown
 
 Passthrough matters most. An unrecognised dep is still DECLARED IN A MANIFEST,
 which is stronger evidence than anything the AI layer infers from a file tree.
@@ -49,6 +49,7 @@ import re
 
 __all__ = [
     "build_base_detections",
+    "collect_unresolved_tail",
     "enrich_with_classifications",
     "classify_dep",
     "assert_deps_survived",
@@ -139,7 +140,7 @@ _DEV_TOOLING = {
     "@types/node", "setuptools", "wheel", "pip", "twine", "build",
 }
 
-_TEST_SCOPES = {"test", "dev", "development", "testing"}
+_TEST_SCOPES = {"test", "testing"}
 
 
 def _norm(name: str) -> str:
@@ -155,6 +156,23 @@ def _maven_group(name: str) -> str:
     return name.split(":")[0] if ":" in name else name
 
 
+def _maven_lookup_key(name: str, table: dict[str, dict]) -> str:
+    """Resolve a Maven group by the longest curated group-prefix match.
+
+    org.springframework.security:spring-security-core first tries the complete
+    group, then org.springframework.security, then org.springframework. This
+    preserves specific mappings while allowing curated parent groups to cover
+    their subgroups.
+    """
+    group = _norm(_maven_group(name))
+    matches = [
+        key
+        for key in table
+        if group == key or group.startswith(f"{key}.")
+    ]
+    return max(matches, key=len) if matches else group
+
+
 def _go_module_root(name: str) -> str:
     """github.com/gin-gonic/gin/v2 -> github.com/gin-gonic/gin"""
     parts = name.split("/")
@@ -164,13 +182,37 @@ def _go_module_root(name: str) -> str:
     return name
 
 
+def _usage_scope(scope: str | None) -> str:
+    normalized = _norm(scope)
+    if normalized in {"test", "testing"}:
+        return "test"
+    if normalized in {"dev", "development"}:
+        return "dev"
+    if normalized == "build":
+        return "build"
+    return "runtime"
+
+
+def _layer_assignment(seed: dict | None, confidence: float) -> dict | None:
+    if not seed or not seed.get("layer"):
+        return None
+    multi_role = bool(seed.get("multi_role"))
+    return {
+        "primary": seed["layer"],
+        "secondary": [],
+        "assignment_method": "provisional" if multi_role else "deterministic",
+        "confidence": min(confidence, 0.65) if multi_role else confidence,
+        "disambiguation_pending": multi_role,
+    }
+
+
 def classify_dep(
     name: str,
     ecosystem: str | None = None,
     scope: str | None = None,
 ) -> tuple[str, float, str]:
     """
-    -> (category, confidence, tier)
+    -> (technology_role, confidence, tier)
 
     tier is one of: "table" | "heuristic" | "passthrough" | "dev_tool"
     Never raises. Never returns None. Every dep gets a home.
@@ -189,7 +231,7 @@ def classify_dep(
     # Ecosystem-specific key shaping
     lookup = raw
     if table is maven_table or ":" in raw:
-        lookup = _norm(_maven_group(raw))
+        lookup = _maven_lookup_key(raw, maven_table)
     elif table is go_table or raw.startswith("github.com/"):
         lookup = _norm(_go_module_root(raw))
 
@@ -199,7 +241,7 @@ def classify_dep(
 
     def table_result(entry: dict, confidence: float) -> tuple[str, float, str]:
         return (
-            entry["category"],
+            entry["technology_role"],
             confidence if not entry["multi_role"] else min(confidence, 0.65),
             "provisional" if entry["multi_role"] else "table",
         )
@@ -222,9 +264,9 @@ def classify_dep(
             return table_result(table[bare], 0.70)
 
     # Tier 2: name heuristics
-    for pattern, category in _HEURISTICS:
+    for pattern, technology_role in _HEURISTICS:
         if pattern.search(lookup):
-            return category, 0.55, "heuristic"
+            return technology_role, 0.55, "heuristic"
 
     # Tier 3: passthrough. Declared in a manifest, so it exists. We just don't
     # know what it is â€” which is a labelling gap, not grounds for deletion.
@@ -257,11 +299,11 @@ def build_base_detections(raw_deps: list[dict]) -> list[dict]:
 
         ecosystem = dep.get("ecosystem") or dep.get("matched_file")
         scope = dep.get("scope")
-        category, confidence, tier = classify_dep(name, ecosystem, scope)
+        technology_role, confidence, tier = classify_dep(name, ecosystem, scope)
         table = ecosystem_tables.get(ecosystem or "", {})
         lookup = key
         if table is maven_table or ":" in key:
-            lookup = _norm(_maven_group(key))
+            lookup = _maven_lookup_key(key, maven_table)
         elif table is go_table or key.startswith("github.com/"):
             lookup = _norm(_go_module_root(key))
         seed = table.get(lookup)
@@ -275,15 +317,26 @@ def build_base_detections(raw_deps: list[dict]) -> list[dict]:
             seed = table.get(key.split("/", 1)[1])
         multi_role = bool(seed and seed.get("multi_role"))
 
-        # Test-scoped deps are testing regardless of what the name suggests.
-        # Scope comes from the manifest and outranks the name every time.
-        if _norm(scope) in _TEST_SCOPES and category not in ("testing",):
-            category = "testing"
-            confidence = min(confidence, 0.70)
+        # Only an explicit test scope implies a testing architectural role.
+        # Dev scope controls usage/display but does not turn compilers, build
+        # tools, type packages, or frontend utilities into testing technology.
+        if _norm(scope) in _TEST_SCOPES:
+            if technology_role != "testing":
+                technology_role = "testing"
+                confidence = min(confidence, 0.70)
+            layer_assignment = {
+                "primary": "testing",
+                "secondary": [],
+                "assignment_method": "deterministic",
+                "confidence": confidence,
+                "disambiguation_pending": False,
+            }
+        else:
+            layer_assignment = _layer_assignment(seed, confidence)
 
         out.append({
             "name": name,
-            "category": category,
+            "technology_role": technology_role,
             "confidence": confidence,
             "detection_source": f"manifest_{tier}",
             "scope": scope or "required",
@@ -291,14 +344,30 @@ def build_base_detections(raw_deps: list[dict]) -> list[dict]:
             "matched_file": dep.get("matched_file"),
             "version_spec": dep.get("version_spec"),
             "fallback_tier": tier,
-            "assignment_method": (
-                "provisional" if multi_role else
-                "deterministic" if tier == "table" else tier
-            ),
             "multi_role": multi_role,
             "secondary_roles": list(seed.get("secondary_roles", [])) if seed else [],
+            "architectural_layer": layer_assignment,
+            "usage_scope": _usage_scope(scope),
         })
     return out
+
+
+def collect_unresolved_tail(
+    raw_deps: list[dict],
+    base_detections: list[dict],
+) -> list[dict]:
+    """Return only deps still unresolved after the complete deterministic pass."""
+    unresolved_names = {
+        _norm(dep.get("name"))
+        for dep in base_detections
+        if dep.get("fallback_tier") in {"heuristic", "passthrough"}
+        and dep.get("architectural_layer") is None
+    }
+    return [
+        dep
+        for dep in raw_deps
+        if _norm(dep.get("name")) in unresolved_names
+    ]
 
 
 def enrich_with_classifications(
@@ -308,10 +377,10 @@ def enrich_with_classifications(
     """
     Overlay Gemini's classifications onto the base.
 
-    Enrichment ONLY. It may relabel a category and raise confidence. It may add
+    Enrichment ONLY. It may relabel a technology_role and raise confidence. It may add
     a tech the base missed. It may NOT remove anything â€” that is the whole
     point. If `classifications` is empty, the base passes through untouched and
-    the stack survives a total Gemini outage with degraded category precision.
+    the stack survives a total Gemini outage with degraded technology_role precision.
     """
     if not classifications:
         return base
@@ -324,13 +393,28 @@ def enrich_with_classifications(
             continue
         key = _norm(name)
         existing = by_name.get(key)
+        inferred_layer = cls.get("architectural_layer")
+        layer_assignment = (
+            {
+                "primary": inferred_layer,
+                "secondary": [],
+                "assignment_method": "ai_inferred",
+                "confidence": cls.get(
+                    "layer_confidence",
+                    cls.get("confidence", 0.75),
+                ),
+                "disambiguation_pending": False,
+            }
+            if inferred_layer
+            else None
+        )
 
         if existing is None:
             # Gemini collapsed several packages into one tech (e.g. the 12
             # @babel/* packages -> "Babel"), or renamed one. Keep it.
             by_name[key] = {
                 "name": name,
-                "category": cls.get("category", "library"),
+                "technology_role": cls.get("technology_role", "library"),
                 "confidence": cls.get("confidence", 0.80),
                 "detection_source": "manifest",
                 "scope": cls.get("scope", "required"),
@@ -338,23 +422,28 @@ def enrich_with_classifications(
                 "matched_file": None,
                 "version_spec": None,
                 "fallback_tier": "ai_classified",
-                "assignment_method": "inference",
                 "multi_role": False,
                 "secondary_roles": [],
+                "architectural_layer": layer_assignment,
+                "layer_inference_status": cls.get("layer_resolution"),
+                "usage_scope": _usage_scope(cls.get("scope")),
             }
             continue
 
         # Relabel: Gemini beats a heuristic or a passthrough, but not a table
         # hit we are confident about.
         if existing["fallback_tier"] in ("heuristic", "passthrough", "dev_tool"):
-            existing["category"] = cls.get("category", existing["category"])
+            existing["technology_role"] = cls.get("technology_role", existing["technology_role"])
         existing["confidence"] = max(
             existing["confidence"], cls.get("confidence", 0.0)
         )
         existing["detection_source"] = "manifest"
         if existing["fallback_tier"] not in ("table", "provisional"):
             existing["fallback_tier"] = "ai_classified"
-            existing["assignment_method"] = "inference"
+            # Tail entries have no deterministic layer. Trust the layer returned
+            # by this same consolidated call, independently of technology_role.
+            existing["architectural_layer"] = layer_assignment
+            existing["layer_inference_status"] = cls.get("layer_resolution")
 
     return list(by_name.values())
 

@@ -2,103 +2,103 @@
   "ecosystems": {
     "cargo": {
       "actix-web": {
-        "category": "frameworks",
+        "technology_role": "frameworks",
         "layer": "backend",
         "multi_role": false,
         "secondary_roles": []
       },
       "anyhow": {
-        "category": "library",
+        "technology_role": "library",
         "layer": null,
         "multi_role": false,
         "secondary_roles": []
       },
       "async-std": {
-        "category": "infra",
-        "layer": "infra",
+        "technology_role": "infra",
+        "layer": "language_runtime",
         "multi_role": false,
         "secondary_roles": []
       },
       "axum": {
-        "category": "frameworks",
+        "technology_role": "frameworks",
         "layer": "backend",
         "multi_role": false,
         "secondary_roles": []
       },
       "candle-core": {
-        "category": "ai_ml",
+        "technology_role": "ai_ml",
         "layer": "ai_ml",
         "multi_role": false,
         "secondary_roles": []
       },
       "clap": {
-        "category": "library",
+        "technology_role": "library",
         "layer": null,
         "multi_role": false,
         "secondary_roles": []
       },
       "criterion": {
-        "category": "testing",
+        "technology_role": "testing",
         "layer": "testing",
         "multi_role": false,
         "secondary_roles": []
       },
       "diesel": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": false,
         "secondary_roles": []
       },
       "lapin": {
-        "category": "messaging",
+        "technology_role": "messaging",
         "layer": "messaging",
         "multi_role": false,
         "secondary_roles": []
       },
       "mongodb": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": false,
         "secondary_roles": []
       },
       "napi": {
-        "category": "library",
+        "technology_role": "library",
         "layer": null,
         "multi_role": false,
         "secondary_roles": []
       },
       "ort": {
-        "category": "ai_ml",
+        "technology_role": "ai_ml",
         "layer": "ai_ml",
         "multi_role": false,
         "secondary_roles": []
       },
       "poem": {
-        "category": "frameworks",
+        "technology_role": "frameworks",
         "layer": "backend",
         "multi_role": false,
         "secondary_roles": []
       },
       "proptest": {
-        "category": "testing",
+        "technology_role": "testing",
         "layer": "testing",
         "multi_role": false,
         "secondary_roles": []
       },
       "rayon": {
-        "category": "infra",
+        "technology_role": "infra",
         "layer": "infra",
         "multi_role": false,
         "secondary_roles": []
       },
       "rdkafka": {
-        "category": "messaging",
+        "technology_role": "messaging",
         "layer": "messaging",
         "multi_role": false,
         "secondary_roles": []
       },
       "redis": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": true,
         "secondary_roles": [
@@ -107,67 +107,67 @@
         ]
       },
       "rocket": {
-        "category": "frameworks",
+        "technology_role": "frameworks",
         "layer": "backend",
         "multi_role": false,
         "secondary_roles": []
       },
       "sea-orm": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": false,
         "secondary_roles": []
       },
       "serde": {
-        "category": "library",
+        "technology_role": "library",
         "layer": null,
         "multi_role": false,
         "secondary_roles": []
       },
       "serde_json": {
-        "category": "library",
+        "technology_role": "library",
         "layer": null,
         "multi_role": false,
         "secondary_roles": []
       },
       "sqlx": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": false,
         "secondary_roles": []
       },
       "swc_core": {
-        "category": "infra",
+        "technology_role": "infra",
         "layer": "infra",
         "multi_role": false,
         "secondary_roles": []
       },
       "tch": {
-        "category": "ai_ml",
+        "technology_role": "ai_ml",
         "layer": "ai_ml",
         "multi_role": false,
         "secondary_roles": []
       },
       "thiserror": {
-        "category": "library",
+        "technology_role": "library",
         "layer": null,
         "multi_role": false,
         "secondary_roles": []
       },
       "tide": {
-        "category": "frameworks",
+        "technology_role": "frameworks",
         "layer": "backend",
         "multi_role": false,
         "secondary_roles": []
       },
       "tokio": {
-        "category": "infra",
-        "layer": "infra",
+        "technology_role": "infra",
+        "layer": "language_runtime",
         "multi_role": false,
         "secondary_roles": []
       },
       "warp": {
-        "category": "frameworks",
+        "technology_role": "frameworks",
         "layer": "backend",
         "multi_role": false,
         "secondary_roles": []
@@ -175,61 +175,61 @@
     },
     "go": {
       "github.com/IBM/sarama": {
-        "category": "messaging",
+        "technology_role": "messaging",
         "layer": "messaging",
         "multi_role": false,
         "secondary_roles": []
       },
       "github.com/Shopify/sarama": {
-        "category": "messaging",
+        "technology_role": "messaging",
         "layer": "messaging",
         "multi_role": false,
         "secondary_roles": []
       },
       "github.com/docker/docker": {
-        "category": "infra",
+        "technology_role": "infra",
         "layer": "infra",
         "multi_role": false,
         "secondary_roles": []
       },
       "github.com/gin-gonic/gin": {
-        "category": "frameworks",
+        "technology_role": "frameworks",
         "layer": "backend",
         "multi_role": false,
         "secondary_roles": []
       },
       "github.com/go-chi/chi": {
-        "category": "frameworks",
+        "technology_role": "frameworks",
         "layer": "backend",
         "multi_role": false,
         "secondary_roles": []
       },
       "github.com/gofiber/fiber": {
-        "category": "frameworks",
+        "technology_role": "frameworks",
         "layer": "backend",
         "multi_role": false,
         "secondary_roles": []
       },
       "github.com/jackc/pgx": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": false,
         "secondary_roles": []
       },
       "github.com/labstack/echo": {
-        "category": "frameworks",
+        "technology_role": "frameworks",
         "layer": "backend",
         "multi_role": false,
         "secondary_roles": []
       },
       "github.com/nats-io/nats.go": {
-        "category": "messaging",
+        "technology_role": "messaging",
         "layer": "messaging",
         "multi_role": false,
         "secondary_roles": []
       },
       "github.com/redis/go-redis": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": true,
         "secondary_roles": [
@@ -238,31 +238,31 @@
         ]
       },
       "github.com/spf13/cobra": {
-        "category": "library",
+        "technology_role": "library",
         "layer": null,
         "multi_role": false,
         "secondary_roles": []
       },
       "github.com/stretchr/testify": {
-        "category": "testing",
+        "technology_role": "testing",
         "layer": "testing",
         "multi_role": false,
         "secondary_roles": []
       },
       "go.mongodb.org/mongo-driver": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": false,
         "secondary_roles": []
       },
       "gorm.io/gorm": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": false,
         "secondary_roles": []
       },
       "k8s.io/client-go": {
-        "category": "infra",
+        "technology_role": "infra",
         "layer": "infra",
         "multi_role": false,
         "secondary_roles": []
@@ -270,7 +270,7 @@
     },
     "maven": {
       "co.elastic.clients": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": true,
         "secondary_roles": [
@@ -279,103 +279,103 @@
         ]
       },
       "com.fasterxml.jackson.core": {
-        "category": "library",
+        "technology_role": "library",
         "layer": null,
         "multi_role": false,
         "secondary_roles": []
       },
       "com.google.cloud": {
-        "category": "infra",
+        "technology_role": "infra",
         "layer": "infra",
         "multi_role": false,
         "secondary_roles": []
       },
       "com.google.guava": {
-        "category": "library",
+        "technology_role": "library",
         "layer": null,
         "multi_role": false,
         "secondary_roles": []
       },
       "com.google.inject": {
-        "category": "frameworks",
+        "technology_role": "frameworks",
         "layer": "backend",
         "multi_role": false,
         "secondary_roles": []
       },
       "com.rabbitmq": {
-        "category": "messaging",
+        "technology_role": "messaging",
         "layer": "messaging",
         "multi_role": false,
         "secondary_roles": []
       },
       "io.micronaut": {
-        "category": "frameworks",
+        "technology_role": "frameworks",
         "layer": "backend",
         "multi_role": false,
         "secondary_roles": []
       },
       "io.quarkus": {
-        "category": "frameworks",
+        "technology_role": "frameworks",
         "layer": "backend",
         "multi_role": false,
         "secondary_roles": []
       },
       "io.vertx": {
-        "category": "frameworks",
+        "technology_role": "frameworks",
         "layer": "backend",
         "multi_role": false,
         "secondary_roles": []
       },
       "junit": {
-        "category": "testing",
+        "technology_role": "testing",
         "layer": "testing",
         "multi_role": false,
         "secondary_roles": []
       },
       "mysql": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": false,
         "secondary_roles": []
       },
       "org.apache.activemq": {
-        "category": "messaging",
+        "technology_role": "messaging",
         "layer": "messaging",
         "multi_role": false,
         "secondary_roles": []
       },
       "org.apache.kafka": {
-        "category": "messaging",
+        "technology_role": "messaging",
         "layer": "messaging",
         "multi_role": false,
         "secondary_roles": []
       },
       "org.apache.pulsar": {
-        "category": "messaging",
+        "technology_role": "messaging",
         "layer": "messaging",
         "multi_role": false,
         "secondary_roles": []
       },
       "org.apache.spark": {
-        "category": "ai_ml",
+        "technology_role": "ai_ml",
         "layer": "ai_ml",
         "multi_role": false,
         "secondary_roles": []
       },
       "org.assertj": {
-        "category": "testing",
+        "technology_role": "testing",
         "layer": "testing",
         "multi_role": false,
         "secondary_roles": []
       },
       "org.deeplearning4j": {
-        "category": "ai_ml",
+        "technology_role": "ai_ml",
         "layer": "ai_ml",
         "multi_role": false,
         "secondary_roles": []
       },
       "org.elasticsearch": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": true,
         "secondary_roles": [
@@ -384,73 +384,73 @@
         ]
       },
       "org.hibernate": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": false,
         "secondary_roles": []
       },
       "org.junit": {
-        "category": "testing",
+        "technology_role": "testing",
         "layer": "testing",
         "multi_role": false,
         "secondary_roles": []
       },
       "org.junit.jupiter": {
-        "category": "testing",
+        "technology_role": "testing",
         "layer": "testing",
         "multi_role": false,
         "secondary_roles": []
       },
       "org.mockito": {
-        "category": "testing",
+        "technology_role": "testing",
         "layer": "testing",
         "multi_role": false,
         "secondary_roles": []
       },
       "org.mongodb": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": false,
         "secondary_roles": []
       },
       "org.postgresql": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": false,
         "secondary_roles": []
       },
       "org.projectlombok": {
-        "category": "library",
+        "technology_role": "library",
         "layer": null,
         "multi_role": false,
         "secondary_roles": []
       },
       "org.slf4j": {
-        "category": "library",
+        "technology_role": "library",
         "layer": null,
         "multi_role": false,
         "secondary_roles": []
       },
       "org.springframework": {
-        "category": "frameworks",
+        "technology_role": "frameworks",
         "layer": "backend",
         "multi_role": false,
         "secondary_roles": []
       },
       "org.springframework.boot": {
-        "category": "frameworks",
+        "technology_role": "frameworks",
         "layer": "backend",
         "multi_role": false,
         "secondary_roles": []
       },
       "org.testcontainers": {
-        "category": "testing",
+        "technology_role": "testing",
         "layer": "testing",
         "multi_role": false,
         "secondary_roles": []
       },
       "redis.clients": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": true,
         "secondary_roles": [
@@ -459,7 +459,7 @@
         ]
       },
       "software.amazon.awssdk": {
-        "category": "infra",
+        "technology_role": "infra",
         "layer": "infra",
         "multi_role": false,
         "secondary_roles": []
@@ -467,25 +467,25 @@
     },
     "npm": {
       "@angular/core": {
-        "category": "frameworks",
+        "technology_role": "frameworks",
         "layer": "frontend",
         "multi_role": false,
         "secondary_roles": []
       },
       "@anthropic-ai/sdk": {
-        "category": "ai_ml",
+        "technology_role": "ai_ml",
         "layer": "ai_ml",
         "multi_role": false,
         "secondary_roles": []
       },
       "@babel/core": {
-        "category": "infra",
+        "technology_role": "infra",
         "layer": "infra",
         "multi_role": false,
         "secondary_roles": []
       },
       "@elastic/elasticsearch": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": true,
         "secondary_roles": [
@@ -494,145 +494,174 @@
         ]
       },
       "@google/generative-ai": {
-        "category": "ai_ml",
+        "technology_role": "ai_ml",
         "layer": "ai_ml",
         "multi_role": false,
         "secondary_roles": []
       },
       "@nestjs/core": {
-        "category": "frameworks",
+        "technology_role": "frameworks",
         "layer": "backend",
         "multi_role": false,
         "secondary_roles": []
       },
       "@playwright/test": {
-        "category": "testing",
+        "technology_role": "testing",
         "layer": "testing",
         "multi_role": false,
         "secondary_roles": []
       },
       "@prisma/client": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": false,
         "secondary_roles": []
       },
       "@reduxjs/toolkit": {
-        "category": "library",
+        "technology_role": "library",
         "layer": "frontend",
         "multi_role": false,
         "secondary_roles": []
       },
       "@supabase/supabase-js": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": false,
         "secondary_roles": []
       },
       "@swc/core": {
-        "category": "infra",
+        "technology_role": "infra",
         "layer": "infra",
         "multi_role": false,
         "secondary_roles": []
       },
+      "@tailwindcss/vite": {
+        "technology_role": "library",
+        "layer": "frontend",
+        "multi_role": true,
+        "secondary_roles": [
+          "build_tooling"
+        ]
+      },
       "@tensorflow/tfjs": {
-        "category": "ai_ml",
+        "technology_role": "ai_ml",
         "layer": "frontend",
         "multi_role": false,
         "secondary_roles": []
       },
       "@testing-library/jest-dom": {
-        "category": "testing",
+        "technology_role": "testing",
         "layer": "testing",
         "multi_role": false,
         "secondary_roles": []
       },
       "@testing-library/react": {
-        "category": "testing",
+        "technology_role": "testing",
         "layer": "testing",
         "multi_role": false,
         "secondary_roles": []
       },
+      "@types/node": {
+        "technology_role": "library",
+        "layer": "language_runtime",
+        "multi_role": false,
+        "secondary_roles": []
+      },
+      "@types/react": {
+        "technology_role": "library",
+        "layer": "frontend",
+        "multi_role": false,
+        "secondary_roles": []
+      },
+      "@vitejs/plugin-react-swc": {
+        "technology_role": "infra",
+        "layer": "infra",
+        "multi_role": true,
+        "secondary_roles": [
+          "build_tooling",
+          "frontend"
+        ]
+      },
       "ai": {
-        "category": "ai_ml",
+        "technology_role": "ai_ml",
         "layer": "ai_ml",
         "multi_role": false,
         "secondary_roles": []
       },
       "amqplib": {
-        "category": "messaging",
+        "technology_role": "messaging",
         "layer": "messaging",
         "multi_role": false,
         "secondary_roles": []
       },
       "astro": {
-        "category": "frameworks",
+        "technology_role": "frameworks",
         "layer": "frontend",
         "multi_role": false,
         "secondary_roles": []
       },
       "ava": {
-        "category": "testing",
+        "technology_role": "testing",
         "layer": "testing",
         "multi_role": false,
         "secondary_roles": []
       },
       "axios": {
-        "category": "library",
+        "technology_role": "library",
         "layer": null,
         "multi_role": false,
         "secondary_roles": []
       },
       "babel": {
-        "category": "infra",
+        "technology_role": "infra",
         "layer": "infra",
         "multi_role": false,
         "secondary_roles": []
       },
       "better-sqlite3": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": false,
         "secondary_roles": []
       },
       "bull": {
-        "category": "messaging",
+        "technology_role": "messaging",
         "layer": "messaging",
         "multi_role": false,
         "secondary_roles": []
       },
       "bullmq": {
-        "category": "messaging",
+        "technology_role": "messaging",
         "layer": "messaging",
         "multi_role": false,
         "secondary_roles": []
       },
       "chai": {
-        "category": "testing",
+        "technology_role": "testing",
         "layer": "testing",
         "multi_role": false,
         "secondary_roles": []
       },
       "cypress": {
-        "category": "testing",
+        "technology_role": "testing",
         "layer": "testing",
         "multi_role": false,
         "secondary_roles": []
       },
       "date-fns": {
-        "category": "library",
+        "technology_role": "library",
         "layer": null,
         "multi_role": false,
         "secondary_roles": []
       },
       "drizzle-orm": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": false,
         "secondary_roles": []
       },
       "elasticsearch": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": true,
         "secondary_roles": [
@@ -641,31 +670,31 @@
         ]
       },
       "esbuild": {
-        "category": "infra",
+        "technology_role": "infra",
         "layer": "infra",
         "multi_role": false,
         "secondary_roles": []
       },
       "express": {
-        "category": "frameworks",
+        "technology_role": "frameworks",
         "layer": "backend",
         "multi_role": false,
         "secondary_roles": []
       },
       "fastify": {
-        "category": "frameworks",
+        "technology_role": "frameworks",
         "layer": "backend",
         "multi_role": false,
         "secondary_roles": []
       },
       "immer": {
-        "category": "library",
+        "technology_role": "library",
         "layer": "frontend",
         "multi_role": false,
         "secondary_roles": []
       },
       "ioredis": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": true,
         "secondary_roles": [
@@ -674,169 +703,169 @@
         ]
       },
       "jasmine": {
-        "category": "testing",
+        "technology_role": "testing",
         "layer": "testing",
         "multi_role": false,
         "secondary_roles": []
       },
       "jest": {
-        "category": "testing",
+        "technology_role": "testing",
         "layer": "testing",
         "multi_role": false,
         "secondary_roles": []
       },
       "kafkajs": {
-        "category": "messaging",
+        "technology_role": "messaging",
         "layer": "messaging",
         "multi_role": false,
         "secondary_roles": []
       },
       "knex": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": false,
         "secondary_roles": []
       },
       "koa": {
-        "category": "frameworks",
+        "technology_role": "frameworks",
         "layer": "backend",
         "multi_role": false,
         "secondary_roles": []
       },
       "langchain": {
-        "category": "ai_ml",
+        "technology_role": "ai_ml",
         "layer": "ai_ml",
         "multi_role": false,
         "secondary_roles": []
       },
       "lodash": {
-        "category": "library",
+        "technology_role": "library",
         "layer": null,
         "multi_role": false,
         "secondary_roles": []
       },
       "mocha": {
-        "category": "testing",
+        "technology_role": "testing",
         "layer": "testing",
         "multi_role": false,
         "secondary_roles": []
       },
       "mongodb": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": false,
         "secondary_roles": []
       },
       "mongoose": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": false,
         "secondary_roles": []
       },
       "mqtt": {
-        "category": "messaging",
+        "technology_role": "messaging",
         "layer": "messaging",
         "multi_role": false,
         "secondary_roles": []
       },
       "mysql": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": false,
         "secondary_roles": []
       },
       "mysql2": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": false,
         "secondary_roles": []
       },
       "nats": {
-        "category": "messaging",
+        "technology_role": "messaging",
         "layer": "messaging",
         "multi_role": false,
         "secondary_roles": []
       },
       "next": {
-        "category": "frameworks",
+        "technology_role": "frameworks",
         "layer": "frontend",
         "multi_role": false,
         "secondary_roles": []
       },
       "nodemon": {
-        "category": "infra",
+        "technology_role": "infra",
         "layer": "infra",
         "multi_role": false,
         "secondary_roles": []
       },
       "onnxruntime-node": {
-        "category": "ai_ml",
+        "technology_role": "ai_ml",
         "layer": "ai_ml",
         "multi_role": false,
         "secondary_roles": []
       },
       "openai": {
-        "category": "ai_ml",
+        "technology_role": "ai_ml",
         "layer": "ai_ml",
         "multi_role": false,
         "secondary_roles": []
       },
       "parcel": {
-        "category": "infra",
+        "technology_role": "infra",
         "layer": "infra",
         "multi_role": false,
         "secondary_roles": []
       },
       "pg": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": false,
         "secondary_roles": []
       },
       "playwright": {
-        "category": "testing",
+        "technology_role": "testing",
         "layer": "testing",
         "multi_role": false,
         "secondary_roles": []
       },
       "pm2": {
-        "category": "infra",
+        "technology_role": "infra",
         "layer": "infra",
         "multi_role": false,
         "secondary_roles": []
       },
       "preact": {
-        "category": "frameworks",
+        "technology_role": "frameworks",
         "layer": "frontend",
         "multi_role": false,
         "secondary_roles": []
       },
       "prisma": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": false,
         "secondary_roles": []
       },
       "puppeteer": {
-        "category": "testing",
+        "technology_role": "testing",
         "layer": "testing",
         "multi_role": false,
         "secondary_roles": []
       },
       "react": {
-        "category": "frameworks",
+        "technology_role": "frameworks",
         "layer": "frontend",
         "multi_role": false,
         "secondary_roles": []
       },
       "react-dom": {
-        "category": "frameworks",
+        "technology_role": "frameworks",
         "layer": "frontend",
         "multi_role": false,
         "secondary_roles": []
       },
       "redis": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": true,
         "secondary_roles": [
@@ -845,97 +874,109 @@
         ]
       },
       "redux": {
-        "category": "library",
+        "technology_role": "library",
         "layer": "frontend",
         "multi_role": false,
         "secondary_roles": []
       },
       "remix": {
-        "category": "frameworks",
+        "technology_role": "frameworks",
         "layer": "frontend",
         "multi_role": false,
         "secondary_roles": []
       },
       "rollup": {
-        "category": "infra",
+        "technology_role": "infra",
         "layer": "infra",
         "multi_role": false,
         "secondary_roles": []
       },
       "rxjs": {
-        "category": "library",
+        "technology_role": "library",
         "layer": null,
         "multi_role": false,
         "secondary_roles": []
       },
       "sequelize": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": false,
         "secondary_roles": []
       },
       "socket.io": {
-        "category": "messaging",
+        "technology_role": "messaging",
         "layer": "messaging",
         "multi_role": false,
         "secondary_roles": []
       },
       "solid-js": {
-        "category": "frameworks",
+        "technology_role": "frameworks",
         "layer": "frontend",
         "multi_role": false,
         "secondary_roles": []
       },
       "sqlite3": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": false,
         "secondary_roles": []
       },
       "styled-components": {
-        "category": "library",
+        "technology_role": "library",
         "layer": "frontend",
         "multi_role": false,
         "secondary_roles": []
       },
       "supertest": {
-        "category": "testing",
+        "technology_role": "testing",
         "layer": "testing",
         "multi_role": false,
         "secondary_roles": []
       },
       "svelte": {
-        "category": "frameworks",
+        "technology_role": "frameworks",
         "layer": "frontend",
         "multi_role": false,
         "secondary_roles": []
       },
       "swc": {
-        "category": "infra",
+        "technology_role": "infra",
         "layer": "infra",
         "multi_role": false,
         "secondary_roles": []
       },
       "tailwindcss": {
-        "category": "library",
+        "technology_role": "library",
+        "layer": "frontend",
+        "multi_role": false,
+        "secondary_roles": []
+      },
+      "tw-animate-css": {
+        "technology_role": "library",
         "layer": "frontend",
         "multi_role": false,
         "secondary_roles": []
       },
       "turbo": {
-        "category": "infra",
+        "technology_role": "infra",
         "layer": "infra",
         "multi_role": false,
         "secondary_roles": []
       },
+      "typescript": {
+        "technology_role": "infra",
+        "layer": "language_runtime",
+        "multi_role": false,
+        "secondary_roles": []
+      },
       "typeorm": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": false,
         "secondary_roles": []
       },
       "vite": {
-        "category": "infra",
+        "technology_role": "infra",
         "layer": "infra",
         "multi_role": true,
         "secondary_roles": [
@@ -944,37 +985,37 @@
         ]
       },
       "vitest": {
-        "category": "testing",
+        "technology_role": "testing",
         "layer": "testing",
         "multi_role": false,
         "secondary_roles": []
       },
       "vue": {
-        "category": "frameworks",
+        "technology_role": "frameworks",
         "layer": "frontend",
         "multi_role": false,
         "secondary_roles": []
       },
       "webpack": {
-        "category": "infra",
+        "technology_role": "infra",
         "layer": "infra",
         "multi_role": false,
         "secondary_roles": []
       },
       "ws": {
-        "category": "messaging",
+        "technology_role": "messaging",
         "layer": "messaging",
         "multi_role": false,
         "secondary_roles": []
       },
       "zod": {
-        "category": "library",
+        "technology_role": "library",
         "layer": null,
         "multi_role": false,
         "secondary_roles": []
       },
       "zustand": {
-        "category": "library",
+        "technology_role": "library",
         "layer": "frontend",
         "multi_role": false,
         "secondary_roles": []
@@ -982,25 +1023,25 @@
     },
     "pypi": {
       "accelerate": {
-        "category": "ai_ml",
+        "technology_role": "ai_ml",
         "layer": "ai_ml",
         "multi_role": false,
         "secondary_roles": []
       },
       "aiohttp": {
-        "category": "frameworks",
+        "technology_role": "frameworks",
         "layer": "backend",
         "multi_role": false,
         "secondary_roles": []
       },
       "aiokafka": {
-        "category": "messaging",
+        "technology_role": "messaging",
         "layer": "messaging",
         "multi_role": false,
         "secondary_roles": []
       },
       "aioredis": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": true,
         "secondary_roles": [
@@ -1009,91 +1050,91 @@
         ]
       },
       "alembic": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": false,
         "secondary_roles": []
       },
       "anthropic": {
-        "category": "ai_ml",
+        "technology_role": "ai_ml",
         "layer": "ai_ml",
         "multi_role": false,
         "secondary_roles": []
       },
       "asyncpg": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": false,
         "secondary_roles": []
       },
       "attrs": {
-        "category": "library",
+        "technology_role": "library",
         "layer": null,
         "multi_role": false,
         "secondary_roles": []
       },
       "boto3": {
-        "category": "infra",
+        "technology_role": "infra",
         "layer": "infra",
         "multi_role": false,
         "secondary_roles": []
       },
       "bottle": {
-        "category": "frameworks",
+        "technology_role": "frameworks",
         "layer": "backend",
         "multi_role": false,
         "secondary_roles": []
       },
       "celery": {
-        "category": "messaging",
+        "technology_role": "messaging",
         "layer": "messaging",
         "multi_role": false,
         "secondary_roles": []
       },
       "chromadb": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": false,
         "secondary_roles": []
       },
       "click": {
-        "category": "library",
+        "technology_role": "library",
         "layer": null,
         "multi_role": false,
         "secondary_roles": []
       },
       "confluent-kafka": {
-        "category": "messaging",
+        "technology_role": "messaging",
         "layer": "messaging",
         "multi_role": false,
         "secondary_roles": []
       },
       "coverage": {
-        "category": "testing",
+        "technology_role": "testing",
         "layer": "testing",
         "multi_role": false,
         "secondary_roles": []
       },
       "datasets": {
-        "category": "ai_ml",
+        "technology_role": "ai_ml",
         "layer": "ai_ml",
         "multi_role": false,
         "secondary_roles": []
       },
       "django": {
-        "category": "frameworks",
+        "technology_role": "frameworks",
         "layer": "backend",
         "multi_role": false,
         "secondary_roles": []
       },
       "docker": {
-        "category": "infra",
+        "technology_role": "infra",
         "layer": "infra",
         "multi_role": false,
         "secondary_roles": []
       },
       "elasticsearch": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": true,
         "secondary_roles": [
@@ -1102,223 +1143,223 @@
         ]
       },
       "fastapi": {
-        "category": "frameworks",
+        "technology_role": "frameworks",
         "layer": "backend",
         "multi_role": false,
         "secondary_roles": []
       },
       "flask": {
-        "category": "frameworks",
+        "technology_role": "frameworks",
         "layer": "backend",
         "multi_role": false,
         "secondary_roles": []
       },
       "google-generativeai": {
-        "category": "ai_ml",
+        "technology_role": "ai_ml",
         "layer": "ai_ml",
         "multi_role": false,
         "secondary_roles": []
       },
       "gunicorn": {
-        "category": "infra",
+        "technology_role": "infra",
         "layer": "infra",
         "multi_role": false,
         "secondary_roles": []
       },
       "httpx": {
-        "category": "library",
+        "technology_role": "library",
         "layer": null,
         "multi_role": false,
         "secondary_roles": []
       },
       "huggingface-hub": {
-        "category": "ai_ml",
+        "technology_role": "ai_ml",
         "layer": "ai_ml",
         "multi_role": false,
         "secondary_roles": []
       },
       "hypercorn": {
-        "category": "infra",
+        "technology_role": "infra",
         "layer": "infra",
         "multi_role": false,
         "secondary_roles": []
       },
       "hypothesis": {
-        "category": "testing",
+        "technology_role": "testing",
         "layer": "testing",
         "multi_role": false,
         "secondary_roles": []
       },
       "jinja2": {
-        "category": "library",
+        "technology_role": "library",
         "layer": null,
         "multi_role": false,
         "secondary_roles": []
       },
       "kafka-python": {
-        "category": "messaging",
+        "technology_role": "messaging",
         "layer": "messaging",
         "multi_role": false,
         "secondary_roles": []
       },
       "kombu": {
-        "category": "messaging",
+        "technology_role": "messaging",
         "layer": "messaging",
         "multi_role": false,
         "secondary_roles": []
       },
       "kubernetes": {
-        "category": "infra",
+        "technology_role": "infra",
         "layer": "infra",
         "multi_role": false,
         "secondary_roles": []
       },
       "langchain": {
-        "category": "ai_ml",
+        "technology_role": "ai_ml",
         "layer": "ai_ml",
         "multi_role": false,
         "secondary_roles": []
       },
       "litestar": {
-        "category": "frameworks",
+        "technology_role": "frameworks",
         "layer": "backend",
         "multi_role": false,
         "secondary_roles": []
       },
       "mock": {
-        "category": "testing",
+        "technology_role": "testing",
         "layer": "testing",
         "multi_role": false,
         "secondary_roles": []
       },
       "motor": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": false,
         "secondary_roles": []
       },
       "nose": {
-        "category": "testing",
+        "technology_role": "testing",
         "layer": "testing",
         "multi_role": false,
         "secondary_roles": []
       },
       "numpy": {
-        "category": "ai_ml",
+        "technology_role": "ai_ml",
         "layer": "ai_ml",
         "multi_role": false,
         "secondary_roles": []
       },
       "openai": {
-        "category": "ai_ml",
+        "technology_role": "ai_ml",
         "layer": "ai_ml",
         "multi_role": false,
         "secondary_roles": []
       },
       "pandas": {
-        "category": "ai_ml",
+        "technology_role": "ai_ml",
         "layer": "ai_ml",
         "multi_role": false,
         "secondary_roles": []
       },
       "peewee": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": false,
         "secondary_roles": []
       },
       "pika": {
-        "category": "messaging",
+        "technology_role": "messaging",
         "layer": "messaging",
         "multi_role": false,
         "secondary_roles": []
       },
       "pinecone-client": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": false,
         "secondary_roles": []
       },
       "psycopg": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": false,
         "secondary_roles": []
       },
       "psycopg2": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": false,
         "secondary_roles": []
       },
       "psycopg2-binary": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": false,
         "secondary_roles": []
       },
       "pydantic": {
-        "category": "library",
+        "technology_role": "library",
         "layer": null,
         "multi_role": false,
         "secondary_roles": []
       },
       "pymongo": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": false,
         "secondary_roles": []
       },
       "pyramid": {
-        "category": "frameworks",
+        "technology_role": "frameworks",
         "layer": "backend",
         "multi_role": false,
         "secondary_roles": []
       },
       "pytest": {
-        "category": "testing",
+        "technology_role": "testing",
         "layer": "testing",
         "multi_role": false,
         "secondary_roles": []
       },
       "pytest-asyncio": {
-        "category": "testing",
+        "technology_role": "testing",
         "layer": "testing",
         "multi_role": false,
         "secondary_roles": []
       },
       "pytest-cov": {
-        "category": "testing",
+        "technology_role": "testing",
         "layer": "testing",
         "multi_role": false,
         "secondary_roles": []
       },
       "python-dotenv": {
-        "category": "library",
+        "technology_role": "library",
         "layer": null,
         "multi_role": false,
         "secondary_roles": []
       },
       "qdrant-client": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": false,
         "secondary_roles": []
       },
       "quart": {
-        "category": "frameworks",
+        "technology_role": "frameworks",
         "layer": "backend",
         "multi_role": false,
         "secondary_roles": []
       },
       "ray": {
-        "category": "ai_ml",
+        "technology_role": "ai_ml",
         "layer": "ai_ml",
         "multi_role": false,
         "secondary_roles": []
       },
       "redis": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": true,
         "secondary_roles": [
@@ -1327,103 +1368,103 @@
         ]
       },
       "requests": {
-        "category": "library",
+        "technology_role": "library",
         "layer": null,
         "multi_role": false,
         "secondary_roles": []
       },
       "rich": {
-        "category": "library",
+        "technology_role": "library",
         "layer": null,
         "multi_role": false,
         "secondary_roles": []
       },
       "safetensors": {
-        "category": "ai_ml",
+        "technology_role": "ai_ml",
         "layer": "ai_ml",
         "multi_role": false,
         "secondary_roles": []
       },
       "sanic": {
-        "category": "frameworks",
+        "technology_role": "frameworks",
         "layer": "backend",
         "multi_role": false,
         "secondary_roles": []
       },
       "scikit-learn": {
-        "category": "ai_ml",
+        "technology_role": "ai_ml",
         "layer": "ai_ml",
         "multi_role": false,
         "secondary_roles": []
       },
       "scipy": {
-        "category": "ai_ml",
+        "technology_role": "ai_ml",
         "layer": "ai_ml",
         "multi_role": false,
         "secondary_roles": []
       },
       "sqlalchemy": {
-        "category": "databases",
+        "technology_role": "databases",
         "layer": "data",
         "multi_role": false,
         "secondary_roles": []
       },
       "starlette": {
-        "category": "frameworks",
+        "technology_role": "frameworks",
         "layer": "backend",
         "multi_role": false,
         "secondary_roles": []
       },
       "tensorflow": {
-        "category": "ai_ml",
+        "technology_role": "ai_ml",
         "layer": "ai_ml",
         "multi_role": false,
         "secondary_roles": []
       },
       "tokenizers": {
-        "category": "ai_ml",
+        "technology_role": "ai_ml",
         "layer": "ai_ml",
         "multi_role": false,
         "secondary_roles": []
       },
       "torch": {
-        "category": "ai_ml",
+        "technology_role": "ai_ml",
         "layer": "ai_ml",
         "multi_role": false,
         "secondary_roles": []
       },
       "tornado": {
-        "category": "frameworks",
+        "technology_role": "frameworks",
         "layer": "backend",
         "multi_role": false,
         "secondary_roles": []
       },
       "tox": {
-        "category": "testing",
+        "technology_role": "testing",
         "layer": "testing",
         "multi_role": false,
         "secondary_roles": []
       },
       "transformers": {
-        "category": "ai_ml",
+        "technology_role": "ai_ml",
         "layer": "ai_ml",
         "multi_role": false,
         "secondary_roles": []
       },
       "typer": {
-        "category": "library",
+        "technology_role": "library",
         "layer": null,
         "multi_role": false,
         "secondary_roles": []
       },
       "unittest2": {
-        "category": "testing",
+        "technology_role": "testing",
         "layer": "testing",
         "multi_role": false,
         "secondary_roles": []
       },
       "uvicorn": {
-        "category": "infra",
+        "technology_role": "infra",
         "layer": "infra",
         "multi_role": false,
         "secondary_roles": []

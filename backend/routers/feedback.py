@@ -1,10 +1,10 @@
 """
 backend/routers/feedback.py
 
-Domain-level RLHF data collection.
+SoftwareType-level RLHF data collection.
 Java equivalent: part of AnalysisController + UsageTrackingServiceImpl
 
-Collects human preference signal on domain classification correctness.
+Collects human preference signal on software_type classification correctness.
 Signal flows to learning_service.py for pattern confidence updates.
 Mirrors UsageTrackingEvent → IngestionEventListener in stacksniffer-learning.
 """
@@ -21,8 +21,8 @@ router = APIRouter(prefix="/api/feedback", tags=["feedback"])
 
 
 class FeedbackRequest(BaseModel):
-    domain_correct: bool
-    correct_domain: Optional[str] = None
+    software_type_correct: bool
+    correct_software_type: Optional[str] = None
     confidence_felt: Optional[int] = None   # 1-5 user-perceived confidence
     techs_wrong: Optional[list[str]] = []
     techs_missing: Optional[list[str]] = []
@@ -44,11 +44,11 @@ async def submit_feedback(
     repo_key: str = Depends(resolve_repo_key),
 ):
     """
-    Submit domain-level correctness signal.
+    Submit software_type-level correctness signal.
 
     RLHF mechanism:
-      domain_correct=True  → reward: increase confidence of patterns that fired
-      domain_correct=False → penalty: decrease confidence + store correct label
+      software_type_correct=True  → reward: increase confidence of patterns that fired
+      software_type_correct=False → penalty: decrease confidence + store correct label
       techs_wrong          → penalize specific false positive patterns
       techs_missing        → store for pattern discovery pipeline
 
@@ -59,20 +59,20 @@ async def submit_feedback(
     if not doc:
         raise HTTPException(404, "no analysis for this repo")
     stack = doc["stack"]
-    if not feedback.domain_correct:
-        if not feedback.correct_domain:
-            raise HTTPException(422, "correct_domain is required when domain_correct is false")
-        if not await storage_service.is_valid_domain(feedback.correct_domain):
-            raise HTTPException(422, f"invalid domain: {feedback.correct_domain}")
+    if not feedback.software_type_correct:
+        if not feedback.correct_software_type:
+            raise HTTPException(422, "correct_software_type is required when software_type_correct is false")
+        if not await storage_service.is_valid_software_type(feedback.correct_software_type):
+            raise HTTPException(422, f"invalid software_type: {feedback.correct_software_type}")
 
     feedback_doc = {
-        "domain_correct":        feedback.domain_correct,
-        "correct_domain":        feedback.correct_domain,
+        "software_type_correct":        feedback.software_type_correct,
+        "correct_software_type":        feedback.correct_software_type,
         "confidence_felt":       feedback.confidence_felt,
         "techs_wrong":           feedback.techs_wrong or [],
         "techs_missing":         feedback.techs_missing or [],
         "notes":                 feedback.notes,
-        "detected_domain":       stack["domain"],
+        "detected_software_type":       stack["software_type"],
         "ai_classification_used": stack["ai_classification_used"],
         "created_at":            datetime.utcnow().isoformat(),
     }
@@ -84,13 +84,17 @@ async def submit_feedback(
         rated_embedding=doc.get("stack_embedding"),
         feedback=feedback_doc,
     )
+    if not feedback.software_type_correct:
+        await storage_service.upsert_correction(
+            repo_key, "software_type", feedback.correct_software_type
+        )
 
     pattern_matches = stack.get("pattern_matches", [])
     patterns_updated = 0
 
-    if feedback.domain_correct and not feedback.techs_wrong:
+    if feedback.software_type_correct and not feedback.techs_wrong:
         patterns_updated = await reward_patterns(pattern_matches)
-    elif not feedback.domain_correct or feedback.techs_wrong:
+    elif not feedback.software_type_correct or feedback.techs_wrong:
         patterns_updated = await penalize_patterns(
             pattern_matches,
             wrong_techs=feedback.techs_wrong or []
@@ -119,31 +123,31 @@ async def feedback_stats():
     if not all_feedback:
         return {
             "total": 0,
-            "message": "No feedback collected yet. Use UI thumbs up/down on domain classifications."
+            "message": "No feedback collected yet. Use UI thumbs up/down on software_type classifications."
         }
 
     total   = len(all_feedback)
-    correct = sum(1 for f in all_feedback if f.get("domain_correct"))
+    correct = sum(1 for f in all_feedback if f.get("software_type_correct"))
 
     from collections import defaultdict
-    domain_stats = defaultdict(lambda: {"correct": 0, "total": 0})
+    software_type_stats = defaultdict(lambda: {"correct": 0, "total": 0})
     for f in all_feedback:
-        detected = f.get("detected_domain", "unknown")
-        domain_stats[detected]["total"] += 1
-        if f.get("domain_correct"):
-            domain_stats[detected]["correct"] += 1
+        detected = f.get("detected_software_type", "unknown")
+        software_type_stats[detected]["total"] += 1
+        if f.get("software_type_correct"):
+            software_type_stats[detected]["correct"] += 1
 
     return {
         "total_feedback":    total,
-        "domain_accuracy":   f"{correct/total*100:.0f}%",
+        "software_type_accuracy":   f"{correct/total*100:.0f}%",
         "correct":           correct,
         "incorrect":         total - correct,
-        "per_domain": {
-            domain: {
+        "per_software_type": {
+            software_type: {
                 "accuracy": f"{s['correct']/s['total']*100:.0f}%",
                 "samples":  s["total"]
             }
-            for domain, s in domain_stats.items()
+            for software_type, s in software_type_stats.items()
         },
         "training_ready":    total >= 10,
         "classifier_ready":  total >= 50,

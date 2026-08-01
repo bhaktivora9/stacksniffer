@@ -2,26 +2,121 @@ import { useEffect, useState } from "react";
 import { Check, Plus, Trash2, X } from "lucide-react";
 import AiInsightsCard from "./AiInsightsCard";
 import { API_BASE } from "../config/api";
+import { buildArtifactLayerGroups } from "../utils/layerViewModel";
 
-const FALLBACK_CATEGORIES = [
+const FALLBACK_TECHNOLOGY_ROLES = [
   "languages", "frameworks", "databases", "messaging",
   "ai_ml", "infra", "testing", "library",
 ].map((id) => ({ id, label: id.replace(/_/g, " ") }));
 
 const LONG_TAIL_COLLAPSE_THRESHOLD = 8;
-
-function isExpandedByDefault(category, techCount) {
+function isExpandedByDefault(technology_role, techCount) {
   return !(
-    (category === "testing" || category === "library")
+    (technology_role === "testing" || technology_role === "library")
     && techCount > LONG_TAIL_COLLAPSE_THRESHOLD
   );
 }
 
-function humanizeCategory(category) {
-  return category
+function humanizeTechnologyRole(technology_role) {
+  return technology_role
     .split("_")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
+}
+
+function ArtifactLayerView({ stack, classification, groups }) {
+  const artifactGroups = groups ?? buildArtifactLayerGroups(stack, classification);
+  if (!artifactGroups.length) return null;
+
+  return (
+    <section className="rounded-lg border border-border bg-surface overflow-hidden">
+      <div className="border-b border-border px-5 py-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold text-text">Architecture layers</h2>
+            <p className="mt-1 text-xs text-muted">
+              Functional tiers scoped to detected artifacts—not service topology.
+            </p>
+          </div>
+          <span className="rounded-full border border-border bg-bg px-2 py-1 text-[10px] font-mono uppercase text-muted">
+            {classification.artifact_count} artifact
+            {classification.artifact_count === "multi" ? "s" : ""}
+          </span>
+        </div>
+      </div>
+
+      <div className="divide-y divide-border">
+        {artifactGroups.map(({ artifact, layers }) => {
+          return (
+            <div key={artifact.name} className="px-5 py-4">
+              <div className="mb-3 flex items-center gap-2">
+                <span className="text-sm font-medium text-text">{artifact.name}</span>
+                {artifact.primary && (
+                  <span className="rounded border border-accent/25 bg-accent/10 px-1.5 py-0.5 text-[9px] font-mono uppercase text-accent">
+                    primary
+                  </span>
+                )}
+                <span className="text-[11px] font-mono text-muted">
+                  {humanizeTechnologyRole(artifact.type)}
+                  {artifact.path ? ` · ${artifact.path}` : ""}
+                </span>
+              </div>
+
+              <div className="space-y-2">
+                {layers.map(({ layer, techs: layerTechs }) => (
+                  <div
+                    key={layer}
+                    className={`grid gap-2 sm:grid-cols-[9rem_1fr] ${
+                      layer === "testing" ? "opacity-60" : ""
+                    }`}
+                  >
+                    <div className="pt-1 text-[10px] font-mono uppercase tracking-wider text-muted">
+                      {humanizeTechnologyRole(layer)}
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {layerTechs.map((tech) => {
+                        const method = tech.architectural_layer.assignment_method;
+                        return (
+                          <span
+                            key={`${artifact.name}-${layer}-${tech.name}`}
+                            title={`${method} · ${Math.round(
+                              tech.architectural_layer.confidence * 100
+                            )}% layer confidence`}
+                            className={`inline-flex items-center gap-1.5 rounded border border-border bg-bg px-2 py-1 text-xs text-text ${
+                              tech.usage_scope === "dev" || tech.usage_scope === "test"
+                                ? "opacity-50"
+                                : ""
+                            }`}
+                          >
+                            {tech.name}
+                            <span
+                              className={`text-[8px] font-mono uppercase ${
+                                method === "deterministic"
+                                  ? "text-green"
+                                  : method === "provisional"
+                                  ? "text-amber"
+                                  : "text-ai-purple"
+                              }`}
+                            >
+                              {method === "deterministic"
+                                ? "map"
+                                : method === "provisional"
+                                ? "pending"
+                                : "ai"}
+                            </span>
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
 }
 
 function SourceDot({ source }) {
@@ -241,9 +336,9 @@ function LanguageBreakdown({ languages = [] }) {
   );
 }
 
-function MissingTechPanel({ onMissingTech, categories }) {
+function MissingTechPanel({ onMissingTech, technologyRoles }) {
   const [open, setOpen] = useState(false);
-  const [items, setItems] = useState([{ tech_name: "", category: "frameworks" }]);
+  const [items, setItems] = useState([{ tech_name: "", technology_role: "frameworks" }]);
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -257,7 +352,7 @@ function MissingTechPanel({ onMissingTech, categories }) {
     setSubmitting(false);
     if (ok) {
       setMessage(`${missingTechs.length} technolog${missingTechs.length === 1 ? "y" : "ies"} reported. Will be added to pattern discovery queue.`);
-      setItems([{ tech_name: "", category: "frameworks" }]);
+      setItems([{ tech_name: "", technology_role: "frameworks" }]);
     }
   }
 
@@ -275,10 +370,16 @@ function MissingTechPanel({ onMissingTech, categories }) {
         + Report a technology that was missed
       </button>
       <div
-        className="overflow-hidden transition-all duration-150"
-        style={{ maxHeight: open ? "150px" : "0px", opacity: open ? 1 : 0 }}
+        className={`transition-all duration-150 ${open ? "overflow-y-auto" : "overflow-hidden"}`}
+        style={{ maxHeight: open ? "32rem" : "0px", opacity: open ? 1 : 0 }}
       >
-        <div className="mt-3 rounded border border-border bg-bg px-3 py-3">
+        <form
+          className="mt-3 rounded border border-border bg-bg px-3 py-3"
+          onSubmit={(event) => {
+            event.preventDefault();
+            submitMissing();
+          }}
+        >
           <div className="space-y-2">
             {items.map((item, index) => (
               <div key={index} className="flex flex-wrap gap-2">
@@ -289,11 +390,11 @@ function MissingTechPanel({ onMissingTech, categories }) {
                   className="min-w-[160px] flex-1 rounded border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-accent"
                 />
                 <select
-                  value={item.category}
-                  onChange={(event) => updateItem(index, "category", event.target.value)}
+                  value={item.technology_role}
+                  onChange={(event) => updateItem(index, "technology_role", event.target.value)}
                   className="rounded border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-accent"
                 >
-                  {categories.map(({ id, label }) => <option key={id} value={id}>{label}</option>)}
+                  {technologyRoles.map(({ id, label }) => <option key={id} value={id}>{label}</option>)}
                 </select>
                 {items.length > 1 && (
                   <button type="button" onClick={() => setItems((current) => current.filter((_, i) => i !== index))} className="p-2 text-muted hover:text-red-400" aria-label={`Remove technology ${index + 1}`}>
@@ -302,22 +403,21 @@ function MissingTechPanel({ onMissingTech, categories }) {
                 )}
               </div>
             ))}
-            <button type="button" onClick={() => setItems((current) => [...current, { tech_name: "", category: "frameworks" }])} className="inline-flex items-center gap-1 text-xs text-accent hover:text-accent/80">
+            <button type="button" onClick={() => setItems((current) => [...current, { tech_name: "", technology_role: "frameworks" }])} className="inline-flex items-center gap-1 text-xs text-accent hover:text-accent/80">
               <Plus size={13} /> Add another
             </button>
-            <div>
+            <div className="flex items-center gap-3">
             <button
-              type="button"
-              onClick={submitMissing}
+              type="submit"
               disabled={submitting || !items.some((item) => item.tech_name.trim())}
               className="rounded border border-accent/30 bg-accent/10 px-3 py-2 text-sm text-accent transition-colors hover:bg-accent/15 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitting ? "Reporting..." : "Report"}
             </button>
+            {message && <p className="text-xs text-green">{message}</p>}
             </div>
           </div>
-          {message && <p className="mt-2 text-xs text-green">{message}</p>}
-        </div>
+        </form>
       </div>
     </div>
   );
@@ -326,6 +426,7 @@ function MissingTechPanel({ onMissingTech, categories }) {
 export default function StackPanel({
   stack,
   repo,
+  repositoryClassification,
   analysisId,
   afterInsights,
   feedbackState = {},
@@ -337,27 +438,27 @@ export default function StackPanel({
   const [correctingPrimary, setCorrectingPrimary] = useState(false);
   const [selectedPrimary, setSelectedPrimary] = useState(stack?.primary_language ?? "");
   const [savingPrimary, setSavingPrimary] = useState(false);
-  const [categoryOptions, setCategoryOptions] = useState(FALLBACK_CATEGORIES);
+  const [technologyRoleOptions, setTechnologyRoleOptions] = useState(FALLBACK_TECHNOLOGY_ROLES);
   const [expandedSections, setExpandedSections] = useState({});
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`${API_BASE}/api/taxonomy/categories`)
+    fetch(`${API_BASE}/api/taxonomy/technology_roles`)
       .then((response) => response.ok ? response.json() : Promise.reject(response.status))
-      .then((data) => { if (!cancelled && data.categories?.length) setCategoryOptions(data.categories); })
-      .catch(() => { if (!cancelled) setCategoryOptions(FALLBACK_CATEGORIES); });
+      .then((data) => { if (!cancelled && data.technology_roles?.length) setTechnologyRoleOptions(data.technology_roles); })
+      .catch(() => { if (!cancelled) setTechnologyRoleOptions(FALLBACK_TECHNOLOGY_ROLES); });
     return () => { cancelled = true; };
   }, []);
 
-  const builtinCategoryIds = categoryOptions.map((category) => category.id);
-  const visibleEmergentCategories = (stack?.emergent_categories ?? []).filter(
+  const builtinTechnologyRoleIds = technologyRoleOptions.map((technology_role) => technology_role.id);
+  const visibleEmergentTechnologyRoles = (stack?.emergent_technology_roles ?? []).filter(
     (key) => Array.isArray(stack?.[key]) && stack[key].length > 0
   );
-  const visibleCategoryIds = [
-    ...builtinCategoryIds.filter((key) => Array.isArray(stack?.[key]) && stack[key].length > 0),
-    ...visibleEmergentCategories,
+  const visibleTechnologyRoleIds = [
+    ...builtinTechnologyRoleIds.filter((key) => Array.isArray(stack?.[key]) && stack[key].length > 0),
+    ...visibleEmergentTechnologyRoles,
   ];
-  const categoryStateSignature = visibleCategoryIds
+  const technologyRoleStateSignature = visibleTechnologyRoleIds
     .map((key) => `${key}:${stack?.[key]?.length ?? 0}`)
     .join("|");
 
@@ -365,7 +466,7 @@ export default function StackPanel({
     if (!stack) return;
     setExpandedSections(
       Object.fromEntries(
-        visibleCategoryIds.map((key) => [
+        visibleTechnologyRoleIds.map((key) => [
           key,
           isExpandedByDefault(key, stack[key]?.length ?? 0),
         ])
@@ -373,33 +474,38 @@ export default function StackPanel({
     );
   // Reset disclosure state for a new analysis or a materially different result set.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [analysisId, categoryStateSignature]);
+  }, [analysisId, technologyRoleStateSignature]);
 
   if (!stack || !repo) return null;
 
   const complexity = stack.complexity_score ?? 0;
-  const builtinOrder = categoryOptions.map((category) => category.id);
-  const categoryLabels = Object.fromEntries(
-    categoryOptions.map((category) => [category.id, category.label])
+  const builtinOrder = technologyRoleOptions.map((technology_role) => technology_role.id);
+  const technologyRoleLabels = Object.fromEntries(
+    technologyRoleOptions.map((technology_role) => [technology_role.id, technology_role.label])
   );
-  const emergentCategories = (stack.emergent_categories ?? []).filter(
+  const emergentTechnologyRoles = (stack.emergent_technology_roles ?? []).filter(
     (key) => Array.isArray(stack[key]) && stack[key].length > 0
   );
-  const presentCategories = [
+  const presentTechnologyRoles = [
     ...builtinOrder.filter((key) => Array.isArray(stack[key]) && stack[key].length > 0),
-    ...emergentCategories,
+    ...emergentTechnologyRoles,
   ];
-  const orderedCategories = [
-    ...builtinOrder.filter((key) => presentCategories.includes(key)),
-    ...emergentCategories,
+  const orderedTechnologyRoles = [
+    ...builtinOrder.filter((key) => presentTechnologyRoles.includes(key)),
+    ...emergentTechnologyRoles,
   ];
-  const expandedCount = orderedCategories.filter((key) => expandedSections[key]).length;
-  const majorityExpanded = expandedCount >= Math.ceil(orderedCategories.length / 2);
+  const expandedCount = orderedTechnologyRoles.filter((key) => expandedSections[key]).length;
+  const majorityExpanded = expandedCount >= Math.ceil(orderedTechnologyRoles.length / 2);
   const primaryLanguage = stack.primary_language
     ? stack.languages?.find(
         (tech) => tech.name.toLowerCase() === stack.primary_language.toLowerCase()
       ) ?? { name: stack.primary_language, confidence: 0 }
     : null;
+  const artifactLayerGroups = buildArtifactLayerGroups(
+    stack,
+    repositoryClassification
+  );
+  const hasArtifactLayerView = artifactLayerGroups.length > 0;
   async function savePrimaryLanguage() {
     if (!selectedPrimary || selectedPrimary === stack.primary_language) {
       setCorrectingPrimary(false);
@@ -456,12 +562,19 @@ export default function StackPanel({
 
       {afterInsights}
 
+      <ArtifactLayerView
+        stack={stack}
+        classification={repositoryClassification}
+        groups={artifactLayerGroups}
+      />
+
+      {!hasArtifactLayerView && (
       <div className="bg-surface border border-border rounded-lg overflow-hidden">
         <div className="px-4 py-3 border-b border-border flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {stack.domain && stack.domain !== "unknown" && (
+            {stack.software_type && stack.software_type !== "unknown" && (
               <span className="text-xs font-mono px-2.5 py-1 bg-green/10 text-green border border-green/25 rounded-full font-medium">
-                {stack.domain.replace(/_/g, " ")}
+                {stack.software_type.replace(/_/g, " ")}
               </span>
             )}
             {stack.architecture_style && stack.architecture_style !== "unknown" && (
@@ -469,13 +582,13 @@ export default function StackPanel({
                 {stack.architecture_style}
               </span>
             )}
-            {orderedCategories.length > 0 && (
+            {orderedTechnologyRoles.length > 0 && (
               <button
                 type="button"
                 onClick={() => {
                   const nextExpanded = !majorityExpanded;
                   setExpandedSections(
-                    Object.fromEntries(orderedCategories.map((key) => [key, nextExpanded]))
+                    Object.fromEntries(orderedTechnologyRoles.map((key) => [key, nextExpanded]))
                   );
                 }}
                 className="text-xs text-muted hover:text-accent transition-colors"
@@ -486,7 +599,7 @@ export default function StackPanel({
           </div>
           <div
             className="flex items-center gap-2 text-xs text-muted"
-            title="Detection breadth — how many technology categories have confident signal"
+            title="Detection breadth — how many technology roles have confident signal"
           >
             <span>complexity</span>
             <div className="flex gap-0.5">
@@ -540,8 +653,8 @@ export default function StackPanel({
               )}
             </div>
           )}
-          {orderedCategories.map((key) => {
-            const label = categoryLabels[key] ?? humanizeCategory(key);
+          {orderedTechnologyRoles.map((key) => {
+            const label = technologyRoleLabels[key] ?? humanizeTechnologyRole(key);
             const isEmergent = !builtinOrder.includes(key);
             const techs = stack[key];
             if (!techs?.length) return null;
@@ -557,7 +670,7 @@ export default function StackPanel({
               || flaggedTechNames.has(tech.name.toLowerCase())
               || feedbackState[tech.name] === "false_positive"
             ));
-            const panelId = `stack-category-${key.replace(/[^a-z0-9_-]/gi, "-")}`;
+            const panelId = `stack-technology_role-${key.replace(/[^a-z0-9_-]/gi, "-")}`;
             return (
               <div key={key}>
                 <button
@@ -579,7 +692,7 @@ export default function StackPanel({
                   </span>
                   {isEmergent && (
                     <span className="rounded-full border border-ai-purple/30 bg-ai-purple/10 px-1.5 py-0.5 text-[9px] font-mono uppercase text-ai-purple">
-                      new category
+                      new technology_role
                     </span>
                   )}
                   {!isExpanded && hasFlaggedTech && (
@@ -615,9 +728,16 @@ export default function StackPanel({
               </div>
             );
           })}
-          <MissingTechPanel onMissingTech={onMissingTech} categories={categoryOptions} />
+          <MissingTechPanel onMissingTech={onMissingTech} technologyRoles={technologyRoleOptions} />
         </div>
       </div>
+      )}
+
+      {hasArtifactLayerView && (
+        <div className="overflow-hidden rounded-lg border border-border bg-surface">
+          <MissingTechPanel onMissingTech={onMissingTech} technologyRoles={technologyRoleOptions} />
+        </div>
+      )}
     </div>
   );
 }

@@ -1,11 +1,11 @@
 """
 backend/routers/stack_feedback.py
 
-Per-technology RLHF feedback — more granular than domain-level feedback.
+Per-technology RLHF feedback — more granular than software_type-level feedback.
 Java equivalent: UsageTrackingServiceImpl + PatternValidationServiceImpl
 + PatternPerformanceMetrics in stacksniffer-learning.
 
-Domain feedback answers: "Was this repo classified correctly?"
+SoftwareType feedback answers: "Was this repo classified correctly?"
 Stack feedback answers: "Was THIS SPECIFIC TECHNOLOGY correctly detected?"
 
 Verdict types:
@@ -27,7 +27,7 @@ router = APIRouter(prefix="/api/stack-feedback", tags=["stack-feedback"])
 
 class TechEvaluation(BaseModel):
     tech_name: str
-    category: str       # languages | frameworks | databases | messaging | ai_ml | infra | testing
+    technology_role: str       # languages | frameworks | databases | messaging | ai_ml | infra | testing
     verdict: str        # "correct" | "false_positive" | "false_negative"
     reason: Optional[str] = None
 
@@ -35,7 +35,7 @@ class TechEvaluation(BaseModel):
 class StackFeedbackRequest(BaseModel):
     tech_evaluations: list[TechEvaluation]
     missing_techs: Optional[list[dict]] = []
-    # [{tech_name, category}]
+    # [{tech_name, technology_role}]
     overall_stack_correct: Optional[bool] = None
     notes: Optional[str] = None
 
@@ -105,10 +105,10 @@ async def submit_stack_feedback(
 
     for missing in (feedback.missing_techs or []):
         tech_name = missing.get("tech_name", "")
-        category  = missing.get("category", "infra")
+        technology_role  = missing.get("technology_role", "infra")
         if tech_name:
             result = await stack_feedback_service.register_missing_tech(
-                tech_name, category, repo_key
+                tech_name, technology_role, repo_key
             )
             if result["action"] == "pattern_discovered":
                 discovered += 1
@@ -229,7 +229,7 @@ async def mark_tech_wrong(
 async def mark_tech_missing(
     id: str,
     tech_name: str,
-    category: str = "infra",
+    technology_role: str = "infra",
     repo_key: str = Depends(resolve_repo_key),
 ):
     """Report a technology present in repo but not detected."""
@@ -237,10 +237,10 @@ async def mark_tech_missing(
     if not doc:
         raise HTTPException(404, "no analysis for this repo")
     result = await stack_feedback_service.register_missing_tech(
-        tech_name, category, repo_key
+        tech_name, technology_role, repo_key
     )
     feedback_doc = {
-        "missing_techs": [{"tech_name": tech_name, "category": category}],
+        "missing_techs": [{"tech_name": tech_name, "technology_role": technology_role}],
         "quick_feedback": True,
         "created_at": datetime.utcnow().isoformat(),
     }

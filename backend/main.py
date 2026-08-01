@@ -15,7 +15,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.routers import analyze        # POST /api/analyze
 from backend.routers import chat           # POST /api/chat/
-from backend.routers import feedback       # POST /api/feedback/{id}       (domain RLHF)
+from backend.routers import feedback       # POST /api/feedback/{id}       (software_type RLHF)
 from backend.routers import stack_feedback # POST /api/stack-feedback/{id} (tech RLHF)
 from backend.routers import learning       # GET  /api/learning/stats
 from backend.routers import taxonomy       # POST /api/taxonomy/discover
@@ -25,7 +25,6 @@ from backend.routers import insights_feedback #GET /api/insights-feedback/stats 
 from backend.routers import discovery
 
 from backend.services import storage_service
-from backend.routers import dep_categories
 
 load_dotenv()
 
@@ -38,7 +37,7 @@ async def lifespan(app: FastAPI):
     Java equivalent: ApplicationRunner + @PreDestroy in StackSnifferApplication.java
     """
     await storage_service.init_db()
-    await storage_service.seed_builtin_categories()
+    await storage_service.seed_builtin_technology_roles()
     yield
     await storage_service.close_db()
 
@@ -46,7 +45,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="StackSniffer API",
     version="1.0.0",
-    description="AI-powered tech stack detection and domain analysis engine",
+    description="AI-powered tech stack detection and software_type analysis engine",
     lifespan=lifespan,
 )
 
@@ -67,7 +66,6 @@ app.add_middleware(
 # ── Router registration ───────────────────────────────────────────────────────
 # Java equivalent: @RestController auto-detection via @SpringBootApplication
 # Python requires explicit include_router() calls — 404 means router not registered
-app.include_router(dep_categories.router)
 app.include_router(discovery.router)
 app.include_router(analyze.router, prefix="/api")
 app.include_router(chat.router)
@@ -99,8 +97,8 @@ async def health():
 
     classifier_active = False
     try:
-        from pathlib import Path
-        classifier_active = Path("backend/models/domain_classifier.pkl").exists()
+        from backend.services.learning_service import load_layer0
+        classifier_active = load_layer0() is not None
     except Exception:
         pass
 
@@ -115,7 +113,7 @@ async def health():
         "with_embeddings":    stats.get("with_embeddings", 0),
         "with_feedback":      stats.get("with_feedback", 0),
         "embedding_coverage": stats.get("embedding_coverage", "0%"),
-        "by_domain":          stats.get("by_domain", {}),
+        "by_software_type":          stats.get("by_software_type", {}),
         "stack_feedback":     stack_fb,
         "classifier_active":  classifier_active,
         "rag_active":         stats.get("with_embeddings", 0) >= 5,

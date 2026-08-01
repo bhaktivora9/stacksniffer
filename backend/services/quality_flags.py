@@ -7,34 +7,34 @@ v2.0 — Flag layer fixes:
   3. UNRELIABLE_SOURCE_FILE: deterministic — _SELF_EVIDENCING exempt from CI files
      CI techs (GitHub Actions from .github/workflows) are always exempt
   4. severity:error flags now demote — confidence penalty applied, excluded from insights
-  5. confidence_breakdown spans ALL categories (was only pattern_match categories)
+  5. confidence_breakdown spans ALL technology_roles (was only pattern_match technology_roles)
   6. missing_patterns: tech names only, never filenames
 """
 from __future__ import annotations
 
-_DOMAIN_REQUIRED_SIGNALS = {
+_SOFTWARE_TYPE_REQUIRED_SIGNALS = {
     "ml_platform": {
-        "categories": ["ai_ml"],
+        "technology_roles": ["ai_ml"],
         "frameworks": [],
-        "message":    "domain=ml_platform but no AI/ML technologies detected"
+        "message":    "software_type=ml_platform but no AI/ML technologies detected"
     },
     "data_pipeline": {
-        "categories": ["messaging"],
+        "technology_roles": ["messaging"],
         "frameworks": ["airflow", "dagster", "prefect", "spark", "flink", "dbt"],
-        "message":    "domain=data_pipeline but no messaging or pipeline frameworks"
+        "message":    "software_type=data_pipeline but no messaging or pipeline frameworks"
     },
     "web_api": {
-        "categories": [],
+        "technology_roles": [],
         "frameworks": [
             "fastapi", "django", "flask", "spring boot", "express",
             "nestjs", "gin", "fiber", "echo", "actix"
         ],
-        "message": "domain=web_api but no backend framework detected"
+        "message": "software_type=web_api but no backend framework detected"
     },
     "web_app": {
-        "categories": [],
+        "technology_roles": [],
         "frameworks": ["react", "vue", "next.js", "angular", "svelte"],
-        "message":    "domain=web_app but no frontend framework detected"
+        "message":    "software_type=web_app but no frontend framework detected"
     },
 }
 
@@ -111,8 +111,8 @@ def compute_analysis_flags(
     severity:error flags should trigger confidence demotion in analyze.py.
     """
     flags     = []
-    domain    = stack.get("domain", "unknown")
-    conf      = stack.get("domain_confidence", 0.0)
+    software_type    = stack.get("software_type", "unknown")
+    conf      = stack.get("software_type_confidence", 0.0)
     frameworks = _get_framework_names(stack)
 
     # ── Flag 1: LOW_FILE_COVERAGE — warning (not error per spec) ─────────────
@@ -132,22 +132,22 @@ def compute_analysis_flags(
             "field":    "files_analyzed",
         })
 
-    # ── Flag 2: UNKNOWN_DOMAIN ────────────────────────────────────────────────
-    if domain == "unknown":
+    # ── Flag 2: UNKNOWN_SOFTWARE_TYPE ────────────────────────────────────────────────
+    if software_type == "unknown":
         flags.append({
-            "code":     "UNKNOWN_DOMAIN",
+            "code":     "UNKNOWN_SOFTWARE_TYPE",
             "severity": "warning",
-            "message":  "Domain could not be classified.",
-            "field":    "domain",
+            "message":  "SoftwareType could not be classified.",
+            "field":    "software_type",
         })
 
-    # ── Flag 3: LOW_DOMAIN_CONFIDENCE ────────────────────────────────────────
-    if 0 < conf < 0.60 and domain != "unknown":
+    # ── Flag 3: LOW_SOFTWARE_TYPE_CONFIDENCE ────────────────────────────────────────
+    if 0 < conf < 0.60 and software_type != "unknown":
         flags.append({
-            "code":     "LOW_DOMAIN_CONFIDENCE",
+            "code":     "LOW_SOFTWARE_TYPE_CONFIDENCE",
             "severity": "warning",
-            "message":  f"Domain confidence {conf:.0%} — borderline.",
-            "field":    "domain_confidence",
+            "message":  f"SoftwareType confidence {conf:.0%} — borderline.",
+            "field":    "software_type_confidence",
         })
 
     # ── Flag 4: OVERCALIBRATED_CONFIDENCE ────────────────────────────────────
@@ -157,22 +157,22 @@ def compute_analysis_flags(
             "code":     "OVERCALIBRATED_CONFIDENCE",
             "severity": "info",
             "message":  "High confidence without corpus grounding — verify classification.",
-            "field":    "domain_confidence",
+            "field":    "software_type_confidence",
         })
 
     # ── Flag 5: UNRELIABLE_SOURCE_FILE ───────────────────────────────────────
     # Deterministic: fires for every tech from unreliable files EXCEPT _SELF_EVIDENCING
     # CI techs (GitHub Actions from .github/workflows) are always exempt
-    all_categories = {
+    all_technology_roles = {
         "frameworks", "ai_ml", "databases", "messaging",
         "infra", "languages", "testing"
     }
     for pm in pattern_matches:
-        category     = _pm_get(pm, "category")
+        technology_role     = _pm_get(pm, "technology_role")
         matched_file = _pm_get(pm, "matched_file")
         tech         = _pm_get(pm, "tech")
 
-        if category not in all_categories:
+        if technology_role not in all_technology_roles:
             continue
         if tech in _SELF_EVIDENCING:
             continue
@@ -210,10 +210,10 @@ def compute_analysis_flags(
             "field":    "detection_source",
         })
 
-    # ── Flag 8: DOMAIN_CONTRADICTION ─────────────────────────────────────────
-    if domain in _DOMAIN_REQUIRED_SIGNALS:
-        rule = _DOMAIN_REQUIRED_SIGNALS[domain]
-        required_cats = rule.get("categories", [])
+    # ── Flag 8: SOFTWARE_TYPE_CONTRADICTION ─────────────────────────────────────────
+    if software_type in _SOFTWARE_TYPE_REQUIRED_SIGNALS:
+        rule = _SOFTWARE_TYPE_REQUIRED_SIGNALS[software_type]
+        required_cats = rule.get("technology_roles", [])
         required_fws  = {f.lower() for f in rule.get("frameworks", [])}
 
         has_cat = any(len(stack.get(cat, [])) > 0 for cat in required_cats)
@@ -224,10 +224,10 @@ def compute_analysis_flags(
 
         if not ((not needs_cat or has_cat) or (not needs_fw or has_fw)):
             flags.append({
-                "code":     "DOMAIN_CONTRADICTION",
+                "code":     "SOFTWARE_TYPE_CONTRADICTION",
                 "severity": "error",
                 "message":  rule["message"],
-                "field":    "domain",
+                "field":    "software_type",
                 "demote":   True,
             })
 
@@ -261,10 +261,10 @@ def compute_analysis_flags(
 
     # ── Flag 12: TEST_FRAMEWORK_FROM_CI ──────────────────────────────────────
     for pm in pattern_matches:
-        category     = _pm_get(pm, "category")
+        technology_role     = _pm_get(pm, "technology_role")
         matched_file = _pm_get(pm, "matched_file")
         tech         = _pm_get(pm, "tech")
-        if category == "testing" and (
+        if technology_role == "testing" and (
             "workflows" in matched_file or
             (".github" in matched_file and "scripts" in matched_file)
         ):
@@ -282,11 +282,11 @@ def compute_analysis_flags(
     # ── Flag 13: DEV_DEPENDENCY_AS_FRAMEWORK ─────────────────────────────────
     dev_suspects = {"flask", "django", "express"}
     for pm in pattern_matches:
-        category     = _pm_get(pm, "category")
+        technology_role     = _pm_get(pm, "technology_role")
         matched_file = _pm_get(pm, "matched_file")
         tech         = (_pm_get(pm, "tech") or "").lower()
         scope        = _pm_get(pm, "scope", "required")
-        if (category == "frameworks"
+        if (technology_role == "frameworks"
                 and matched_file.endswith("pyproject.toml")
                 and tech in dev_suspects
                 and scope in ("test", "dev")):
@@ -305,7 +305,7 @@ def compute_analysis_flags(
 
 
 def apply_confidence_demotions(
-    domain_confidence: float,
+    software_type_confidence: float,
     flags: list[dict],
 ) -> float:
     """
@@ -316,12 +316,12 @@ def apply_confidence_demotions(
     """
     demotion_flags = [f for f in flags if f.get("demote") and f.get("severity") == "error"]
     if not demotion_flags:
-        return domain_confidence
+        return software_type_confidence
 
     penalty = len(demotion_flags) * 0.15
-    demoted = max(domain_confidence - penalty, 0.10)
+    demoted = max(software_type_confidence - penalty, 0.10)
     print(
-        f"[quality_flags] Demoting confidence {domain_confidence:.2f} → {demoted:.2f} "
+        f"[quality_flags] Demoting confidence {software_type_confidence:.2f} → {demoted:.2f} "
         f"({len(demotion_flags)} error flags)"
     )
     return round(demoted, 3)
@@ -343,8 +343,8 @@ def apply_demotions_to_detections(
     if not flagged_techs:
         return merged
 
-    for category, techs in merged.items():
-        merged[category] = [
+    for technology_role, techs in merged.items():
+        merged[technology_role] = [
             tech for tech in techs
             if getattr(tech, "name", "").lower() not in flagged_techs
         ]

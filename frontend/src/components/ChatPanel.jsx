@@ -4,11 +4,11 @@ import AudioControls, { useAudioSpeech } from "./AudioControls";
 import { API_BASE } from "../config/api";
 
 function buildStarterQuestions(stack, repoName) {
-  const domain = stack?.domain ?? "this domain";
+  const software_type = stack?.software_type ?? "this software_type";
   const pattern = stack?.stack_pattern ?? "this pattern";
   const lang = stack?.primary_language ?? "the primary language";
   return [
-    `Why was ${domain} chosen as the domain?`,
+    `Why was ${software_type} chosen as the software_type?`,
     `What does "${pattern}" mean for this repo?`,
     "Which techs were AI-inferred and why?",
     `What is the confidence score for ${lang}?`,

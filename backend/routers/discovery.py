@@ -27,7 +27,7 @@ _patterns_path = Path(__file__).parent.parent / "config" / "patterns.json"
 
 class ApplyPatternRequest(BaseModel):
     tech_name: str
-    category: str
+    technology_role: str
     keywords: list[str]
     confidence: float = 0.75
     detection_files: list[str] = []
@@ -39,7 +39,7 @@ async def get_associations():
     Tech co-occurrence rules from corpus analyses.
     Used by AiInsightsCard dropdown to show corpus-derived stack patterns.
 
-    Returns: {rules: [{stack_pattern, domain, tech_combo, count}]}
+    Returns: {rules: [{stack_pattern, software_type, tech_combo, count}]}
     Java equivalent: AssociationRuleLearner.getFrequentRules()
     """
     try:
@@ -54,28 +54,28 @@ async def get_associations():
             "message": "No analyses in corpus yet. Seed repos to populate.",
         }
 
-    # Extract stack_pattern values and domains from corpus
+    # Extract stack_pattern values and software_types from corpus
     from collections import defaultdict, Counter
 
     pattern_counts = Counter()
-    domain_patterns = defaultdict(Counter)
+    software_type_patterns = defaultdict(Counter)
     tech_by_pattern = defaultdict(list)
-    categories = await storage_service.get_valid_categories()
+    technology_roles = await storage_service.get_valid_technology_roles()
 
     for a in analyses:
         stack = a.get("stack", {})
         sp = stack.get("stack_pattern", "")
-        domain = stack.get("domain", "unknown")
+        software_type = stack.get("software_type", "unknown")
 
         if not sp or sp in ("Custom", "MVC", ""):
             continue
 
         pattern_counts[sp] += 1
-        domain_patterns[domain][sp] += 1
+        software_type_patterns[software_type][sp] += 1
 
         # Collect tech names for this pattern
         techs = []
-        for cat in categories:
+        for cat in technology_roles:
             for t in stack.get(cat, []):
                 name = (
                     t.get("name") if isinstance(t, dict) else getattr(t, "name", None)
@@ -88,9 +88,9 @@ async def get_associations():
     # Build rules
     rules = []
     for pattern, count in pattern_counts.most_common(20):
-        # Find most common domain for this pattern
-        domains = domain_patterns.get(pattern, {})
-        top_domain = max(domains, key=domains.get) if domains else "unknown"
+        # Find most common software_type for this pattern
+        software_types = software_type_patterns.get(pattern, {})
+        top_software_type = max(software_types, key=software_types.get) if software_types else "unknown"
 
         # Find most common tech combo
         all_techs = [t for combo in tech_by_pattern.get(pattern, []) for t in combo]
@@ -100,7 +100,7 @@ async def get_associations():
         rules.append(
             {
                 "stack_pattern": pattern,
-                "domain": top_domain,
+                "software_type": top_software_type,
                 "tech_combo": top_techs,
                 "count": count,
             }
@@ -194,7 +194,7 @@ async def run_discovery():
 
     # Find ai_inferred techs that appear in multiple analyses
     inferred_counts = Counter()
-    inferred_categories = {}
+    inferred_technology_roles = {}
 
     for a in analyses:
         stack = a.get("stack", {})
@@ -203,18 +203,18 @@ async def run_discovery():
                 inf.get("tech") if isinstance(inf, dict) else getattr(inf, "tech", None)
             )
             cat = (
-                inf.get("category")
+                inf.get("technology_role")
                 if isinstance(inf, dict)
-                else getattr(inf, "category", None)
+                else getattr(inf, "technology_role", None)
             )
             if name and name.lower() not in known_techs:
                 inferred_counts[name] += 1
-                inferred_categories[name] = cat
+                inferred_technology_roles[name] = cat
 
     candidates = [
         {
             "tech_name": tech,
-            "category": inferred_categories.get(tech, "infra"),
+            "technology_role": inferred_technology_roles.get(tech, "infra"),
             "seen_in": count,
             "suggested_keyword": tech.lower().replace(" ", "-"),
             "action": "review",
@@ -240,13 +240,13 @@ async def apply_pattern(request: ApplyPatternRequest):
     Add an approved discovered pattern to patterns.json.
     Java equivalent: PatternUpdateService.addNewPattern()
     """
-    if not request.tech_name or not request.category:
-        raise HTTPException(400, "tech_name and category required")
+    if not request.tech_name or not request.technology_role:
+        raise HTTPException(400, "tech_name and technology_role required")
 
-    from backend.services.category_registry import valid_categories
-    valid = await valid_categories()
-    if request.category not in valid:
-        raise HTTPException(400, f"category must be one of: {valid}")
+    from backend.services.technology_role_registry import valid_technology_roles
+    valid = await valid_technology_roles()
+    if request.technology_role not in valid:
+        raise HTTPException(400, f"technology_role must be one of: {valid}")
 
     with _patterns_path.open() as f:
         patterns = json.load(f)
@@ -254,13 +254,13 @@ async def apply_pattern(request: ApplyPatternRequest):
     # Check not already present
     existing = [
         e
-        for e in patterns.get(request.category, [])
+        for e in patterns.get(request.technology_role, [])
         if isinstance(e, dict)
         and e.get("name", "").lower() == request.tech_name.lower()
     ]
     if existing:
         raise HTTPException(
-            409, f"{request.tech_name} already exists in {request.category}"
+            409, f"{request.tech_name} already exists in {request.technology_role}"
         )
 
     new_entry = {
@@ -270,9 +270,9 @@ async def apply_pattern(request: ApplyPatternRequest):
         "keywords": request.keywords,
     }
 
-    if request.category not in patterns:
-        patterns[request.category] = []
-    patterns[request.category].append(new_entry)
+    if request.technology_role not in patterns:
+        patterns[request.technology_role] = []
+    patterns[request.technology_role].append(new_entry)
 
     with _patterns_path.open("w") as f:
         json.dump(patterns, f, indent=2)
@@ -280,18 +280,18 @@ async def apply_pattern(request: ApplyPatternRequest):
     return {
         "applied": True,
         "tech_name": request.tech_name,
-        "category": request.category,
+        "technology_role": request.technology_role,
         "entry": new_entry,
-        "message": f"Added {request.tech_name} to patterns.json [{request.category}]. Restart not required — patterns reload on next analysis.",
+        "message": f"Added {request.tech_name} to patterns.json [{request.technology_role}]. Restart not required — patterns reload on next analysis.",
     }
 
 
 # In backend/routers/discovery.py
-@router.get("/dep-categories")
-async def get_dep_categories():
+@router.get("/dep-technology_roles")
+async def get_dep_technology_roles():
     """
-    All known dependency categories — standard + emergent from Gemini.
-    Used by frontend to render tech pills for non-standard categories
+    All known dependency technology_roles — standard + emergent from Gemini.
+    Used by frontend to render tech pills for non-standard technology_roles
     like 'bundler', 'state_management', 'css_framework'.
     """
-    return await storage_service.get_dep_categories()
+    return await storage_service.get_dep_technology_roles()

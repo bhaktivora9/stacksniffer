@@ -4,12 +4,13 @@ import { GitFork as Github, RefreshCw } from "lucide-react";
 import StackPanel from "../components/StackPanel";
 import ExplainabilityDrawer from "../components/ExplainabilityDrawer";
 import ChatPanel from "../components/ChatPanel";
-import DomainFeedbackBar from "../components/DomainFeedbackBar";
+import SoftwareTypeFeedbackBar from "../components/SoftwareTypeFeedbackBar";
 import FeedbackToast from "../components/FeedbackToast";
 import LearningStatsDrawer from "../components/LearningStatsDrawer";
 import SimilarReposCard from "../components/SimilarReposCard";
 import StackAccuracyPanel from "../components/StackAccuracyPanel";
-import PendingCategoryReview from "../components/PendingCategoryReview";
+import PendingTechnologyRoleReview from "../components/PendingTechnologyRoleReview";
+import CorpusSearchPanel from "../components/CorpusSearchPanel";
 import { API_BASE } from "../config/api";
 import { DEMO_RESULT } from "../data/demoResult";
 
@@ -21,8 +22,8 @@ const SNIPPETS = {
     `import httpx\nr = httpx.get("${API_BASE}/api/analyze/${id}")\ndata = r.json()`,
   node: (id) =>
     `const r = await fetch('${API_BASE}/api/analyze/${id}');\nconst data = await r.json();`,
-  similar: (_id, domain) =>
-    `curl ${API_BASE}/api/analyses/domain/${domain ?? "{domain}"}`,
+  similar: (_id, software_type) =>
+    `curl ${API_BASE}/api/analyses/software_type/${software_type ?? "{software_type}"}`,
 };
 
 function useHealthStatus() {
@@ -107,7 +108,7 @@ export default function ResultsPage() {
 
   async function copySnippet() {
     try {
-      await navigator.clipboard.writeText(SNIPPETS[snippetLang](analysisId, result?.stack?.domain));
+      await navigator.clipboard.writeText(SNIPPETS[snippetLang](analysisId, result?.stack?.software_type));
       setSnippetCopied(true);
       setTimeout(() => setSnippetCopied(false), 2000);
     } catch {}
@@ -241,6 +242,13 @@ export default function ResultsPage() {
     }
   }
 
+  function handleSoftwareTypeChange(software_type) {
+    setResult((current) => ({
+      ...current,
+      stack: { ...current.stack, software_type },
+    }));
+  }
+
   const healthDot = health?.status === "ok" ? "bg-green" : "bg-amber";
   const healthColor = health?.status === "ok" ? "text-green" : "text-amber";
 
@@ -268,8 +276,8 @@ export default function ResultsPage() {
   const aiClassificationUsed = stack.ai_classification_used;
   const feedbackTechs = [...(stack.frameworks ?? []), ...(stack.ai_ml ?? [])];
   const classifierUsed =
-    typeof stack.domain_reasoning === "string" &&
-    stack.domain_reasoning.toLowerCase().startsWith("trained classifier:");
+    typeof stack.software_type_reasoning === "string" &&
+    stack.software_type_reasoning.toLowerCase().startsWith("trained classifier:");
 
   return (
     <div className="min-h-screen bg-bg flex flex-col">
@@ -339,7 +347,7 @@ export default function ResultsPage() {
             <span className="shrink-0 font-bold mt-px">!</span>
             <span>
               AI pipeline unavailable — showing pattern detection only. Add{" "}
-              <code className="font-mono">GEMINI_API_KEY</code> to enable domain classification.
+              <code className="font-mono">GEMINI_API_KEY</code> to enable software_type classification.
             </span>
           </div>
         )}
@@ -354,6 +362,7 @@ export default function ResultsPage() {
         <StackPanel
           stack={stack}
           repo={repo}
+          repositoryClassification={result.repository_classification}
           analysisId={analysisId}
           feedbackState={feedbackState}
           onTechCorrect={handleTechCorrect}
@@ -362,25 +371,33 @@ export default function ResultsPage() {
           onPrimaryLanguageChange={handlePrimaryLanguageChange}
           afterInsights={
             <>
-              <DomainFeedbackBar
+              <SoftwareTypeFeedbackBar
                 analysisId={analysisId}
-                currentDomain={stack.domain}
-                domainConfidence={stack.domain_confidence}
+                currentSoftwareType={stack.software_type}
+                softwareTypeConfidence={stack.software_type_confidence}
                 ragInfluenced={Boolean(stack.rag_influenced || stack.rag_repos_retrieved)}
                 similarReposUsed={stack.similar_repos_used ?? stack.rag_repos_retrieved ?? 0}
                 classifierUsed={classifierUsed}
                 detectedTechs={feedbackTechs}
                 onToast={showToast}
+                onSoftwareTypeChange={handleSoftwareTypeChange}
               />
               <SimilarReposCard analysisId={analysisId} />
             </>
           }
         />
 
-        <PendingCategoryReview
-          triggered={result.emergent_categories ?? stack.emergent_categories ?? []}
+        <PendingTechnologyRoleReview
+          triggered={[
+            ...(result.emergent_technology_roles ?? stack.emergent_technology_roles ?? []),
+            ...(result.emergent_software_type ?? stack.emergent_software_type
+              ? [result.emergent_software_type ?? stack.emergent_software_type]
+              : []),
+          ]}
           onToast={showToast}
         />
+
+        <CorpusSearchPanel />
 
         <div>
           <div className="flex items-center gap-2 flex-wrap">
@@ -464,7 +481,7 @@ export default function ResultsPage() {
                 </button>
               </div>
               <pre className="bg-bg border border-border rounded px-3 py-3 font-mono text-xs text-text overflow-x-auto whitespace-pre-wrap leading-relaxed">
-                {SNIPPETS[snippetLang](analysisId, result?.stack?.domain)}
+                {SNIPPETS[snippetLang](analysisId, result?.stack?.software_type)}
               </pre>
             </div>
 

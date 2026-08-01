@@ -5,17 +5,17 @@ def test_rag_filter_drops_non_teaching_and_weak_neighbors():
     neighbors = [
         {
             "repo": {"full_name": "elastic/elasticsearch"},
-            "stack": {"domain": "database", "primary_language": "Java"},
+            "stack": {"software_type": "database", "primary_language": "Java"},
             "score": 0.91,
         },
         {
             "repo": {"full_name": "example/unknown"},
-            "stack": {"domain": "unknown"},
+            "stack": {"software_type": "unknown"},
             "score": 0.88,
         },
         {
             "repo": {"full_name": "example/weak"},
-            "stack": {"domain": "library"},
+            "stack": {"software_type": "library"},
             "score": 0.25,
         },
     ]
@@ -25,9 +25,9 @@ def test_rag_filter_drops_non_teaching_and_weak_neighbors():
     assert diagnostic == {
         "total_neighbors": 3,
         "usable_after_filter": 1,
-        "dropped_non_teaching_domain": 1,
+        "dropped_non_teaching_software_type": 1,
         "dropped_below_similarity_floor": 1,
-        "surviving_domains": ["database"],
+        "surviving_software_types": ["database"],
         "surviving_repos": ["elastic/elasticsearch"],
     }
     context = format_rag_context(neighbors)
@@ -36,13 +36,13 @@ def test_rag_filter_drops_non_teaching_and_weak_neighbors():
     assert "example/weak" not in context
 
 
-def test_rag_filter_prefers_human_corrected_domain():
+def test_rag_filter_prefers_human_corrected_software_type():
     context = format_rag_context([{
         "repo": {"full_name": "elastic/elasticsearch"},
-        "stack": {"domain": "library"},
-        "corrections": {"domain": "database"},
+        "stack": {"software_type": "library"},
+        "corrections": {"software_type": "database"},
         "score": 0.9,
     }])
 
-    assert "domain: database" in context
-    assert "domain: library" not in context
+    assert "software_type: database" in context
+    assert "software_type: library" not in context

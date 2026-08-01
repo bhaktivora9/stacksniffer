@@ -8,13 +8,13 @@ Flow:
   1. Load all embeddings from MongoDB
   2. Run DBSCAN (density-based) — discovers natural clusters without predefining count
   3. Run KMeans as comparison — forces fixed cluster count
-  4. Human reviews cluster summaries and assigns domain names
-  5. Named clusters become the new domain taxonomy
-  6. Store in MongoDB domains collection
+  4. Human reviews cluster summaries and assigns software_type names
+  5. Named clusters become the new software_type taxonomy
+  6. Store in MongoDB software_types collection
 
 DBSCAN chosen over KMeans because:
   - Stack distributions are not spherical (KMeans assumption violated)
-  - Number of domains is unknown — DBSCAN discovers it
+  - Number of software_types is unknown — DBSCAN discovers it
   - Noise points (genuinely ambiguous repos) are labeled -1, not forced into a cluster
   - Maps directly to PatternClusterer.java DBSCAN implementation
 """
@@ -52,7 +52,7 @@ async def load_embeddings_for_clustering() -> tuple[list, list, list]:
         analysis_ids.append(a["analysis_id"])
         metadata.append({
             "repo": a.get("repo", {}).get("full_name", "unknown"),
-            "current_domain": a.get("stack", {}).get("domain", "unknown"),
+            "current_software_type": a.get("stack", {}).get("software_type", "unknown"),
             "primary_language": a.get("stack", {}).get("primary_language", ""),
             "frameworks": [
                 t["name"] for t in a.get("stack", {}).get("frameworks", [])
@@ -176,7 +176,7 @@ def summarize_clusters(
         all_ai_ml = []
         all_languages = []
         all_patterns = []
-        current_domains = []
+        current_software_types = []
 
         for m in members:
             all_frameworks.extend(m.get("frameworks", []))
@@ -184,14 +184,14 @@ def summarize_clusters(
             all_languages.append(m.get("primary_language", ""))
             if m.get("stack_pattern"):
                 all_patterns.append(m["stack_pattern"])
-            current_domains.append(m.get("current_domain", "unknown"))
+            current_software_types.append(m.get("current_software_type", "unknown"))
 
         # Most common signals
         top_frameworks = [f for f, _ in Counter(all_frameworks).most_common(5)]
         top_languages  = [l for l, _ in Counter(all_languages).most_common(3) if l]
         top_ai_ml      = [a for a, _ in Counter(all_ai_ml).most_common(3)]
         top_patterns   = [p for p, _ in Counter(all_patterns).most_common(2)]
-        domain_votes   = Counter(current_domains).most_common(3)
+        software_type_votes   = Counter(current_software_types).most_common(3)
 
         avg_complexity = round(
             sum(m.get("complexity", 0) for m in members) / max(len(members), 1), 1
@@ -209,7 +209,7 @@ def summarize_clusters(
                 "top_patterns":   top_patterns,
                 "avg_complexity": avg_complexity,
             },
-            "current_domain_votes": dict(domain_votes),
+            "current_software_type_votes": dict(software_type_votes),
             "suggested_name": _suggest_cluster_name(
                 top_frameworks, top_languages, top_ai_ml, top_patterns
             ),
@@ -339,7 +339,7 @@ async def store_discovered_taxonomy(
     quality_metrics: dict
 ) -> dict:
     """
-    Store human-approved cluster names as the new domain taxonomy.
+    Store human-approved cluster names as the new software_type taxonomy.
     Only stores clusters that have been explicitly named by human review.
 
     approved_names example:
@@ -353,14 +353,14 @@ async def store_discovered_taxonomy(
     from backend.services import storage_service
 
     stored = []
-    for cluster_label, domain_name in approved_names.items():
+    for cluster_label, software_type_name in approved_names.items():
         if cluster_label not in cluster_summary:
             continue
 
         cluster = cluster_summary[cluster_label]
         doc = {
-            "domain_id": domain_name,
-            "label": domain_name.replace("-", " ").title(),
+            "software_type_id": software_type_name,
+            "label": software_type_name.replace("-", " ").title(),
             "source": "emergent_clustering",
             "cluster_id": cluster["cluster_id"],
             "size_at_discovery": cluster["size"],
@@ -373,15 +373,15 @@ async def store_discovered_taxonomy(
             "created_at": datetime.utcnow().isoformat(),
             "status": "active"
         }
-        await storage_service.store_domain(domain_name, doc)
-        stored.append(domain_name)
+        await storage_service.store_software_type(software_type_name, doc)
+        stored.append(software_type_name)
 
     return {
-        "domains_stored": len(stored),
-        "domain_ids": stored,
+        "software_types_stored": len(stored),
+        "software_type_ids": stored,
         "message": (
-            f"Stored {len(stored)} emergent domains. "
-            "Update Gemini prompt and frontend dropdown to use /api/domains endpoint."
+            f"Stored {len(stored)} emergent software_types. "
+            "Update Gemini prompt and frontend dropdown to use /api/software_types endpoint."
         )
     }
 

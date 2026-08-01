@@ -16,8 +16,8 @@ def build_system_prompt(analysis: dict) -> str:
     stack = analysis.get("stack", {})
     repo = analysis.get("repo", {})
 
-    def tech_list(category):
-        techs = stack.get(category, [])
+    def tech_list(technology_role):
+        techs = stack.get(technology_role, [])
         return ", ".join(
             f"{t['name']} ({int(t['confidence']*100)}%, {t['detection_source']})"
             for t in techs
@@ -25,7 +25,7 @@ def build_system_prompt(analysis: dict) -> str:
 
     ai_inferences = stack.get("ai_inferences", [])
     inference_text = "\n".join(
-        f"  - {i['tech']} ({i['category']}): {i['reasoning']}"
+        f"  - {i['tech']} ({i['technology_role']}): {i['reasoning']}"
         for i in ai_inferences
     ) or "  none"
 
@@ -53,8 +53,8 @@ DETECTED TECH STACK:
   Testing:    {tech_list('testing')}
 
 AI ANALYSIS RESULTS:
-  Domain:             {stack.get('domain', 'unknown')} ({int(stack.get('domain_confidence', 0)*100)}% confidence)
-  Domain reasoning:   {stack.get('domain_reasoning', '')}
+  SoftwareType:             {stack.get('software_type', 'unknown')} ({int(stack.get('software_type_confidence', 0)*100)}% confidence)
+  SoftwareType reasoning:   {stack.get('software_type_reasoning', '')}
   Architecture style: {stack.get('architecture_style', 'unknown')}
   Stack pattern:      {stack.get('stack_pattern', 'unknown')}
   Why this stack:     {stack.get('why_this_stack', '')}

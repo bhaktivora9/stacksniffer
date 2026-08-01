@@ -41,8 +41,8 @@ def build_stack_fingerprint(stack: dict) -> str:
     Build text fingerprint for embedding.
 
     Two modes:
-      Pre-AI  (domain=unknown): sparse — tech signals only
-      Post-AI (domain set):     rich   — includes semantic fields
+      Pre-AI  (software_type=unknown): sparse — tech signals only
+      Post-AI (software_type set):     rich   — includes semantic fields
 
     Rich fingerprints make RAG retrieval semantically meaningful.
     Repos with similar stacks AND similar architectural intent
@@ -50,20 +50,20 @@ def build_stack_fingerprint(stack: dict) -> str:
     """
     parts = []
 
-    # ── Domain + architecture (highest semantic signal) ────────────────────
-    domain = stack.get("domain", "unknown")
+    # ── SoftwareType + architecture (highest semantic signal) ────────────────────
+    software_type = stack.get("software_type", "unknown")
     arch = stack.get("architecture_style", "unknown")
     pattern = stack.get("stack_pattern", "")
 
-    if domain and domain != "unknown":
-        parts.append(f"domain:{domain}")
+    if software_type and software_type != "unknown":
+        parts.append(f"software_type:{software_type}")
     if arch and arch != "unknown":
         parts.append(f"architecture:{arch}")
     if pattern and pattern not in ("", "Custom"):
         parts.append(f"pattern:{pattern}")
 
     # ── Technology signals ─────────────────────────────────────────────────
-    for category in [
+    for technology_role in [
         "languages",
         "frameworks",
         "databases",
@@ -73,7 +73,7 @@ def build_stack_fingerprint(stack: dict) -> str:
         "testing",
         "library",
     ]:
-        techs = stack.get(category, [])
+        techs = stack.get(technology_role, [])
         if techs:
             names = []
             for t in techs:
@@ -85,7 +85,7 @@ def build_stack_fingerprint(stack: dict) -> str:
                     names.append(str(t))
             names = [n for n in names if n]
             if names:
-                parts.append(f"{category}:{','.join(names)}")
+                parts.append(f"{technology_role}:{','.join(names)}")
 
     # ── Semantic fields (only present in post-AI enriched fingerprint) ─────
     why = stack.get("why_this_stack", "")

@@ -14,8 +14,8 @@ function repoName(item) {
     || "unknown/repo";
 }
 
-function domain(item) {
-  return getNested(item, "stack.domain") || item.domain || "unknown";
+function software_type(item) {
+  return getNested(item, "stack.software_type") || item.software_type || "unknown";
 }
 
 function stackPattern(item) {
@@ -23,7 +23,7 @@ function stackPattern(item) {
 }
 
 function whyThisStack(item) {
-  return getNested(item, "stack.why_this_stack") || item.why_this_stack || item.domain_reasoning || "";
+  return getNested(item, "stack.why_this_stack") || item.why_this_stack || item.software_type_reasoning || "";
 }
 
 function truncate(text, length = 80) {
@@ -80,7 +80,7 @@ export default function SimilarReposCard({ analysisId }) {
         <div className="flex items-center gap-2">
           <span className={`h-2 w-2 rounded-full ${isVector ? "bg-teal-300" : "bg-amber"}`} />
           <span className="text-sm font-medium text-text">
-            Similar repos {isVector ? "(vector search)" : "(domain match)"}
+            Similar repos {isVector ? "(vector search)" : "(software_type match)"}
           </span>
         </div>
         {!loading && similar.length > 0 && (
@@ -121,7 +121,7 @@ export default function SimilarReposCard({ analysisId }) {
                     {name}
                   </a>
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-green/10 text-green border border-green/25">
-                    {domain(item).replace(/_/g, " ")}
+                    {software_type(item).replace(/_/g, " ")}
                   </span>
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-ai-purple/10 text-ai-purple border border-ai-purple/25">
                     {stackPattern(item)}

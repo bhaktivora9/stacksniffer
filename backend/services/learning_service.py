@@ -11,7 +11,7 @@ Two distinct subsystems live here, and it's important not to confuse them:
      caller can't mistake "did nothing" for "succeeded". Delete this whole
      block if the keyword scanner is truly gone.
 
-  2. Domain classifier (train/predict) + regression tracking
+  2. SoftwareType classifier (train/predict) + regression tracking
      LIVE. Trains on frozen feedback snapshots (rated_embedding), never joins
      against mutable analyses_result.
 """
@@ -68,22 +68,22 @@ def _save_patterns(patterns: dict) -> None:
 
 
 def _find_pattern_by_keyword(patterns: dict, keyword: str):
-    for category, entries in patterns.items():
+    for technology_role, entries in patterns.items():
         if not isinstance(entries, list):
             continue
         for entry in entries:
             if keyword in entry.get("keywords", []):
-                return category, entry
+                return technology_role, entry
     return None, None
 
 
 def _find_pattern_by_tech(patterns: dict, tech_name: str):
-    for category, entries in patterns.items():
+    for technology_role, entries in patterns.items():
         if not isinstance(entries, list):
             continue
         for entry in entries:
             if entry.get("name", "").lower() == tech_name.lower():
-                return category, entry
+                return technology_role, entry
     return None, None
 
 
@@ -181,14 +181,14 @@ async def compute_pattern_accuracy_from_corpus() -> dict:
         # back to the nested blob for rows written before that promotion.
         fb = feedback.get("feedback") or feedback
         wrong_techs = [t.lower() for t in fb.get("techs_wrong", [])]
-        domain_correct = fb.get("domain_correct", True)
+        software_type_correct = fb.get("software_type_correct", True)
 
         for pm in _reliable_matches(rated_output.get("pattern_matches", [])):
             keyword = _pm_get(pm, "matched_keyword", "")
             tech = _pm_get(pm, "tech", "")
             keyword_stats[keyword]["fires"] += 1
             keyword_stats[keyword]["tech"] = tech
-            if domain_correct and tech.lower() not in wrong_techs:
+            if software_type_correct and tech.lower() not in wrong_techs:
                 keyword_stats[keyword]["correct"] += 1
 
     return {
@@ -222,7 +222,7 @@ async def update_patterns_from_corpus(min_samples: int = 3) -> dict:
     patterns = _load_patterns()
     updated = 0
     deltas = []
-    for category, entries in patterns.items():
+    for technology_role, entries in patterns.items():
         if not isinstance(entries, list):
             continue
         for entry in entries:
@@ -260,6 +260,7 @@ async def get_learning_stats() -> dict:
     feedback = await storage_service.get_all_feedback()
     analyses = await storage_service.get_all_analyses()
     events = await storage_service.get_analysis_events()
+    disagreements = await storage_service.get_software_type_disagreements()
     accuracy = await compute_pattern_accuracy_from_corpus()
 
     patterns = _load_patterns()
@@ -267,14 +268,14 @@ async def get_learning_stats() -> dict:
 
     DEFAULT_CONFIDENCE = 0.90
     changed_patterns = []
-    for category, entries in patterns.items():
+    for technology_role, entries in patterns.items():
         if not isinstance(entries, list):
             continue
         for entry in entries:
             conf = entry.get("confidence", DEFAULT_CONFIDENCE)
             if abs(conf - DEFAULT_CONFIDENCE) > 0.05:
                 changed_patterns.append({
-                    "tech": entry["name"], "category": category, "confidence": conf,
+                    "tech": entry["name"], "technology_role": technology_role, "confidence": conf,
                     "direction": "increased" if conf > DEFAULT_CONFIDENCE else "decreased",
                 })
 
@@ -283,7 +284,7 @@ async def get_learning_stats() -> dict:
     trainable = sum(
         1 for f in feedback
         if (f.get("rated_embedding") or f.get("stack_embedding"))
-        and (f.get("correct_domain") or (f.get("rated_output") or {}).get("domain"))
+        and (f.get("correct_software_type") or (f.get("rated_output") or {}).get("software_type"))
     )
 
     return {
@@ -292,6 +293,12 @@ async def get_learning_stats() -> dict:
         "trainable_samples": trainable,
         "repos_with_feedback": len({f.get("repo_key") for f in feedback if f.get("repo_key")}),
         "corrections_count": await storage_service.count_corrections(),
+        "layer0_disagreements": len(disagreements),
+        "layer0_pending_human_validation": sum(
+            1
+            for row in disagreements
+            if row.get("training_status") == "pending_human_validation"
+        ),
         "pipeline_versions_seen": sorted(
             {e.get("pipeline_version") for e in events if e.get("pipeline_version")}
         ),
@@ -311,7 +318,7 @@ async def get_learning_stats() -> dict:
     }
 
 
-# ── Domain classifier (LIVE) ─────────────────────────────────────────────
+# ── SoftwareType classifier (LIVE) ─────────────────────────────────────────────
 
 
 def _extract_features(item: dict) -> list[float]:
@@ -323,7 +330,7 @@ def _extract_features(item: dict) -> list[float]:
         if not isinstance(techs, list):
             continue
         for t in techs:
-            if not isinstance(t, dict) or not t.get("category"):
+            if not isinstance(t, dict) or not t.get("technology_role"):
                 continue
             name = t.get("name", "") if isinstance(t, dict) else str(t)
             techs_detected.add(name.lower())
@@ -345,9 +352,9 @@ def _valid_embedding(emb) -> bool:
     return bool(emb) and len(emb) == EMBEDDING_DIM and any(v != 0.0 for v in emb)
 
 
-async def train_domain_classifier() -> dict:
+async def train_software_type_classifier() -> dict:
     """
-    Train a domain classifier from frozen feedback snapshots.
+    Train a software_type classifier from frozen feedback snapshots.
 
     Reads rated_embedding (the vector the human actually saw), never the live
     analyses_result embedding — so re-analysis can't shift the training target.
@@ -365,8 +372,9 @@ async def train_domain_classifier() -> dict:
         }
 
     try:
-        import numpy as np
         import pickle
+
+        import numpy as np
         from sklearn.linear_model import LogisticRegression
         from sklearn.model_selection import cross_val_score
         from sklearn.preprocessing import LabelEncoder
@@ -376,7 +384,7 @@ async def train_domain_classifier() -> dict:
     try:
         X, y = [], []
         for item in labeled_data:
-            label = item.get("correct_domain") or item.get("detected_domain") or "unknown"
+            label = item.get("correct_software_type") or item.get("detected_software_type") or "unknown"
             if label == "unknown":
                 continue
             emb = item.get("rated_embedding") or item.get("stack_embedding")
@@ -406,7 +414,7 @@ async def train_domain_classifier() -> dict:
                 "message": f"After length-normalising to {target_len}-dim, only {len(X)} samples remain.",
             }
 
-        # A classifier needs at least two classes to classify. One domain across
+        # A classifier needs at least two classes to classify. One software_type across
         # 55 samples is not a trained model — it's a constant function.
         distinct = set(y)
         if len(distinct) < 2:
@@ -415,8 +423,8 @@ async def train_domain_classifier() -> dict:
                 "samples": len(X),
                 "classes": sorted(distinct),
                 "message": (
-                    f"All {len(X)} labeled samples are domain '{next(iter(distinct))}'. "
-                    "Need feedback spanning at least 2 domains to train."
+                    f"All {len(X)} labeled samples are software_type '{next(iter(distinct))}'. "
+                    "Need feedback spanning at least 2 software_types to train."
                 ),
             }
 
@@ -427,7 +435,7 @@ async def train_domain_classifier() -> dict:
         clf = LogisticRegression(max_iter=1000, C=1.0)  # multi_class removed (sklearn 1.7)
 
         # Cross-validation guard. cross_val_score needs >= 2 folds AND >= 2
-        # examples per class per fold. A rare domain with 2 samples across 5
+        # examples per class per fold. A rare software_type with 2 samples across 5
         # folds creates empty folds and either errors or reports noise.
         min_class = min(Counter(y_encoded).values())
         n = len(X)
@@ -446,14 +454,14 @@ async def train_domain_classifier() -> dict:
 
         clf.fit(X, y_encoded)
 
-        model_path = Path("backend/models/domain_classifier.pkl")
+        model_path = Path("backend/models/software_type_classifier.pkl")
         model_path.parent.mkdir(parents=True, exist_ok=True)
         with open(model_path, "wb") as f:
             pickle.dump(
                 {"classifier": clf, "label_encoder": le, "feature_dim": target_len}, f
             )
 
-        logger.info("Trained domain classifier on %d samples (cv=%s)", n, cv_mean)
+        logger.info("Trained software_type classifier on %d samples (cv=%s)", n, cv_mean)
         return {
             "status": "trained",
             "samples": n,
@@ -475,21 +483,22 @@ async def train_domain_classifier() -> dict:
         return {"status": "error", "message": str(e)}
 
 
-async def predict_domain(stack: dict) -> dict | None:
+async def predict_software_type(stack: dict) -> dict | None:
     """
-    Predict domain with the trained classifier. Returns None if untrained.
+    Predict software_type with the trained classifier. Returns None if untrained.
     Never raises.
 
     Feature representation MUST match training. The saved model records its
     feature_dim; if the live embedding doesn't match it, fall back to the
     hand-crafted vector rather than handing sklearn a wrong-width array.
     """
-    model_path = Path("backend/models/domain_classifier.pkl")
+    model_path = Path("backend/models/software_type_classifier.pkl")
     if not model_path.exists():
         return None
 
     try:
         import pickle
+
         import numpy as np
 
         with open(model_path, "rb") as f:
@@ -510,7 +519,7 @@ async def predict_domain(stack: dict) -> dict | None:
                 # Model was trained on embeddings; we only have the short vector.
                 # Predicting would be a dimension mismatch — decline instead.
                 logger.warning(
-                    "predict_domain: feature dim %d != trained %d; skipping",
+                    "predict_software_type: feature dim %d != trained %d; skipping",
                     len(fallback), trained_dim,
                 )
                 return None
@@ -520,7 +529,7 @@ async def predict_domain(stack: dict) -> dict | None:
         proba = clf.predict_proba(X)[0]
         best_idx = int(proba.argmax())
         return {
-            "domain": le.inverse_transform([best_idx])[0],
+            "software_type": le.inverse_transform([best_idx])[0],
             "confidence": float(proba[best_idx]),
             "source": "trained_classifier",
             "all_probabilities": {
@@ -546,8 +555,8 @@ async def regression_report(repo_key: str) -> list[dict]:
             "commit_sha": e.get("commit_sha"),
             "pipeline_version": e.get("pipeline_version"),
             "analyzed_at": e.get("analyzed_at") or e.get("created_at"),
-            "domain": e.get("summary", {}).get("domain"),
-            "domain_confidence": e.get("summary", {}).get("domain_confidence"),
+            "software_type": e.get("summary", {}).get("software_type"),
+            "software_type_confidence": e.get("summary", {}).get("software_type_confidence"),
             "stack_pattern": e.get("summary", {}).get("stack_pattern"),
             "tech_names": e.get("summary", {}).get("tech_names", []),
             "quality_flags": e.get("summary", {}).get("quality_flags", []),
@@ -579,8 +588,8 @@ async def version_diff(repo_key: str, version_a: str, version_b: str) -> dict:
         "repo_key": repo_key, "version_a": version_a, "version_b": version_b,
         "techs_added": sorted(techs_b - techs_a),
         "techs_removed": sorted(techs_a - techs_b),
-        "domain_changed": a.get("domain") != b.get("domain"),
-        "domain_a": a.get("domain"), "domain_b": b.get("domain"),
+        "software_type_changed": a.get("software_type") != b.get("software_type"),
+        "software_type_a": a.get("software_type"), "software_type_b": b.get("software_type"),
         "flags_changed": flags_a != flags_b,
         "flags_added": sorted(flags_b - flags_a),
         "flags_removed": sorted(flags_a - flags_b),

@@ -64,11 +64,11 @@ async def update_patterns(background_tasks: BackgroundTasks):
 @router.post("/train-classifier")
 async def train_classifier():
     """
-    Train sklearn LogisticRegression domain classifier from labeled corpus.
+    Train sklearn LogisticRegression software_type classifier from labeled corpus.
     Requires 50+ feedback samples for meaningful accuracy.
 
     Once trained, activates Layer 0 in analyze.py — high-confidence analyses
-    skip the Gemini domain classification call entirely.
+    skip the Gemini software_type classification call entirely.
 
     Expected accuracy by corpus size:
       50 samples:  ~60-70% CV accuracy (underfitting)
@@ -78,7 +78,7 @@ async def train_classifier():
     Java equivalent: FrequentPatternMiner + ML pipeline in stacksniffer-learning.
     Uses embeddings if available, falls back to hand-crafted feature vector.
     """
-    return await learning_service.train_domain_classifier()
+    return await learning_service.train_software_type_classifier()
 
 @router.post("/reembed-corpus")
 async def reembed_corpus():
@@ -94,8 +94,8 @@ async def reembed_corpus():
         for a in analyses:
             try:
                 stack = a.get("stack", {})
-                # Skip if already has a rich embedding (domain not unknown)
-                if stack.get("domain", "unknown") == "unknown":
+                # Skip if already has a rich embedding (software_type not unknown)
+                if stack.get("software_type", "unknown") == "unknown":
                     continue
                 enriched_stack = {
                     "languages":    stack.get("languages", []),
@@ -105,7 +105,7 @@ async def reembed_corpus():
                     "ai_ml":        stack.get("ai_ml", []),
                     "infra":        stack.get("infra", []),
                     "testing":      stack.get("testing", []),
-                    "domain":              stack.get("domain", "unknown"),
+                    "software_type":              stack.get("software_type", "unknown"),
                     "architecture_style":  stack.get("architecture_style", "unknown"),
                     "stack_pattern":       stack.get("stack_pattern", ""),
                     "why_this_stack":      stack.get("why_this_stack", ""),

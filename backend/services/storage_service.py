@@ -24,8 +24,8 @@ from backend.services.repo_key import parse_repo_key
 load_dotenv()
 logger = logging.getLogger(__name__)
 
-PIPELINE_VERSION = getenv("PIPELINE_VERSION", "dev")
-BUILTIN_DOMAINS: tuple[dict, ...] = (
+PIPELINE_VERSION = getenv("PIPELINE_VERSION", "3.0.0")
+BUILTIN_SOFTWARE_TYPES: tuple[dict, ...] = (
     {"_id": "database", "label": "Database", "builtin": True, "active": True, "order": 1},
     {"_id": "data_pipeline", "label": "Data Pipeline", "builtin": True, "active": True, "order": 2},
     {"_id": "ml_platform", "label": "ML Platform", "builtin": True, "active": True, "order": 3},
@@ -34,26 +34,26 @@ BUILTIN_DOMAINS: tuple[dict, ...] = (
     {"_id": "library", "label": "Library", "builtin": True, "active": True, "order": 6},
     {"_id": "unknown", "label": "Unknown", "builtin": True, "active": True, "order": 99, "sentinel": True},
 )
-BUILTIN_CATEGORIES: tuple[str, ...] = (
+BUILTIN_TECHNOLOGY_ROLES: tuple[str, ...] = (
     "languages", "frameworks", "databases", "messaging",
     "ai_ml", "infra", "testing", "library",
 )
 _TAXONOMY_CACHE_TTL = 30.0
-_domain_cache: tuple[float, list[dict]] | None = None
-_category_cache: tuple[float, list[dict]] | None = None
+_software_type_cache: tuple[float, list[dict]] | None = None
+_technology_role_cache: tuple[float, list[dict]] | None = None
 ALLOWED_CORRECTION_FIELDS = {
     "why_this_stack",
     "stack_pattern",
     "ecosystem_context",
     "notable_combinations",
-    "domain",
+    "software_type",
     "primary_language",
 }
 _LIST_STORES = {
     "analysis_events",
     "insights_feedback",
-    "dep_categories",
-    "dep_category_feedback",
+    "dep_technology_roles",
+    "dep_technology_role_feedback",
 }
 
 _client = None
@@ -67,11 +67,12 @@ _memory_store: dict = {
     "stack_feedback": {},
     "insights_feedback": [],
     "quality_criteria": {},
-    "domains": {},
-    "dep_categories": [],
-    "dep_category_feedback": [],
-    "taxonomy_domains": {},
-    "taxonomy_categories": {},
+    "software_types": {},
+    "dep_technology_roles": [],
+    "dep_technology_role_feedback": [],
+    "taxonomy_software_types": {},
+    "taxonomy_technology_roles": {},
+    "software_type_disagreements": {},
 }
 
 
@@ -84,43 +85,43 @@ def _memory(name: str):
 
 
 def _invalidate_taxonomy_cache() -> None:
-    global _domain_cache, _category_cache
-    _domain_cache = None
-    _category_cache = None
+    global _software_type_cache, _technology_role_cache
+    _software_type_cache = None
+    _technology_role_cache = None
 
 
-async def seed_builtin_domains() -> None:
+async def seed_builtin_software_types() -> None:
     if _db is not None:
-        for domain in BUILTIN_DOMAINS:
-            await _db.taxonomy_domains.update_one(
-                {"_id": domain["_id"]},
+        for software_type in BUILTIN_SOFTWARE_TYPES:
+            await _db.taxonomy_software_types.update_one(
+                {"_id": software_type["_id"]},
                 {"$setOnInsert": {
-                    **{key: value for key, value in domain.items() if key != "_id"},
+                    **{key: value for key, value in software_type.items() if key != "_id"},
                     "created_at": _now(),
                 }},
                 upsert=True,
             )
     else:
-        store = _memory("taxonomy_domains")
-        for domain in BUILTIN_DOMAINS:
-            store.setdefault(domain["_id"], {**domain, "created_at": _now()})
+        store = _memory("taxonomy_software_types")
+        for software_type in BUILTIN_SOFTWARE_TYPES:
+            store.setdefault(software_type["_id"], {**software_type, "created_at": _now()})
     _invalidate_taxonomy_cache()
 
 
-async def seed_builtin_taxonomy_categories() -> None:
+async def seed_builtin_taxonomy_technology_roles() -> None:
     records = [
         {
-            "_id": category,
-            "label": category.replace("_", " ").title(),
+            "_id": technology_role,
+            "label": technology_role.replace("_", " ").title(),
             "builtin": True,
             "active": True,
             "order": index,
         }
-        for index, category in enumerate(BUILTIN_CATEGORIES, start=1)
+        for index, technology_role in enumerate(BUILTIN_TECHNOLOGY_ROLES, start=1)
     ]
     if _db is not None:
         for record in records:
-            await _db.taxonomy_categories.update_one(
+            await _db.taxonomy_technology_roles.update_one(
                 {"_id": record["_id"]},
                 {"$setOnInsert": {
                     **{key: value for key, value in record.items() if key != "_id"},
@@ -129,15 +130,15 @@ async def seed_builtin_taxonomy_categories() -> None:
                 upsert=True,
             )
     else:
-        store = _memory("taxonomy_categories")
+        store = _memory("taxonomy_technology_roles")
         for record in records:
             store.setdefault(record["_id"], {**record, "created_at": _now()})
     _invalidate_taxonomy_cache()
 
 
 async def _taxonomy_rows(kind: str, include_inactive: bool = False) -> list[dict]:
-    global _domain_cache, _category_cache
-    cache = _domain_cache if kind == "domains" else _category_cache
+    global _software_type_cache, _technology_role_cache
+    cache = _software_type_cache if kind == "software_types" else _technology_role_cache
     now = time.monotonic()
     if cache is not None and now - cache[0] < _TAXONOMY_CACHE_TTL:
         rows = cache[1]
@@ -148,46 +149,46 @@ async def _taxonomy_rows(kind: str, include_inactive: bool = False) -> list[dict
         else:
             rows = list(_memory(f"taxonomy_{kind}").values())
         if not rows:
-            if kind == "domains":
-                rows = [dict(domain) for domain in BUILTIN_DOMAINS]
+            if kind == "software_types":
+                rows = [dict(software_type) for software_type in BUILTIN_SOFTWARE_TYPES]
             else:
                 rows = [
                     {
-                        "_id": category,
-                        "label": category.replace("_", " ").title(),
+                        "_id": technology_role,
+                        "label": technology_role.replace("_", " ").title(),
                         "builtin": True,
                         "active": True,
                         "order": index,
                     }
-                    for index, category in enumerate(BUILTIN_CATEGORIES, start=1)
+                    for index, technology_role in enumerate(BUILTIN_TECHNOLOGY_ROLES, start=1)
                 ]
         cache = (now, rows)
-        if kind == "domains":
-            _domain_cache = cache
+        if kind == "software_types":
+            _software_type_cache = cache
         else:
-            _category_cache = cache
+            _technology_role_cache = cache
     active_rows = [row for row in rows if include_inactive or row.get("active", True)]
     return sorted(active_rows, key=lambda row: (row.get("order", 50), row["_id"]))
 
 
-async def get_domains(include_inactive: bool = False) -> list[dict]:
-    return await _taxonomy_rows("domains", include_inactive)
+async def get_software_types(include_inactive: bool = False) -> list[dict]:
+    return await _taxonomy_rows("software_types", include_inactive)
 
 
-async def get_valid_domains() -> set[str]:
-    return {row["_id"] for row in await get_domains()}
+async def get_valid_software_types() -> set[str]:
+    return {row["_id"] for row in await get_software_types()}
 
 
-async def is_valid_domain(name: str) -> bool:
-    return name in await get_valid_domains()
+async def is_valid_software_type(name: str) -> bool:
+    return name in await get_valid_software_types()
 
 
-async def get_categories(include_inactive: bool = False) -> list[dict]:
-    return await _taxonomy_rows("categories", include_inactive)
+async def get_technology_roles(include_inactive: bool = False) -> list[dict]:
+    return await _taxonomy_rows("technology_roles", include_inactive)
 
 
-async def get_valid_categories() -> set[str]:
-    return {row["_id"] for row in await get_categories()}
+async def get_valid_technology_roles() -> set[str]:
+    return {row["_id"] for row in await get_technology_roles()}
 
 
 def _public_doc(doc: dict | None) -> dict | None:
@@ -212,8 +213,8 @@ def _tech_names(stack: dict) -> list[str]:
 
 def _event_summary(stack: dict) -> dict:
     return {
-        "domain": stack.get("domain"),
-        "domain_confidence": stack.get("domain_confidence"),
+        "software_type": stack.get("software_type"),
+        "software_type_confidence": stack.get("software_type_confidence"),
         "stack_pattern": stack.get("stack_pattern"),
         "tech_names": _tech_names(stack),
         "quality_flags": stack.get("flags", []),
@@ -225,11 +226,11 @@ def _event_summary(stack: dict) -> dict:
 def _feedback_training_row(row: dict) -> dict:
     rated_output = row.get("rated_output") or {}
     feedback = row.get("feedback") or {}
-    domain_correct = feedback.get("domain_correct", True)
-    correct_domain = (
-        feedback.get("correct_domain")
-        if domain_correct is False
-        else rated_output.get("domain")
+    software_type_correct = feedback.get("software_type_correct", True)
+    correct_software_type = (
+        feedback.get("correct_software_type")
+        if software_type_correct is False
+        else rated_output.get("software_type")
     )
     return {
         "feedback_id": row.get("_id") or row.get("feedback_id"),
@@ -237,9 +238,9 @@ def _feedback_training_row(row: dict) -> dict:
         "commit_sha": row.get("commit_sha"),
         "pipeline_version": row.get("pipeline_version"),
         "repo_name": row.get("repo_key"),
-        "detected_domain": rated_output.get("domain"),
-        "correct_domain": correct_domain,
-        "domain_correct": domain_correct,
+        "detected_software_type": rated_output.get("software_type"),
+        "correct_software_type": correct_software_type,
+        "software_type_correct": software_type_correct,
         "stack_embedding": row.get("rated_embedding"),
         "primary_language": rated_output.get("primary_language"),
         "complexity_score": rated_output.get("complexity_score"),
@@ -256,8 +257,8 @@ async def init_db() -> None:
     if not uri:
         logger.warning("MONGODB_URI not set - using in-memory fallback")
         print("MONGODB_URI not set - using in-memory fallback")
-        await seed_builtin_domains()
-        await seed_builtin_taxonomy_categories()
+        await seed_builtin_software_types()
+        await seed_builtin_taxonomy_technology_roles()
         return
 
     _client = AsyncIOMotorClient(uri, serverSelectionTimeoutMS=5000)
@@ -266,7 +267,7 @@ async def init_db() -> None:
     await _db.analyses_result.create_index("provider")
     await _db.analyses_result.create_index("owner")
     await _db.analyses_result.create_index("name")
-    await _db.analyses_result.create_index("stack.domain")
+    await _db.analyses_result.create_index("stack.software_type")
     await _db.analyses_result.create_index("stack.stack_pattern")
     await _db.analyses_result.create_index("pipeline_version")
     await _db.analyses_result.create_index("stack_embedding", sparse=True)
@@ -278,19 +279,23 @@ async def init_db() -> None:
     await _db.feedback.create_index("created_at")
     await _db.analysis_events.create_index("repo_key")
     await _db.analysis_events.create_index("created_at")
+    await _db.software_type_disagreements.create_index(
+        [("repo_key", ASCENDING), ("commit_sha", ASCENDING), ("pipeline_version", ASCENDING)],
+        unique=True,
+    )
 
     await _db.stack_feedback.create_index("analysis_id")
     await _db.stack_feedback.create_index("created_at")
     await _db.insights_feedback.create_index("analysis_id")
     await _db.insights_feedback.create_index("created_at")
-    await _db.domains.create_index("domain_id", unique=True)
-    await _db.dep_categories.create_index("category", unique=True)
-    await _db.dep_category_feedback.create_index("category", unique=True)
-    await _db.taxonomy_domains.create_index("active")
-    await _db.taxonomy_categories.create_index("active")
-    await seed_builtin_domains()
-    await seed_builtin_taxonomy_categories()
-    await seed_builtin_categories()   # idempotent, safe every boot
+    await _db.software_types.create_index("software_type_id", unique=True)
+    await _db.dep_technology_roles.create_index("technology_role", unique=True)
+    await _db.dep_technology_role_feedback.create_index("technology_role", unique=True)
+    await _db.taxonomy_software_types.create_index("active")
+    await _db.taxonomy_technology_roles.create_index("active")
+    await seed_builtin_software_types()
+    await seed_builtin_taxonomy_technology_roles()
+    await seed_builtin_technology_roles()   # idempotent, safe every boot
     logger.info("MongoDB connected: %s", getenv("MONGODB_DB", "stacksniffer"))
     print(f"MongoDB connected: {getenv('MONGODB_DB', 'stacksniffer')}")
 
@@ -335,7 +340,8 @@ async def upsert_repo_analysis(
     embedding: list[float] | None,
     commit_sha: str,
     pipeline_version: str,
-    repo_metadata: dict | None = None
+    repo_metadata: dict | None = None,
+    repository_classification: dict | None = None,
 ) -> None:
     provider, owner, name = parse_repo_key(repo_key)
     now = _now()
@@ -355,6 +361,8 @@ async def upsert_repo_analysis(
     }
     if repo_metadata is not None:
         set_fields["repo"] = deepcopy(repo_metadata)
+    if repository_classification is not None:
+        set_fields["repository_classification"] = deepcopy(repository_classification)
     if _db is not None:
         await _db.analyses_result.update_one(
             {"_id": repo_key},
@@ -452,9 +460,16 @@ async def complete_refresh(
     commit_sha,
     pipeline_version,
     repo_metadata: dict | None = None,
+    repository_classification: dict | None = None,
 ) -> None:
     await upsert_repo_analysis(
-        repo_key, stack, embedding, commit_sha, pipeline_version, repo_metadata
+        repo_key,
+        stack,
+        embedding,
+        commit_sha,
+        pipeline_version,
+        repo_metadata,
+        repository_classification,
     )
 
 
@@ -569,6 +584,38 @@ async def record_event(repo_key, commit_sha, pipeline_version, summary: dict) ->
     _memory("analysis_events").append(doc)
 
 
+async def record_software_type_disagreement(
+    repo_key: str,
+    commit_sha: str,
+    pipeline_version: str,
+    disagreement: dict,
+) -> None:
+    """Persist an advisory Layer-0 disagreement for later human labeling."""
+    record_id = f"{repo_key}|{commit_sha}|{pipeline_version}"
+    doc = {
+        "_id": record_id,
+        "repo_key": repo_key,
+        "commit_sha": commit_sha,
+        "pipeline_version": pipeline_version,
+        **deepcopy(disagreement),
+        "created_at": _now(),
+    }
+    if _db is not None:
+        await _db.software_type_disagreements.update_one(
+            {"_id": record_id},
+            {"$set": doc},
+            upsert=True,
+        )
+        return
+    _memory("software_type_disagreements")[record_id] = doc
+
+
+async def get_software_type_disagreements() -> list[dict]:
+    if _db is not None:
+        return await _db.software_type_disagreements.find({}, {"_id": 0}).to_list(10000)
+    return [deepcopy(row) for row in _memory("software_type_disagreements").values()]
+
+
 async def get_analysis_events(repo_key: str | None = None) -> list[dict]:
     if _db is not None:
         query = {"repo_key": repo_key} if repo_key else {}
@@ -610,7 +657,7 @@ async def store_feedback(
     # body containing repo_key/commit_sha/rated_output would silently overwrite
     # the real ones — corrupting exactly the provenance this row exists to
     # freeze. Promote only the known scoring keys.
-    for key in ("domain_correct", "correct_domain", "rating", "source", "notes"):
+    for key in ("software_type_correct", "correct_software_type", "rating", "source", "notes"):
         if key in feedback:
             doc[key] = deepcopy(feedback[key])
     if _db is not None:
@@ -639,11 +686,79 @@ async def get_all_analyses(with_embeddings_only: bool = False) -> list[dict]:
     if _db is not None:
         query = {"stack_embedding": {"$exists": True, "$ne": None}} if with_embeddings_only else {}
         cursor = _db.analyses_result.find(query)
-        return [_public_doc(doc) for doc in await cursor.to_list(10000)]
-    docs = [_public_doc(v) for v in _memory("analyses_result").values()]
-    if with_embeddings_only:
-        docs = [d for d in docs if d.get("stack_embedding")]
+        docs = [_public_doc(doc) for doc in await cursor.to_list(10000)]
+    else:
+        docs = [_public_doc(v) for v in _memory("analyses_result").values()]
+        if with_embeddings_only:
+            docs = [d for d in docs if d.get("stack_embedding")]
+    if _db is not None:
+        correction_rows = await _db.corrections.find({}, {"_id": 0}).to_list(10000)
+    else:
+        correction_rows = list(_memory("corrections").values())
+    corrections_by_repo: dict[str, list[dict]] = {}
+    for correction in correction_rows:
+        corrections_by_repo.setdefault(correction.get("repo_key", ""), []).append(correction)
+    for doc in docs:
+        repo_key = doc.get("repo_key") or doc.get("analysis_id") or doc.get("_id")
+        stack = deepcopy(doc.get("stack") or {})
+        for correction in corrections_by_repo.get(repo_key, []):
+            field = correction.get("field")
+            if field in ALLOWED_CORRECTION_FIELDS:
+                stack[field] = correction.get("value")
+        doc["stack"] = stack
     return docs
+
+
+async def search_analysis_examples(kind: str, query: str, limit: int = 10) -> list[dict]:
+    """Search the learned corpus with identical MongoDB and memory behavior."""
+    needle = query.strip().lower()
+    if not needle:
+        return []
+    terms = [term.strip() for term in needle.split(",") if term.strip()]
+    results: list[dict] = []
+    for doc in await get_all_analyses():
+        stack = doc.get("stack") or {}
+        techs_by_technology_role = {
+            technology_role: [tech for tech in values if isinstance(tech, dict) and tech.get("name")]
+            for technology_role, values in stack.items()
+            if isinstance(values, list)
+        }
+        matched_techs: list[str] = []
+        matched_technology_role = None
+        if kind == "software_type":
+            if needle not in str(stack.get("software_type", "")).lower():
+                continue
+        elif kind == "technology_role":
+            normalized = needle.replace(" ", "_")
+            matched_technology_role = next(
+                (technology_role for technology_role, techs in techs_by_technology_role.items()
+                 if normalized in technology_role.lower() and techs),
+                None,
+            )
+            if not matched_technology_role:
+                continue
+            matched_techs = [tech["name"] for tech in techs_by_technology_role[matched_technology_role]][:8]
+        elif kind == "technology":
+            all_names = [tech["name"] for techs in techs_by_technology_role.values() for tech in techs]
+            if not all(any(term in name.lower() for name in all_names) for term in terms):
+                continue
+            matched_techs = [name for name in all_names if any(term in name.lower() for term in terms)][:8]
+        else:
+            raise ValueError("kind must be technology, software_type, or technology_role")
+
+        repo_key = doc.get("repo_key") or doc.get("analysis_id") or doc.get("_id", "")
+        results.append({
+            "repo": (doc.get("repo") or {}).get("full_name") or repo_key.removeprefix("github:"),
+            "repo_key": repo_key,
+            "software_type": stack.get("software_type", "unknown"),
+            "primary_language": stack.get("primary_language"),
+            "stack_pattern": stack.get("stack_pattern"),
+            "matched_technology_role": matched_technology_role,
+            "matched_technologies": matched_techs,
+        })
+        if len(results) >= limit:
+            break
+    return results
 
 
 async def count_embedded_analyses() -> int:
@@ -704,9 +819,9 @@ async def find_similar(
                     "repo.full_name": 1,
                     "repo.description": 1,
                     "repo.stars": 1,
-                    "stack.domain": 1,
-                    "stack.domain_confidence": 1,
-                    "stack.domain_reasoning": 1,
+                    "stack.software_type": 1,
+                    "stack.software_type_confidence": 1,
+                    "stack.software_type_reasoning": 1,
                     "stack.stack_pattern": 1,
                     "stack.why_this_stack": 1,
                     "stack.primary_language": 1,
@@ -722,20 +837,28 @@ async def find_similar(
         return []
 
 
-async def find_similar_by_domain(domain: str, limit: int = 3) -> list[dict]:
+async def find_similar_by_software_type(software_type: str, limit: int = 3) -> list[dict]:
     if _db is None:
         return [
             _public_doc(v) for v in _memory("analyses_result").values()
-            if v.get("stack", {}).get("domain") == domain and v.get("stack_embedding")
+            if (
+                v.get("pipeline_version") == PIPELINE_VERSION
+                and v.get("stack", {}).get("software_type") == software_type
+                and v.get("stack_embedding")
+            )
         ][:limit]
     cursor = _db.analyses_result.find(
-        {"stack.domain": domain, "stack_embedding": {"$exists": True, "$ne": None}},
+        {
+            "pipeline_version": PIPELINE_VERSION,
+            "stack.software_type": software_type,
+            "stack_embedding": {"$exists": True, "$ne": None},
+        },
         {
             "_id": 0,
             "analysis_id": "$_id",
             "repo_key": "$_id",
-            "stack.domain": 1,
-            "stack.domain_reasoning": 1,
+            "stack.software_type": 1,
+            "stack.software_type_reasoning": 1,
             "stack.stack_pattern": 1,
             "stack.why_this_stack": 1,
         },
@@ -815,50 +938,50 @@ async def update_quality_criterion(field: str, criterion: dict) -> None:
         _memory("quality_criteria")[field] = doc
 
 
-async def get_all_domains() -> list[dict]:
+async def get_all_software_types() -> list[dict]:
     if _db is not None:
-        cursor = _db.domains.find(
+        cursor = _db.software_types.find(
             {"status": "active"}, {"_id": 0}
-        ).sort("domain_id", ASCENDING)
+        ).sort("software_type_id", ASCENDING)
         return await cursor.to_list(100)
     return [
-        d for d in _memory("domains").values()
+        d for d in _memory("software_types").values()
         if d.get("status", "active") == "active"
     ]
 
 
-async def upsert_domain(domain_id: str, doc: dict) -> None:
-    record = {**doc, "domain_id": domain_id}
+async def upsert_software_type(software_type_id: str, doc: dict) -> None:
+    record = {**doc, "software_type_id": software_type_id}
     if _db is not None:
-        await _db.domains.update_one(
-            {"domain_id": domain_id},
+        await _db.software_types.update_one(
+            {"software_type_id": software_type_id},
             {"$set": record},
             upsert=True,
         )
     else:
-        _memory("domains")[domain_id] = record
+        _memory("software_types")[software_type_id] = record
 
 
-async def store_domain(domain_id: str, doc: dict) -> None:
-    await upsert_domain(domain_id, doc)
+async def store_software_type(software_type_id: str, doc: dict) -> None:
+    await upsert_software_type(software_type_id, doc)
 
 
-async def delete_domain(domain_id: str) -> None:
+async def delete_software_type(software_type_id: str) -> None:
     if _db is not None:
-        await _db.domains.delete_one({"domain_id": domain_id})
+        await _db.software_types.delete_one({"software_type_id": software_type_id})
     else:
-        _memory("domains").pop(domain_id, None)
+        _memory("software_types").pop(software_type_id, None)
 
 
-async def store_emergent_categories(entries: list[dict]) -> None:
+async def store_emergent_technology_roles(entries: list[dict]) -> None:
     if not entries:
         return
     if _db is not None:
         for entry in entries:
-            await _db.dep_categories.update_one(
-                {"category": entry["category"]},
+            await _db.dep_technology_roles.update_one(
+                {"technology_role": entry["technology_role"]},
                 {
-                    "$set": {"category": entry["category"]},
+                    "$set": {"technology_role": entry["technology_role"]},
                     "$addToSet": {
                         "example_techs": entry.get("example_tech", ""),
                         "example_repos": entry.get("example_repo", ""),
@@ -870,9 +993,9 @@ async def store_emergent_categories(entries: list[dict]) -> None:
             )
         return
 
-    store = _memory("dep_categories")
+    store = _memory("dep_technology_roles")
     for entry in entries:
-        existing = next((c for c in store if c["category"] == entry["category"]), None)
+        existing = next((c for c in store if c["technology_role"] == entry["technology_role"]), None)
         if existing:
             existing["seen_count"] = existing.get("seen_count", 0) + 1
         else:
@@ -884,50 +1007,142 @@ async def store_emergent_categories(entries: list[dict]) -> None:
             })
 
 
-async def get_dep_categories() -> list[dict]:
-    from backend.services.category_registry import BUILTIN_CATEGORIES
+async def get_dep_technology_roles() -> list[dict]:
+    from backend.services.technology_role_registry import BUILTIN_TECHNOLOGY_ROLES
     standard = [
-        {"category": c, "standard": True, "status": "active", "seen_count": 0}
-        for c in BUILTIN_CATEGORIES
+        {"technology_role": c, "standard": True, "status": "active", "seen_count": 0}
+        for c in BUILTIN_TECHNOLOGY_ROLES
     ]
     if _db is not None:
-        emergent = await _db.dep_categories.find(
+        emergent = await _db.dep_technology_roles.find(
             {"standard": {"$ne": True}}, {"_id": 0}
         ).sort("seen_count", DESCENDING).to_list(200)
         return standard + emergent
-    return standard + _memory("dep_categories")
+    return standard + _memory("dep_technology_roles")
 
 
-async def get_category_feedback_decisions() -> dict:
+async def get_technology_role_feedback_decisions() -> dict:
     if _db is not None:
-        feedback = await _db.dep_category_feedback.find({}, {"_id": 0}).to_list(500)
+        feedback = await _db.dep_technology_role_feedback.find({}, {"_id": 0}).to_list(500)
     else:
-        feedback = _memory("dep_category_feedback")
+        feedback = _memory("dep_technology_role_feedback")
 
     discarded: list[str] = []
     merged: dict[str, str] = {}
     promoted: list[str] = []
     for row in feedback:
-        category = row.get("category", "")
+        if row.get("kind", "technology_role") != "technology_role":
+            continue
+        technology_role = row.get("technology_role", "")
         action = row.get("action", "")
         if action == "discard":
-            discarded.append(category)
+            discarded.append(technology_role)
         elif action == "merge" and row.get("merge_into"):
-            merged[category] = row["merge_into"]
+            merged[technology_role] = row["merge_into"]
         elif action == "promote":
-            promoted.append(category)
+            promoted.append(technology_role)
     return {"discarded": discarded, "merged": merged, "promoted": promoted}
 
 
-async def store_category_feedback(
-    category: str,
+async def get_software_type_feedback_decisions() -> dict:
+    if _db is not None:
+        rows = await _db.dep_technology_role_feedback.find(
+            {"kind": "software_type"}, {"_id": 0}
+        ).to_list(500)
+    else:
+        rows = [r for r in _memory("dep_technology_role_feedback") if r.get("kind") == "software_type"]
+    return {
+        "discarded": [r.get("name", r["technology_role"].removeprefix("software_type:")) for r in rows if r.get("action") == "discard"],
+        "merged": {r.get("name", r["technology_role"].removeprefix("software_type:")): r["merge_into"] for r in rows if r.get("action") == "merge" and r.get("merge_into")},
+        "promoted": [r.get("name", r["technology_role"].removeprefix("software_type:")) for r in rows if r.get("action") == "promote"],
+    }
+
+
+async def record_emergent_software_type(name: str, example_repo: str) -> None:
+    if not name or name in await get_valid_software_types():
+        return
+    if _db is not None:
+        await _db.taxonomy_software_types.update_one(
+            {"_id": name},
+            {"$setOnInsert": {"label": name.replace("_", " ").title(), "builtin": False,
+                              "active": False, "status": "pending", "created_at": _now()},
+             "$inc": {"seen_count": 1}, "$addToSet": {"example_repos": example_repo}},
+            upsert=True,
+        )
+    else:
+        store = _memory("taxonomy_software_types")
+        row = store.setdefault(name, {"_id": name, "label": name.replace("_", " ").title(),
+                                      "builtin": False, "active": False, "status": "pending",
+                                      "seen_count": 0, "example_repos": []})
+        row["seen_count"] = row.get("seen_count", 0) + 1
+        if example_repo not in row["example_repos"]:
+            row["example_repos"].append(example_repo)
+    _invalidate_taxonomy_cache()
+
+
+async def get_pending_taxonomy() -> dict:
+    technology_roles = await get_pending_technology_roles()
+    software_types = [r for r in await get_software_types(include_inactive=True)
+               if not r.get("builtin") and r.get("status") == "pending"]
+    return {"software_types": software_types, "technology_roles": technology_roles}
+
+
+async def apply_taxonomy_action(kind: str, name: str, action: str, merge_into: str | None = None) -> dict:
+    if kind not in {"software_type", "technology_role"} or action not in {"promote", "merge", "discard"}:
+        raise ValueError("invalid taxonomy lifecycle action")
+    if action == "merge" and not merge_into:
+        raise ValueError("merge_into is required")
+    feedback_key = f"software_type:{name}" if kind == "software_type" else name
+    doc = {"kind": kind, "technology_role": feedback_key, "name": name, "action": action,
+           "merge_into": merge_into, "source": "ui", "created_at": _now()}
+    if _db is not None:
+        await _db.dep_technology_role_feedback.update_one(
+            {"technology_role": feedback_key}, {"$set": doc}, upsert=True
+        )
+    else:
+        rows = _memory("dep_technology_role_feedback")
+        existing = next((r for r in rows if r.get("technology_role") == feedback_key), None)
+        if existing: existing.update(doc)
+        else: rows.append(doc)
+
+    active = action == "promote"
+    status = "active" if active else ("merged" if action == "merge" else "discarded")
+    if kind == "software_type":
+        update = {"active": active, "status": status, "merge_into": merge_into}
+        if _db is not None:
+            await _db.taxonomy_software_types.update_one({"_id": name}, {"$set": update}, upsert=True)
+        else:
+            _memory("taxonomy_software_types").setdefault(name, {"_id": name, "builtin": False}).update(update)
+    else:
+        update = {"standard": active, "status": status, "merged_into": merge_into}
+        if _db is not None:
+            await _db.dep_technology_roles.update_one({"technology_role": name}, {"$set": update}, upsert=True)
+            await _db.taxonomy_technology_roles.update_one(
+                {"_id": name}, {"$set": {"active": active, "builtin": False,
+                                           "status": status, "merge_into": merge_into}}, upsert=True)
+        else:
+            rows = _memory("dep_technology_roles")
+            row = next((r for r in rows if r.get("technology_role") == name), None)
+            if row: row.update(update)
+            else: rows.append({"technology_role": name, **update})
+            _memory("taxonomy_technology_roles").setdefault(name, {"_id": name, "builtin": False}).update(
+                {"active": active, "status": status, "merge_into": merge_into})
+    _invalidate_taxonomy_cache()
+    if kind == "technology_role":
+        from backend.services.technology_role_registry import invalidate_cache
+        invalidate_cache()
+    return {"ok": True, "kind": kind, "name": name, "action": action, "merge_into": merge_into}
+
+
+async def store_technology_role_feedback(
+    technology_role: str,
     action: str,
     merge_into: str = None,
     reason: str = None,
     source: str = "ui",
 ) -> dict:
     doc = {
-        "category": category,
+        "technology_role": technology_role,
         "action": action,
         "merge_into": merge_into,
         "reason": reason,
@@ -935,18 +1150,18 @@ async def store_category_feedback(
         "created_at": _now(),
     }
     if _db is not None:
-        await _db.dep_category_feedback.update_one(
-            {"category": category},
+        await _db.dep_technology_role_feedback.update_one(
+            {"technology_role": technology_role},
             {"$set": doc},
             upsert=True,
         )
-        await _db.dep_categories.update_one(
-            {"category": category},
+        await _db.dep_technology_roles.update_one(
+            {"technology_role": technology_role},
             {"$set": {"status": action}},
         )
     else:
-        store = _memory("dep_category_feedback")
-        existing = next((f for f in store if f["category"] == category), None)
+        store = _memory("dep_technology_role_feedback")
+        existing = next((f for f in store if f["technology_role"] == technology_role), None)
         if existing:
             existing.update(doc)
         else:
@@ -954,83 +1169,63 @@ async def store_category_feedback(
     return doc
 
 
-async def delete_category_feedback(category: str) -> None:
+async def delete_technology_role_feedback(technology_role: str) -> None:
     if _db is not None:
-        await _db.dep_category_feedback.delete_one({"category": category})
-        await _db.dep_categories.update_one(
-            {"category": category},
+        await _db.dep_technology_role_feedback.delete_one({"technology_role": technology_role})
+        await _db.dep_technology_roles.update_one(
+            {"technology_role": technology_role},
             {"$set": {"status": "pending"}},
         )
     else:
-        _memory_store["dep_category_feedback"] = [
-            f for f in _memory("dep_category_feedback")
-            if f["category"] != category
+        _memory_store["dep_technology_role_feedback"] = [
+            f for f in _memory("dep_technology_role_feedback")
+            if f["technology_role"] != technology_role
         ]
 
 
-async def reclassify_category_techs(from_category: str, to_category: str | None) -> int:
+async def reclassify_technology_role_techs(from_technology_role: str, to_technology_role: str | None) -> int:
     if _db is None:
         count = 0
         for doc in _memory("analyses_result").values():
             stack = doc.get("stack", {})
-            techs = stack.get(from_category, [])
+            techs = stack.get(from_technology_role, [])
             if not techs:
                 continue
-            if to_category is None:
-                stack.pop(from_category, None)
+            if to_technology_role is None:
+                stack.pop(from_technology_role, None)
             else:
-                stack.setdefault(to_category, []).extend(techs)
-                stack.pop(from_category, None)
+                stack.setdefault(to_technology_role, []).extend(techs)
+                stack.pop(from_technology_role, None)
             count += 1
         return count
 
     cursor = _db.analyses_result.find(
-        {f"stack.{from_category}": {"$exists": True, "$ne": []}},
-        {f"stack.{from_category}": 1},
+        {f"stack.{from_technology_role}": {"$exists": True, "$ne": []}},
+        {f"stack.{from_technology_role}": 1},
     )
     count = 0
     async for doc in cursor:
-        techs = doc.get("stack", {}).get(from_category, [])
+        techs = doc.get("stack", {}).get(from_technology_role, [])
         if not techs:
             continue
-        if to_category is None:
-            update = {"$unset": {f"stack.{from_category}": ""}}
+        if to_technology_role is None:
+            update = {"$unset": {f"stack.{from_technology_role}": ""}}
         else:
             update = {
-                "$push": {f"stack.{to_category}": {"$each": techs}},
-                "$unset": {f"stack.{from_category}": ""},
+                "$push": {f"stack.{to_technology_role}": {"$each": techs}},
+                "$unset": {f"stack.{from_technology_role}": ""},
             }
         await _db.analyses_result.update_one({"_id": doc["_id"]}, update)
         count += 1
     return count
 
 
-async def promote_category(category: str) -> None:
-    if _db is not None:
-        await _db.dep_categories.update_one(
-            {"category": category},
-            {"$set": {"standard": True, "status": "active"}},
-            upsert=True,
-        )
-    else:
-        store = _memory("dep_categories")
-        existing = next((c for c in store if c["category"] == category), None)
-        if existing:
-            existing["standard"] = True
-            existing["status"] = "active"
-        else:
-            store.append({
-                "category": category,
-                "standard": True,
-                "status": "active",
-                "seen_count": 0,
-            })
-    from backend.services.category_registry import invalidate_cache
-    invalidate_cache()
+async def promote_technology_role(technology_role: str) -> None:
+    await apply_taxonomy_action("technology_role", technology_role, "promote")
 
 
-async def update_category_metadata(
-    category: str,
+async def update_technology_role_metadata(
+    technology_role: str,
     display_name: str = None,
     description: str = None,
     color: str = None,
@@ -1045,28 +1240,28 @@ async def update_category_metadata(
     if not update:
         return
     if _db is not None:
-        await _db.dep_categories.update_one(
-            {"category": category},
+        await _db.dep_technology_roles.update_one(
+            {"technology_role": technology_role},
             {"$set": update},
             upsert=True,
         )
     else:
-        store = _memory("dep_categories")
-        existing = next((c for c in store if c["category"] == category), None)
+        store = _memory("dep_technology_roles")
+        existing = next((c for c in store if c["technology_role"] == technology_role), None)
         if existing:
             existing.update(update)
         else:
-            store.append({"category": category, **update})
+            store.append({"technology_role": technology_role, **update})
 
 
-async def find_by_domain(domain: str, limit: int = 20) -> list[dict]:
+async def find_by_software_type(software_type: str, limit: int = 20) -> list[dict]:
     if _db is None:
         return [
             _public_doc(v) for v in _memory("analyses_result").values()
-            if v.get("stack", {}).get("domain") == domain
+            if v.get("stack", {}).get("software_type") == software_type
         ][:limit]
     cursor = _db.analyses_result.find(
-        {"stack.domain": domain},
+        {"stack.software_type": software_type},
         {
             "_id": 0,
             "analysis_id": "$_id",
@@ -1116,14 +1311,14 @@ async def get_stats() -> dict:
     with_feedback = await _db.feedback.count_documents({})
     with_stack_fb = await _db.stack_feedback.count_documents({})
     with_insights_fb = await _db.insights_feedback.count_documents({})
-    emergent_cats = await _db.dep_categories.count_documents(
+    emergent_cats = await _db.dep_technology_roles.count_documents(
         {"standard": {"$ne": True}}
     )
-    pending_review = await _db.dep_categories.count_documents(
+    pending_review = await _db.dep_technology_roles.count_documents(
         {"standard": {"$ne": True}, "status": "pending"}
     )
-    by_domain = await _db.analyses_result.aggregate([
-        {"$group": {"_id": "$stack.domain", "count": {"$sum": 1}}},
+    by_software_type = await _db.analyses_result.aggregate([
+        {"$group": {"_id": "$stack.software_type", "count": {"$sum": 1}}},
         {"$sort": {"count": DESCENDING}},
     ]).to_list(20)
     return {
@@ -1134,9 +1329,9 @@ async def get_stats() -> dict:
         "with_feedback": with_feedback,
         "with_stack_feedback": with_stack_fb,
         "with_insights_feedback": with_insights_fb,
-        "emergent_categories": emergent_cats,
-        "pending_category_review": pending_review,
-        "by_domain": {d["_id"]: d["count"] for d in by_domain if d["_id"]},
+        "emergent_technology_roles": emergent_cats,
+        "pending_technology_role_review": pending_review,
+        "by_software_type": {d["_id"]: d["count"] for d in by_software_type if d["_id"]},
     }
 
 from datetime import datetime, timezone
@@ -1146,19 +1341,19 @@ def _now():
     return datetime.now(timezone.utc)
 
 
-async def seed_builtin_categories() -> None:
+async def seed_builtin_technology_roles() -> None:
     """
     Idempotent. Ensures the 8 builtins exist as standard=True rows so
-    get_promoted_categories() and the registry share one source. Run once at
+    get_promoted_technology_roles() and the registry share one source. Run once at
     startup (or in seed_corpus).
     """
-    from backend.services.category_registry import BUILTIN_CATEGORIES
+    from backend.services.technology_role_registry import BUILTIN_TECHNOLOGY_ROLES
     if _db is not None:
-        for cat in BUILTIN_CATEGORIES:
-            await _db.dep_categories.update_one(
-                {"category": cat},
+        for cat in BUILTIN_TECHNOLOGY_ROLES:
+            await _db.dep_technology_roles.update_one(
+                {"technology_role": cat},
                 {"$setOnInsert": {
-                    "category": cat,
+                    "technology_role": cat,
                     "standard": True,
                     "status": "active",
                     "seen_count": 0,
@@ -1167,50 +1362,50 @@ async def seed_builtin_categories() -> None:
             )
         return
 
-    store = _memory("dep_categories")
-    known = {row.get("category") for row in store}
+    store = _memory("dep_technology_roles")
+    known = {row.get("technology_role") for row in store}
     store.extend(
-        {"category": cat, "standard": True, "status": "active", "seen_count": 0}
-        for cat in BUILTIN_CATEGORIES
+        {"technology_role": cat, "standard": True, "status": "active", "seen_count": 0}
+        for cat in BUILTIN_TECHNOLOGY_ROLES
         if cat not in known
     )
 
 
-async def record_emergent_category(name: str, example_tech: str, example_repo: str) -> None:
+async def record_emergent_technology_role(name: str, example_tech: str, example_repo: str) -> None:
     """
-    Called by _store_emergent_categories when Gemini emits a non-builtin
-    category. Accumulates evidence; does NOT promote. standard stays False until
+    Called by _store_emergent_technology_roles when Gemini emits a non-builtin
+    technology_role. Accumulates evidence; does NOT promote. standard stays False until
     a human acts. Bumps a sighting counter so the review UI can rank by frequency
     ('bundler seen on 6 repos' is a stronger promote signal than one sighting).
     """
-    await store_emergent_categories([{
-        "category": name,
+    await store_emergent_technology_roles([{
+        "technology_role": name,
         "example_tech": example_tech,
         "example_repo": example_repo,
     }])
 
 
-async def get_promoted_categories() -> list[str]:
-    """Every category the registry should treat as valid: standard=True rows."""
+async def get_promoted_technology_roles() -> list[str]:
+    """Every technology_role the registry should treat as valid: standard=True rows."""
     if _db is not None:
-        cursor = _db.dep_categories.find({"standard": True}, {"category": 1})
-        return [doc["category"] async for doc in cursor if doc.get("category")]
+        cursor = _db.dep_technology_roles.find({"standard": True}, {"technology_role": 1})
+        return [doc["technology_role"] async for doc in cursor if doc.get("technology_role")]
     return [
-        row["category"] for row in _memory("dep_categories")
-        if row.get("standard") and row.get("category")
+        row["technology_role"] for row in _memory("dep_technology_roles")
+        if row.get("standard") and row.get("technology_role")
     ]
 
 
-async def get_pending_categories() -> list[dict]:
-    """Emergent categories awaiting a human decision, most-sighted first."""
+async def get_pending_technology_roles() -> list[dict]:
+    """Emergent technology_roles awaiting a human decision, most-sighted first."""
     if _db is not None:
-        rows = await _db.dep_categories.find(
+        rows = await _db.dep_technology_roles.find(
             {"standard": {"$ne": True}, "status": "pending"}, {"_id": 0}
         ).sort("seen_count", -1).to_list(200)
     else:
         rows = sorted(
             (
-                row for row in _memory("dep_categories")
+                row for row in _memory("dep_technology_roles")
                 if not row.get("standard") and row.get("status") == "pending"
             ),
             key=lambda row: row.get("seen_count", 0),
@@ -1219,7 +1414,7 @@ async def get_pending_categories() -> list[dict]:
     return [
         {
             **row,
-            "_id": row.get("category"),
+            "_id": row.get("technology_role"),
             "sightings": row.get("seen_count", 0),
             "last_example_tech": (
                 (row.get("example_techs") or [None])[-1]
@@ -1231,36 +1426,22 @@ async def get_pending_categories() -> list[dict]:
     ]
 
 
-async def discard_category(name: str) -> dict:
+async def discard_technology_role(name: str) -> dict:
     """
-    Reject an emergent category. Techs Gemini put there will be remapped to
+    Reject an emergent technology_role. Techs Gemini put there will be remapped to
     'library' or 'dev_tool' on future runs (the prompt's DISCARDED instruction).
     Builtins cannot be discarded.
     """
-    from backend.services.category_registry import BUILTIN_CATEGORIES, invalidate_cache
-    if name in BUILTIN_CATEGORIES:
-        return {"ok": False, "error": f"'{name}' is a builtin category and cannot be discarded"}
+    from backend.services.technology_role_registry import BUILTIN_TECHNOLOGY_ROLES
+    if name in BUILTIN_TECHNOLOGY_ROLES:
+        return {"ok": False, "error": f"'{name}' is a builtin technology_role and cannot be discarded"}
 
-    await _db.dep_categories.update_one(
-        {"_id": name},
-        {"$set": {"standard": False, "status": "discarded", "discarded_at": _now()}},
-        upsert=True,
-    )
-    invalidate_cache()
-    return {"ok": True, "name": name}
+    return await apply_taxonomy_action("technology_role", name, "discard")
 
 
-async def merge_category(name: str, into: str) -> dict:
+async def merge_technology_role(name: str, into: str) -> dict:
     """
-    Fold an emergent category into an existing one (e.g. 'bundler' -> 'infra').
+    Fold an emergent technology_role into an existing one (e.g. 'bundler' -> 'infra').
     The prompt's MERGED instruction then tells Gemini to classify {name} as {into}.
     """
-    from backend.services.category_registry import invalidate_cache
-    await _db.dep_categories.update_one(
-        {"_id": name},
-        {"$set": {"standard": False, "status": "merged", "merged_into": into,
-                  "merged_at": _now()}},
-        upsert=True,
-    )
-    invalidate_cache()
-    return {"ok": True, "name": name, "merged_into": into}
+    return await apply_taxonomy_action("technology_role", name, "merge", into)

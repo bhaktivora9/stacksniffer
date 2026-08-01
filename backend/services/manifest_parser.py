@@ -10,7 +10,7 @@ Responsibility:
   - Return unclassified dep list for Phase 2 (Gemini classification)
 
 What this file does NOT do:
-  - Classify packages into tech categories (that is Phase 2 — Gemini)
+  - Classify packages into tech technology_roles (that is Phase 2 — Gemini)
   - Map package names to canonical tech names (Gemini knows psycopg2 = PostgreSQL)
   - Score confidence (Gemini assigns confidence based on package + scope + context)
   - Emit DetectedTech objects (Phase 2 output, not Phase 1)
@@ -236,7 +236,7 @@ def parse_manifest_dependencies(
     no DetectedTech objects.
 
     The output feeds Phase 2 (classify_dependencies in ai_pipeline.py) where
-    Gemini maps package names to tech categories.
+    Gemini maps package names to tech technology_roles.
 
     Returns:
       raw_deps:           list of dep dicts (name, scope, origin, matched_file, version_spec)

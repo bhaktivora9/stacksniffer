@@ -2,12 +2,12 @@
 backend/services/stack_feedback_service.py
 
 Stack-level feedback — per-technology correctness signals.
-More granular than domain feedback:
+More granular than software_type feedback:
   - Was React correctly detected?
   - Was LangChain a false positive (commented out)?
   - Was Redis missed entirely?
 
-This feeds the RLHF loop at the technology level, not just domain level.
+This feeds the RLHF loop at the technology level, not just software_type level.
 """
 import json
 import logging
@@ -41,7 +41,7 @@ def _save_patterns(patterns: dict) -> None:
 
 
 def _find_entry(patterns: dict, tech_name: str) -> tuple[str | None, dict | None]:
-    """Find pattern entry by tech name. Returns (category, entry)."""
+    """Find pattern entry by tech name. Returns (technology_role, entry)."""
     for cat, entries in patterns.items():
         if not isinstance(entries, list):
             continue
@@ -134,7 +134,7 @@ async def penalize_tech(tech_name: str, pattern_matches: list[dict], reason: str
 
 async def register_missing_tech(
     tech_name: str,
-    category: str,
+    technology_role: str,
     analysis_id: str
 ) -> dict:
     """
@@ -158,7 +158,7 @@ async def register_missing_tech(
         return {
             "tech": tech_name,
             "action": "false_negative_logged",
-            "category": cat,
+            "technology_role": cat,
             "message": f"{tech_name} exists in patterns but wasn't detected. "
                        f"Check if the repo uses unconventional import/dependency names.",
             "investigation_needed": True
@@ -166,8 +166,8 @@ async def register_missing_tech(
     else:
         # Tech NOT in patterns — this is a discovery signal
         # Add a placeholder entry with low confidence pending keyword discovery
-        if category not in patterns:
-            patterns[category] = []
+        if technology_role not in patterns:
+            patterns[technology_role] = []
 
         new_entry = {
             "name": tech_name,
@@ -179,13 +179,13 @@ async def register_missing_tech(
             "_discovered_at": datetime.utcnow().isoformat(),
             "_note": "Add keywords after inspecting the repo's dependency files"
         }
-        patterns[category].append(new_entry)
+        patterns[technology_role].append(new_entry)
         _save_patterns(patterns)
-        logger.info("Discovered new tech '%s' in category '%s'", tech_name, category)
+        logger.info("Discovered new tech '%s' in technology_role '%s'", tech_name, technology_role)
         return {
             "tech": tech_name,
             "action": "pattern_discovered",
-            "category": category,
+            "technology_role": technology_role,
             "message": f"{tech_name} added to patterns.json with 0.50 confidence. "
                        f"Add keywords by inspecting the repo's dependency files."
         }
@@ -209,17 +209,17 @@ async def compute_per_tech_accuracy() -> dict:
         "false_positive": 0,
         "false_negative": 0,
         "total_evaluations": 0,
-        "category": ""
+        "technology_role": ""
     })
 
     for fb in all_feedback:
         for ev in fb.get("tech_evaluations", []):
             tech = ev.get("tech_name", "")
             verdict = ev.get("verdict", "")  # "correct" | "false_positive" | "false_negative"
-            category = ev.get("category", "")
+            technology_role = ev.get("technology_role", "")
 
             tech_stats[tech]["total_evaluations"] += 1
-            tech_stats[tech]["category"] = category
+            tech_stats[tech]["technology_role"] = technology_role
 
             if verdict == "correct":
                 tech_stats[tech]["correct"] += 1
@@ -302,7 +302,7 @@ async def _get_discovered_patterns_without_keywords() -> list[dict]:
                     and not entry.get("keywords")):
                 result.append({
                     "tech": entry["name"],
-                    "category": cat,
+                    "technology_role": cat,
                     "discovered_in": entry.get("_discovered_in", ""),
                     "note": entry.get("_note", "")
                 })

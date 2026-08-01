@@ -104,7 +104,7 @@ async def submit_insights_feedback(
         "notes": feedback.notes,
         "original_insights": original_insights,
         "repo_key": repo_key,
-        "domain": stack.get("domain", "unknown"),
+        "software_type": stack.get("software_type", "unknown"),
         "created_at": datetime.utcnow().isoformat(),
         "training_label": feedback.replacement_text or (
             original_insights if final_score and final_score >= 4 else None
@@ -198,16 +198,16 @@ async def insights_feedback_stats():
     scores    = [f["quality_score"] for f in all_feedback if f.get("quality_score")]
     avg_score = sum(scores) / len(scores) if scores else 0
 
-    by_domain: dict[str, dict] = {}
+    by_software_type: dict[str, dict] = {}
     for f in all_feedback:
-        domain = f.get("domain", "unknown")
-        if domain not in by_domain:
-            by_domain[domain] = {"positive": 0, "negative": 0, "total": 0}
-        by_domain[domain]["total"] += 1
+        software_type = f.get("software_type", "unknown")
+        if software_type not in by_software_type:
+            by_software_type[software_type] = {"positive": 0, "negative": 0, "total": 0}
+        by_software_type[software_type]["total"] += 1
         if f.get("is_training_positive"):
-            by_domain[domain]["positive"] += 1
+            by_software_type[software_type]["positive"] += 1
         if f.get("is_training_negative"):
-            by_domain[domain]["negative"] += 1
+            by_software_type[software_type]["negative"] += 1
 
     need_more = max(0, 200 - positive)
     return {
@@ -216,7 +216,7 @@ async def insights_feedback_stats():
         "negative_examples": negative,
         "gold_labels":       gold,
         "avg_quality_score": round(avg_score, 2),
-        "by_domain":         by_domain,
+        "by_software_type":         by_software_type,
         "finetuning_ready":  positive >= 200,
         "message": (
             f"{positive} positive, {negative} negative, {gold} gold labels. "
@@ -290,7 +290,7 @@ async def export_training_data(min_quality: int = 4):
                 "output":  replacement,
                 "score":   score,
                 "source":  fb.get("source"),
-                "domain":  fb.get("domain"),
+                "software_type":  fb.get("software_type"),
                 "is_gold": True,
             })
         elif score <= 2 and replacement:
@@ -301,7 +301,7 @@ async def export_training_data(min_quality: int = 4):
                 "chosen":   replacement,
                 "score":    score,
                 "source":   fb.get("source"),
-                "domain":   fb.get("domain"),
+                "software_type":   fb.get("software_type"),
             })
         elif score <= 2 and not replacement:
             # Negative signal without positive label — skip for supervised training
@@ -329,11 +329,11 @@ async def export_training_data(min_quality: int = 4):
 def _build_input(feedback: dict) -> str:
     """
     Build the input prompt text for a training example.
-    This is what the model receives — (repo context + domain) → insights.
+    This is what the model receives — (repo context + software_type) → insights.
     """
     return (
         f"Repository: {feedback.get('repo_name', '')}\n"
-        f"Domain: {feedback.get('domain', 'unknown')}\n"
+        f"SoftwareType: {feedback.get('software_type', 'unknown')}\n"
         f"Generate architectural insights.\n"
         f"Return JSON with why_this_stack, stack_pattern, "
         f"ecosystem_context, notable_combinations."

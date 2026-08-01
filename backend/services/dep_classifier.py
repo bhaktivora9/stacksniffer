@@ -10,17 +10,20 @@ Phase 0: apply_file_signals()
 Phase 2a: classify_dependencies()
   Single Gemini Flash call classifying the raw dep list from Phase 1.
   ENRICHMENT, not a gate — analyze.py builds a complete base from raw_deps
-  first, so a Gemini failure degrades category precision but never empties
+  first, so a Gemini failure degrades technology_role precision but never empties
   the stack.
 """
 import asyncio
 import json
 import logging
 import re
+import time
 
-from backend.services.category_registry import is_builtin, valid_categories
+from backend.services.technology_role_registry import is_builtin, valid_technology_roles
 
 logger = logging.getLogger(__name__)
+
+GEMINI_REQUEST_TIMEOUT_SECONDS = 40.0
 
 # ── Phase 0: File signals ─────────────────────────────────────────────────────
 
@@ -86,11 +89,11 @@ def apply_file_signals(file_tree: list[str]) -> list[dict]:
     basenames = {p.split("/")[-1] for p in file_tree}
     all_paths = set(file_tree)
 
-    for filename, (tech, category, conf) in FILE_SIGNALS.items():
+    for filename, (tech, technology_role, conf) in FILE_SIGNALS.items():
         if filename.endswith("/"):
             if any(p.startswith(filename) for p in all_paths) and tech not in detected:
                 detected[tech] = {
-                    "name": tech, "category": category, "confidence": conf,
+                    "name": tech, "technology_role": technology_role, "confidence": conf,
                     "scope": "required", "detection_source": "file_signal",
                     "matched_file": filename,
                 }
@@ -100,7 +103,7 @@ def apply_file_signals(file_tree: list[str]) -> list[dict]:
             )
             if tech not in detected:
                 detected[tech] = {
-                    "name": tech, "category": category, "confidence": conf,
+                    "name": tech, "technology_role": technology_role, "confidence": conf,
                     "scope": "required", "detection_source": "file_signal",
                     "matched_file": real_path,
                 }
@@ -117,7 +120,7 @@ def apply_file_signals(file_tree: list[str]) -> list[dict]:
             ext_counts[suffix] = ext_counts.get(suffix, 0) + 1
             ext_example.setdefault(suffix, path)
 
-    for ext, (tech, category, conf) in EXTENSION_SIGNALS.items():
+    for ext, (tech, technology_role, conf) in EXTENSION_SIGNALS.items():
         count = ext_counts.get(ext, 0)
         if count < _MIN_EXT_COUNT:
             continue
@@ -125,7 +128,7 @@ def apply_file_signals(file_tree: list[str]) -> list[dict]:
             detected[tech]["file_count"] = detected[tech].get("file_count", 0) + count
             continue
         detected[tech] = {
-            "name": tech, "category": category, "confidence": conf,
+            "name": tech, "technology_role": technology_role, "confidence": conf,
             "scope": "required", "detection_source": "file_signal",
             "matched_file": ext_example.get(ext, ext), "file_count": count,
         }
@@ -151,10 +154,11 @@ File tree sample (for context only — do not classify file tree entries):
 Raw dependencies extracted from manifests (Phase 1 structural extraction):
 «RAW_DEPS_JSON»
 
-TASK: Classify each dependency into exactly ONE category and return a
-deduplicated list of CANONICAL TECH NAMES.
+TASK: Classify each dependency into exactly ONE technology_role and return a
+deduplicated list of CANONICAL TECH NAMES. Also assign its architectural layer,
+or null when the dependency's functional tier is genuinely unclear.
 
-CATEGORIES:
+TECHNOLOGY_ROLES:
   languages    — programming language runtime, SDK, or toolchain
   frameworks   — application framework developers build on top of
   databases    — storage engines, ORMs, query builders, database clients
@@ -164,6 +168,14 @@ CATEGORIES:
   testing      — test frameworks, assertion libs, mocking, coverage, E2E testing
   library      — utility library (HTTP clients, serialization, validation, logging)
   dev_tool     — linters, formatters, type checkers, build tools — EXCLUDE FROM OUTPUT
+
+ARCHITECTURAL LAYERS (use exactly one value or null):
+  frontend | backend | messaging | cache | data | observability | infra |
+  testing | ai_ml | language_runtime
+
+TechnologyRole and layer answer different questions. Return both independently.
+Do not force a layer merely to match the technology_role. If evidence is insufficient,
+return null for architectural_layer.
 
 CLASSIFICATION RULES:
   Java group IDs (format group:artifact or org.x.y):
@@ -211,7 +223,9 @@ One entry per unique CANONICAL TECH NAME (deduplicated). Example of the shape:
 [
   {
     "name":       "FastAPI",
-    "category":   "frameworks",
+    "technology_role":   "frameworks",
+    "architectural_layer": "backend",
+    "layer_confidence": 0.92,
     "confidence": 0.95,
     "scope":      "required",
     "packages":   ["fastapi", "fastapi-cli"],
@@ -224,6 +238,11 @@ Exclude dev_tool entries entirely. Return [] if no classifiable dependencies.
 
 _GEMINI_SCOPES = {"required", "optional"}
 _SCOPE_PRIORITY = {"required": 0, "optional": 1, "dev": 2, "test": 3}
+_ARCHITECTURAL_LAYERS = {
+    "frontend", "backend", "messaging", "cache", "data",
+    "observability", "infra", "testing", "ai_ml", "language_runtime",
+}
+_MAX_AI_LAYER_CONFIDENCE = 0.80
 
 
 def _render_prompt(repo_full_name: str, file_tree_sample: str, raw_deps_json: str) -> str:
@@ -252,11 +271,11 @@ def _extract_json_array(text: str) -> str:
     return text
 
 
-async def _build_category_feedback_context() -> str:
-    """Human category decisions, injected into the prompt to steer Gemini."""
+async def _build_technology_role_feedback_context() -> str:
+    """Human technology_role decisions, injected into the prompt to steer Gemini."""
     try:
         import backend.services.storage_service as storage_service
-        decisions = await storage_service.get_category_feedback_decisions()
+        decisions = await storage_service.get_technology_role_feedback_decisions()
     except Exception:
         return ""
 
@@ -266,33 +285,33 @@ async def _build_category_feedback_context() -> str:
     if not discarded and not merged and not promoted:
         return ""
 
-    lines = ["\nCATEGORY FEEDBACK (human decisions from previous analyses):"]
+    lines = ["\nTECHNOLOGY_ROLE FEEDBACK (human decisions from previous analyses):"]
     if discarded:
         lines.append(
-            f"  DISCARDED — do NOT emit these categories: {discarded}. "
+            f"  DISCARDED — do NOT emit these technology_roles: {discarded}. "
             f"Map techs from them to 'library' or 'dev_tool' instead."
         )
     for cat, target in merged.items():
         lines.append(f"  MERGED — classify '{cat}' as '{target}' instead.")
     if promoted:
-        lines.append(f"  PROMOTED — emit these first-class categories normally: {promoted}")
+        lines.append(f"  PROMOTED — emit these first-class technology_roles normally: {promoted}")
     return "\n".join(lines)
 
 
-async def _store_emergent_categories(clean: list[dict], repo_full_name: str) -> None:
-    """Persist any non-standard category Gemini invented, for human review."""
+async def _store_emergent_technology_roles(clean: list[dict], repo_full_name: str) -> None:
+    """Persist any non-standard technology_role Gemini invented, for human review."""
     try:
         import backend.services.storage_service as storage_service
         for entry in clean:
-            category = entry["category"]
-            if not is_builtin(category):
-                await storage_service.record_emergent_category(
-                    name=category,
+            technology_role = entry["technology_role"]
+            if not is_builtin(technology_role):
+                await storage_service.record_emergent_technology_role(
+                    name=technology_role,
                     example_tech=entry["name"],
                     example_repo=repo_full_name,
                 )
     except Exception as e:
-        logger.warning("[dep_classifier] Could not store emergent categories: %s", e)
+        logger.warning("[dep_classifier] Could not store emergent technology_roles: %s", e)
 
 
 async def classify_dependencies(
@@ -345,38 +364,78 @@ async def classify_dependencies(
     # as an opaque DEP_CLASSIFICATION_FAILED.
     response = None
     try:
-        feedback_context = await _build_category_feedback_context()
+        feedback_context = await _build_technology_role_feedback_context()
         prompt = _render_prompt(
             repo_full_name=repo_full_name,
             file_tree_sample=json.dumps(file_tree[:40]),
             raw_deps_json=json.dumps(deps_for_prompt, indent=2),
         ) + feedback_context
 
-        print(f"[dep_classifier] → Gemini ({len(unique_deps)} product deps, {len(seen)} total)...")
-        response = await asyncio.to_thread(_json_model.generate_content, prompt)
+        print(
+            f"[dep_classifier] Gemini start "
+            f"(product_tail={len(unique_deps)}, unresolved_tail={len(seen)})"
+        )
+        call_started = time.monotonic()
+        response = await asyncio.to_thread(
+            _json_model.generate_content,
+            prompt,
+            request_options={"timeout": GEMINI_REQUEST_TIMEOUT_SECONDS},
+        )
+        print(
+            f"[dep_classifier] Gemini call took "
+            f"{time.monotonic() - call_started:.1f}s "
+            f"(product_tail={len(unique_deps)})"
+        )
         result = json.loads(_extract_json_array(response.text or ""))
 
         if not isinstance(result, list):
             logger.warning("[dep_classifier] Gemini returned %s, not a list", type(result).__name__)
             return []
 
-        valid = await valid_categories()
+        valid = await valid_technology_roles()
         clean: list[dict] = []
         observed: list[dict] = []
         for entry in result:
             if not isinstance(entry, dict):
                 continue
             name = (entry.get("name") or "").strip()
-            cat = entry.get("category", "library")
+            cat = entry.get("technology_role", "library")
             if not name:
                 continue
             try:
                 confidence = float(entry.get("confidence", 0.75))
             except (TypeError, ValueError):
                 confidence = 0.75
+            if "architectural_layer" not in entry:
+                layer = None
+                layer_resolution = "missing"
+            else:
+                layer = entry.get("architectural_layer")
+                if layer is None:
+                    layer_resolution = "llm_null"
+                elif layer not in _ARCHITECTURAL_LAYERS:
+                    logger.warning(
+                        "[dep_classifier] Off-enum architectural layer %r for %s",
+                        layer,
+                        name,
+                    )
+                    layer = None
+                    layer_resolution = "off_enum"
+                else:
+                    layer_resolution = "resolved"
+            try:
+                layer_confidence = float(entry.get("layer_confidence", confidence))
+            except (TypeError, ValueError):
+                layer_confidence = confidence
             normalized = {
-                "name": name, "category": cat,
+                "name": name, "technology_role": cat,
                 "confidence": max(0.0, min(1.0, confidence)),
+                "architectural_layer": layer,
+                "layer_confidence": max(
+                    0.0,
+                    min(_MAX_AI_LAYER_CONFIDENCE, layer_confidence),
+                ),
+                "layer_resolution": layer_resolution,
                 "scope": entry.get("scope", "required"),
                 "packages": entry.get("packages", []),
                 "reasoning": entry.get("reasoning", ""),
@@ -385,8 +444,8 @@ async def classify_dependencies(
             if cat in valid:
                 clean.append(normalized)
 
-        print(f"[dep_classifier] ✓ {len(clean)} techs from {len(unique_deps)} packages")
-        await _store_emergent_categories(observed, repo_full_name)
+        print(f"[dep_classifier] classified {len(clean)} techs from {len(unique_deps)} packages")
+        await _store_emergent_technology_roles(observed, repo_full_name)
         return clean
 
     except json.JSONDecodeError as e:
@@ -401,5 +460,5 @@ async def classify_dependencies(
         # in full, instead of as a truncated symptom.
         import traceback
         logger.error("[dep_classifier] failed:\n%s", traceback.format_exc())
-        print(f"[dep_classifier] ✗ {type(e).__name__}: {e}")
+        print(f"[dep_classifier] failed with {type(e).__name__}: {e}")
         return []

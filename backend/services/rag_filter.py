@@ -1,17 +1,17 @@
-"""Curate RAG neighbors before using them as domain few-shot examples."""
+"""Curate RAG neighbors before using them as software_type few-shot examples."""
 
 _RAG_SIMILARITY_FLOOR = 0.55
-_NON_TEACHING_DOMAINS = {"unknown", "", None}
+_NON_TEACHING_SOFTWARE_TYPES = {"unknown", "", None}
 _MAX_RAG_EXAMPLES = 5
 
 
-def _neighbor_domain(repo: dict) -> str | None:
-    corrected = (repo.get("corrections") or {}).get("domain")
-    if corrected and corrected not in _NON_TEACHING_DOMAINS:
+def _neighbor_software_type(repo: dict) -> str | None:
+    corrected = (repo.get("corrections") or {}).get("software_type")
+    if corrected and corrected not in _NON_TEACHING_SOFTWARE_TYPES:
         return corrected
-    domain = (repo.get("stack") or {}).get("domain")
-    if domain and domain not in _NON_TEACHING_DOMAINS:
-        return domain
+    software_type = (repo.get("stack") or {}).get("software_type")
+    if software_type and software_type not in _NON_TEACHING_SOFTWARE_TYPES:
+        return software_type
     return None
 
 
@@ -27,13 +27,13 @@ def _usable_neighbors(similar_repos: list[dict]) -> list[dict]:
     usable = []
     for repo in similar_repos or []:
         score = repo.get("score", repo.get("similarity", 0.0)) or 0.0
-        domain = _neighbor_domain(repo)
+        software_type = _neighbor_software_type(repo)
         name = _neighbor_name(repo)
-        if score < _RAG_SIMILARITY_FLOOR or domain is None or not name:
+        if score < _RAG_SIMILARITY_FLOOR or software_type is None or not name:
             continue
         usable.append({
             "name": name,
-            "domain": domain,
+            "software_type": software_type,
             "score": score,
             "stack_pattern": (repo.get("stack") or {}).get("stack_pattern"),
             "primary_language": (repo.get("stack") or {}).get("primary_language"),
@@ -58,13 +58,13 @@ def format_rag_context(similar_repos: list[dict]) -> str:
         language = f" [{repo['primary_language']}]" if repo.get("primary_language") else ""
         pattern = f" · {repo['stack_pattern']}" if repo.get("stack_pattern") else ""
         lines.append(
-            f"  • {repo['name']}{language} → domain: {repo['domain']}{pattern} "
+            f"  • {repo['name']}{language} → software_type: {repo['software_type']}{pattern} "
             f"(similarity {repo['score']:.2f})"
         )
     lines.append(
-        "\nThese are hints, not answers. A repository's domain is determined by "
+        "\nThese are hints, not answers. A repository's software_type is determined by "
         "what it DOES, not by which repositories it resembles. If the target "
-        "clearly belongs to a domain none of these show, use that domain.\n"
+        "clearly belongs to a software_type none of these show, use that software_type.\n"
     )
     return "\n".join(lines)
 
@@ -75,8 +75,8 @@ def diagnose_rag_context(similar_repos: list[dict]) -> dict:
     return {
         "total_neighbors": len(raw),
         "usable_after_filter": len(usable),
-        "dropped_non_teaching_domain": sum(
-            1 for repo in raw if _neighbor_domain(repo) is None
+        "dropped_non_teaching_software_type": sum(
+            1 for repo in raw if _neighbor_software_type(repo) is None
         ),
         "dropped_below_similarity_floor": sum(
             1
@@ -84,6 +84,6 @@ def diagnose_rag_context(similar_repos: list[dict]) -> dict:
             if (repo.get("score", repo.get("similarity", 0.0)) or 0.0)
             < _RAG_SIMILARITY_FLOOR
         ),
-        "surviving_domains": [repo["domain"] for repo in usable],
+        "surviving_software_types": [repo["software_type"] for repo in usable],
         "surviving_repos": [repo["name"] for repo in usable],
     }

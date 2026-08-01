@@ -3,6 +3,12 @@ import { API_BASE } from "../config/api";
 
 const STAR_GOLD = "#F6B93B";
 const AMBER_DOT = "#EF9F27";
+const FALLBACK_STACK_PATTERNS = [
+  "Plugin Architecture", "Chain of Responsibility", "Fluent Interface",
+  "Hexagonal", "CQRS", "Event Sourcing", "Lambda Architecture",
+  "JAMstack", "Microservices", "Event-Driven", "Serverless", "MVC",
+  "DAG Scheduler", "Pull-Based Scraping",
+];
 
 // The model label is read from the analysis payload, never hardcoded. The old
 // literal "Gemini 2.0 Flash" disagreed with the backend (which runs
@@ -331,13 +337,13 @@ export default function AiInsightsCard({ stack, analysisId }) {
           <div className="pt-2 border-t border-border font-mono text-[10px] text-muted flex items-center gap-1.5 flex-wrap">
             <span>{modelLabel}</span>
             <span className="text-border">·</span>
-            {stack.domain && stack.domain !== "unknown" && (
+            {stack.software_type && stack.software_type !== "unknown" && (
               <>
-                <span>{stack.domain}</span>
+                <span>{stack.software_type}</span>
                 <span className="text-border">·</span>
               </>
             )}
-            <span>{((stack.domain_confidence ?? 0) * 100).toFixed(0)}% confidence</span>
+            <span>{((stack.software_type_confidence ?? 0) * 100).toFixed(0)}% confidence</span>
           </div>
         </div>
       )}
@@ -399,47 +405,40 @@ function Row({ label, value, flagged = false }) {
 }
 
 function StackPatternSelect({ value, onChange }) {
-  const PATTERNS = [
-    "Plugin Architecture", "Chain of Responsibility", "Fluent Interface",
-    "Hexagonal", "CQRS", "Event Sourcing", "Lambda Architecture",
-    "JAMstack", "Microservices", "Event-Driven", "Serverless", "MVC",
-    "DAG Scheduler", "Pull-Based Scraping",
-  ];
-  const isCustom = !PATTERNS.includes(value) || value === "Custom";
+  const [patterns, setPatterns] = useState(FALLBACK_STACK_PATTERNS);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${API_BASE}/api/taxonomy/stack_patterns`)
+      .then((response) => response.ok ? response.json() : Promise.reject(response.status))
+      .then((data) => {
+        if (!cancelled && data.patterns?.length) setPatterns(data.patterns);
+      })
+      .catch(() => {
+        if (!cancelled) setPatterns(FALLBACK_STACK_PATTERNS);
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  const isCustom = !patterns.includes(value) || value === "Custom";
 
   return (
     <div className="space-y-1.5">
       <select
         value={isCustom ? "__custom__" : value}
         onChange={(e) => {
-          if (e.target.value !== "__custom__") onChange(e.target.value);
+          if (e.target.value === "__custom__") {
+            onChange("Custom");
+          } else {
+            onChange(e.target.value);
+          }
         }}
         className="w-full rounded border border-border bg-surface px-2 py-2 text-sm text-text outline-none focus:border-accent"
         style={{ background: "#0d1117", color: "var(--color-text-primary)" }}
       >
         <option value="__custom__">Custom (type below)…</option>
-        <optgroup label="Library / Framework">
-          {["Plugin Architecture","Chain of Responsibility","Fluent Interface","Hexagonal"].map(p => (
-            <option key={p} value={p}>{p}</option>
-          ))}
-        </optgroup>
-        <optgroup label="Data">
-          {["Event-Driven","CQRS","Event Sourcing","Lambda Architecture","DAG Scheduler"].map(p => (
-            <option key={p} value={p}>{p}</option>
-          ))}
-        </optgroup>
-        <optgroup label="Web">
-          {["MVC","JAMstack","Serverless"].map(p => (
-            <option key={p} value={p}>{p}</option>
-          ))}
-        </optgroup>
-        <optgroup label="Deployment">
-          {["Microservices"].map(p => (
-            <option key={p} value={p}>{p}</option>
-          ))}
-        </optgroup>
-        <optgroup label="Infrastructure">
-          {["Pull-Based Scraping"].map(p => (
+        <optgroup label="Known patterns">
+          {patterns.map(p => (
             <option key={p} value={p}>{p}</option>
           ))}
         </optgroup>
@@ -455,11 +454,7 @@ function StackPatternSelect({ value, onChange }) {
         />
       )}
       <datalist id="pattern-datalist">
-        {PATTERNS.map(p => <option key={p} value={p} />)}
-        <option value="Observer" />
-        <option value="Decorator" />
-        <option value="Strategy" />
-        <option value="Factory" />
+        {patterns.map(p => <option key={p} value={p} />)}
       </datalist>
     </div>
   );

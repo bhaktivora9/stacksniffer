@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Check, X } from "lucide-react";
 import { API_BASE } from "../config/api";
 
-const FALLBACK_DOMAINS = [
+const FALLBACK_SOFTWARE_TYPES = [
   { id: "database", label: "Database" },
   { id: "data_pipeline", label: "Data Pipeline" },
   { id: "ml_platform", label: "ML Platform" },
@@ -12,7 +12,7 @@ const FALLBACK_DOMAINS = [
   { id: "unknown", label: "Unknown", sentinel: true },
 ];
 
-const DOMAIN_STYLES = {
+const SOFTWARE_TYPE_STYLES = {
   web_api: "bg-accent/10 text-accent border-accent/25",
   data_pipeline: "bg-amber/10 text-amber border-amber/25",
   ml_platform: "bg-ai-purple/10 text-ai-purple border-ai-purple/25",
@@ -23,7 +23,7 @@ const DOMAIN_STYLES = {
   unknown: "bg-border/50 text-muted border-border",
 };
 
-const DOMAIN_BORDER_COLORS = {
+const SOFTWARE_TYPE_BORDER_COLORS = {
   web_api: "#58a6ff",
   data_pipeline: "#d29922",
   ml_platform: "#a371f7",
@@ -40,47 +40,48 @@ function confidenceColor(confidence) {
   return "bg-red-400";
 }
 
-function prettyDomain(domain) {
-  return (domain || "unknown").replace(/_/g, " ");
+function prettySoftwareType(software_type) {
+  return (software_type || "unknown").replace(/_/g, " ");
 }
 
-export default function DomainFeedbackBar({
+export default function SoftwareTypeFeedbackBar({
   analysisId,
-  currentDomain,
-  domainConfidence = 0,
+  currentSoftwareType,
+  softwareTypeConfidence = 0,
   ragInfluenced,
   similarReposUsed = 0,
   classifierUsed,
   detectedTechs = [],
   onToast,
+  onSoftwareTypeChange,
 }) {
   const [selected, setSelected] = useState(null);
   const [formOpen, setFormOpen] = useState(false);
-  const [selectedDomain, setSelectedDomain] = useState(currentDomain || "unknown");
+  const [selectedSoftwareType, setSelectedSoftwareType] = useState(currentSoftwareType || "unknown");
   const [wrongTechs, setWrongTechs] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [corrected, setCorrected] = useState(false);
-  const [domainOptions, setDomainOptions] = useState(FALLBACK_DOMAINS);
+  const [softwareTypeOptions, setSoftwareTypeOptions] = useState(FALLBACK_SOFTWARE_TYPES);
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`${API_BASE}/api/taxonomy/domains`)
+    fetch(`${API_BASE}/api/taxonomy/software_types`)
       .then((response) => response.ok ? response.json() : Promise.reject(response.status))
       .then((data) => {
-        if (!cancelled && data.domains?.length) setDomainOptions(data.domains);
+        if (!cancelled && data.software_types?.length) setSoftwareTypeOptions(data.software_types);
       })
-      .catch(() => { if (!cancelled) setDomainOptions(FALLBACK_DOMAINS); });
+      .catch(() => { if (!cancelled) setSoftwareTypeOptions(FALLBACK_SOFTWARE_TYPES); });
     return () => { cancelled = true; };
   }, []);
 
-  const confidencePct = Math.round((domainConfidence ?? 0) * 100);
-  const domainClass = corrected
+  const confidencePct = Math.round((softwareTypeConfidence ?? 0) * 100);
+  const softwareTypeClass = corrected
     ? "bg-amber/10 text-amber border-amber/30"
-    : DOMAIN_STYLES[currentDomain] ?? DOMAIN_STYLES.unknown;
+    : SOFTWARE_TYPE_STYLES[currentSoftwareType] ?? SOFTWARE_TYPE_STYLES.unknown;
   const leftBorderColor = corrected
     ? "#d29922"
-    : DOMAIN_BORDER_COLORS[currentDomain] ?? DOMAIN_BORDER_COLORS.unknown;
+    : SOFTWARE_TYPE_BORDER_COLORS[currentSoftwareType] ?? SOFTWARE_TYPE_BORDER_COLORS.unknown;
 
   const techOptions = useMemo(() => {
     const names = detectedTechs.map((tech) => tech?.name).filter(Boolean);
@@ -111,7 +112,7 @@ export default function DomainFeedbackBar({
     if (submitted || submitting) return;
     setSelected("up");
     const ok = await submitFeedback(
-      { domain_correct: true },
+      { software_type_correct: true },
       "Thanks - pattern confidence updated",
       "success"
     );
@@ -127,14 +128,17 @@ export default function DomainFeedbackBar({
   async function handleSubmitCorrection() {
     const ok = await submitFeedback(
       {
-        domain_correct: false,
-        correct_domain: selectedDomain,
+        software_type_correct: false,
+        correct_software_type: selectedSoftwareType,
         techs_wrong: wrongTechs,
       },
       "Correction recorded - patterns penalized",
       "warn"
     );
-    if (ok) setCorrected(true);
+    if (ok) {
+      setCorrected(true);
+      onSoftwareTypeChange?.(selectedSoftwareType);
+    }
   }
 
   function toggleWrongTech(tech) {
@@ -152,8 +156,8 @@ export default function DomainFeedbackBar({
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1 space-y-2">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className={`text-xs font-mono px-2.5 py-1 rounded-full border ${domainClass}`}>
-                Domain: {prettyDomain(currentDomain)}
+              <span className={`text-xs font-mono px-2.5 py-1 rounded-full border ${softwareTypeClass}`}>
+                Software type: {prettySoftwareType(currentSoftwareType)}
                 {corrected ? " (corrected)" : ""}
               </span>
               {ragInfluenced && (
@@ -170,7 +174,7 @@ export default function DomainFeedbackBar({
             <div className="flex items-center gap-2">
               <div className="h-1.5 flex-1 max-w-xs rounded-full bg-border overflow-hidden">
                 <div
-                  className={`h-full rounded-full ${confidenceColor(domainConfidence)}`}
+                  className={`h-full rounded-full ${confidenceColor(softwareTypeConfidence)}`}
                   style={{ width: `${Math.max(2, confidencePct)}%` }}
                 />
               </div>
@@ -188,7 +192,7 @@ export default function DomainFeedbackBar({
                   ? "border-green/40 bg-green/15 text-green"
                   : "border-border text-muted hover:border-green/40 hover:text-green"
               } disabled:cursor-not-allowed disabled:opacity-70`}
-              aria-label="Domain is correct"
+              aria-label="SoftwareType is correct"
             >
               <Check size={16} />
             </button>
@@ -201,7 +205,7 @@ export default function DomainFeedbackBar({
                   ? "border-red-400/40 bg-red-400/15 text-red-400"
                   : "border-border text-muted hover:border-red-400/40 hover:text-red-400"
               } disabled:cursor-not-allowed disabled:opacity-70`}
-              aria-label="Domain is incorrect"
+              aria-label="SoftwareType is incorrect"
             >
               <X size={16} />
             </button>
@@ -216,18 +220,18 @@ export default function DomainFeedbackBar({
             <div className="flex flex-wrap items-end gap-2">
               <label className="block shrink-0">
                 <span className="mb-1 block text-[10px] font-mono uppercase tracking-wider text-muted">
-                  Correct domain
+                  Correct software type
                 </span>
                 <select
-                  value={selectedDomain}
-                  onChange={(e) => setSelectedDomain(e.target.value)}
+                  value={selectedSoftwareType}
+                  onChange={(e) => setSelectedSoftwareType(e.target.value)}
                   disabled={submitted || submitting}
                   className="block h-8 w-44 appearance-auto rounded border border-border bg-bg px-2 text-xs font-mono text-text outline-none focus:border-accent disabled:opacity-60"
                   style={{ width: "11rem", backgroundColor: "#0d1117", color: "#e6edf3" }}
                 >
-                  {domainOptions.map((domain) => (
-                    <option key={domain.id} value={domain.id}>
-                      {domain.label}
+                  {softwareTypeOptions.map((software_type) => (
+                    <option key={software_type.id} value={software_type.id}>
+                      {software_type.label}
                     </option>
                   ))}
                 </select>

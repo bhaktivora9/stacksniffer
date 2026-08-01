@@ -1,21 +1,21 @@
 """
 backend/routers/taxonomy.py
 
-Emergent domain taxonomy discovery and management.
+Emergent software_type taxonomy discovery and management.
 Java equivalent: PatternClusterer.java + DynamicPatternConfigService.java
-in stacksniffer-learning, feeding domain-definitions.yml in stacksniffer-config.
+in stacksniffer-learning, feeding software_type-definitions.yml in stacksniffer-config.
 
 The taxonomy flow:
   1. POST /discover   → DBSCAN clusters embedded analyses
   2. Human reviews cluster summaries (suggested names)
-  3. POST /approve    → approved clusters stored in MongoDB domains collection
-  4. GET /domains     → ai_pipeline_rag._get_domain_options() reads this
-  5. Gemini prompt uses extended domain list automatically
-  6. New domains (e.g. "monitoring-infra") appear without code deploy
+  3. POST /approve    → approved clusters stored in MongoDB software_types collection
+  4. GET /software_types     → ai_pipeline_rag._get_software_type_options() reads this
+  5. Gemini prompt uses extended software_type list automatically
+  6. New software_types (e.g. "monitoring-infra") appear without code deploy
 
 Java equivalent flow:
-  PatternClusterer.clusterPatterns() → DynamicPatternConfigService.updateDomainConfig()
-  → PatternConfigUpdatedEvent → PatternsReloadedEvent → domain-definitions.yml updated
+  PatternClusterer.clusterPatterns() → DynamicPatternConfigService.updateSoftwareTypeConfig()
+  → PatternConfigUpdatedEvent → PatternsReloadedEvent → software_type-definitions.yml updated
 """
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -24,6 +24,7 @@ from datetime import datetime
 
 from backend.services import storage_service as storage_service
 from backend.services import taxonomy_discovery
+from backend.services.ai_pipeline import get_stack_pattern_taxonomy
 
 router = APIRouter(prefix="/api/taxonomy", tags=["taxonomy"])
 
@@ -33,13 +34,25 @@ class ApproveRequest(BaseModel):
     quality_threshold: float = 0.0  # reject if silhouette below this
 
 
-class AddDomainRequest(BaseModel):
-    domain_id: str                   # "monitoring-infra"
+class AddSoftwareTypeRequest(BaseModel):
+    software_type_id: str                   # "monitoring-infra"
     label: str                       # "Monitoring & Observability"
     tech_signals: list[str] = []     # ["Prometheus", "Grafana", "InfluxDB"]
     primary_languages: list[str] = []
-    parent_domain: Optional[str] = None
+    parent_software_type: Optional[str] = None
     notes: Optional[str] = None
+
+
+class TaxonomyActionRequest(BaseModel):
+    action: str
+    merge_into: Optional[str] = None
+
+
+class EmergentSuggestionRequest(BaseModel):
+    kind: str
+    name: str
+    example_repo: str = "manual-ui"
+    example_tech: Optional[str] = None
 
 
 # ── Clustering ────────────────────────────────────────────────────────────────
@@ -52,7 +65,7 @@ async def discover_taxonomy(
     n_clusters: int = 8
 ):
     """
-    Run DBSCAN clustering on embedded analyses to discover natural domain groups.
+    Run DBSCAN clustering on embedded analyses to discover natural software_type groups.
 
     Requires: 10+ embedded analyses in MongoDB.
     Recommended: 50+ for trustworthy taxonomy (silhouette > 0.3).
@@ -84,13 +97,13 @@ async def discover_taxonomy(
 @router.post("/approve")
 async def approve_taxonomy(request: ApproveRequest):
     """
-    Store human-approved cluster names as active domain taxonomy.
+    Store human-approved cluster names as active software_type taxonomy.
 
     After POST /discover, review cluster summaries and submit approved names.
-    Only explicitly approved clusters become domains.
+    Only explicitly approved clusters become software_types.
 
-    Java equivalent: DynamicPatternConfigService.updateDomainConfig()
-    which writes to domain-definitions.yml and publishes PatternConfigUpdatedEvent.
+    Java equivalent: DynamicPatternConfigService.updateSoftwareTypeConfig()
+    which writes to software_type-definitions.yml and publishes PatternConfigUpdatedEvent.
     """
     discovery = await taxonomy_discovery.discover_taxonomy()
     if discovery.get("status") == "insufficient_data":
@@ -114,67 +127,127 @@ async def approve_taxonomy(request: ApproveRequest):
     )
 
 
-# ── Domain CRUD ───────────────────────────────────────────────────────────────
+# ── SoftwareType CRUD ───────────────────────────────────────────────────────────────
 
-@router.get("/domains")
-async def list_domains():
+@router.get("/software_types")
+async def list_software_types():
     """
-    Return all active domains — used by:
+    Return all active software_types — used by:
       1. Frontend dropdown (instead of hardcoded list)
-      2. ai_pipeline_rag._get_domain_options() for Gemini prompt
+      2. ai_pipeline_rag._get_software_type_options() for Gemini prompt
 
     Combines: system defaults + DBSCAN-discovered + manually added.
-    Java equivalent: domain-definitions.yml loaded by DomainDefinition.java
+    Java equivalent: software_type-definitions.yml loaded by SoftwareTypeDefinition.java
     via DynamicPatternConfigService.
     """
-    domains = await storage_service.get_domains()
-    return {"domains": [
+    software_types = await storage_service.get_software_types()
+    return {"software_types": [
         {
-            "id": domain["_id"],
-            "label": domain.get("label", domain["_id"]),
-            "sentinel": domain.get("sentinel", False),
+            "id": software_type["_id"],
+            "label": software_type.get("label", software_type["_id"]),
+            "sentinel": software_type.get("sentinel", False),
         }
-        for domain in domains
+        for software_type in software_types
     ]}
 
 
-@router.get("/categories")
-async def list_categories():
-    categories = await storage_service.get_categories()
-    return {"categories": [
-        {"id": category["_id"], "label": category.get("label", category["_id"])}
-        for category in categories
+@router.get("/technology_roles")
+async def list_technology_roles():
+    technology_roles = await storage_service.get_technology_roles()
+    return {"technology_roles": [
+        {"id": technology_role["_id"], "label": technology_role.get("label", technology_role["_id"])}
+        for technology_role in technology_roles
     ]}
 
 
-@router.post("/domains")
-async def add_domain(request: AddDomainRequest):
+@router.get("/stack_patterns")
+async def list_stack_patterns():
+    return get_stack_pattern_taxonomy()
+
+
+@router.get("/search")
+async def search_taxonomy_examples(kind: str, q: str, limit: int = 10):
+    if kind not in {"technology", "software_type", "technology_role"}:
+        raise HTTPException(400, "kind must be technology, software_type, or technology_role")
+    results = await storage_service.search_analysis_examples(kind, q, min(max(limit, 1), 25))
+    return {"kind": kind, "query": q, "examples": results, "count": len(results)}
+
+
+@router.get("/pending")
+async def list_pending_taxonomy():
+    return await storage_service.get_pending_taxonomy()
+
+
+@router.post("/pending")
+async def suggest_pending_taxonomy(request: EmergentSuggestionRequest):
+    if request.kind not in {"software_type", "technology_role"}:
+        raise HTTPException(400, "kind must be software_type or technology_role")
+    name = request.name.strip().lower().replace(" ", "_")
+    if not name or not all(character.isalnum() or character == "_" for character in name):
+        raise HTTPException(400, "name must contain only letters, numbers, spaces, or underscores")
+    valid = (
+        await storage_service.get_valid_software_types()
+        if request.kind == "software_type" else await storage_service.get_valid_technology_roles()
+    )
+    if name in valid:
+        raise HTTPException(409, f"{name} is already an active {request.kind}")
+    if request.kind == "software_type":
+        await storage_service.record_emergent_software_type(name, request.example_repo)
+    else:
+        await storage_service.record_emergent_technology_role(
+            name, request.example_tech or "manual suggestion", request.example_repo
+        )
+    return {"ok": True, "kind": request.kind, "name": name, "status": "pending"}
+
+
+@router.post("/{kind}/{name}/action")
+async def apply_taxonomy_action(kind: str, name: str, request: TaxonomyActionRequest):
+    if kind not in {"software_type", "technology_role"}:
+        raise HTTPException(400, "kind must be software_type or technology_role")
+    if request.action not in {"promote", "merge", "discard"}:
+        raise HTTPException(400, "action must be promote, merge, or discard")
+    valid_targets = (
+        await storage_service.get_valid_software_types()
+        if kind == "software_type" else await storage_service.get_valid_technology_roles()
+    )
+    if request.action == "merge" and request.merge_into not in valid_targets:
+        raise HTTPException(400, "merge_into must be an active taxonomy value")
+    try:
+        return await storage_service.apply_taxonomy_action(
+            kind, name, request.action, request.merge_into
+        )
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+
+
+@router.post("/software_types")
+async def add_software_type(request: AddSoftwareTypeRequest):
     """
-    Manually add a domain not discovered by clustering.
+    Manually add a software_type not discovered by clustering.
     Use for edge cases: "blockchain", "embedded", "game-engine", "desktop-app".
-    Java equivalent: manually editing domain-definitions.yml.
+    Java equivalent: manually editing software_type-definitions.yml.
     """
     doc = {
-        "domain_id":        request.domain_id,
+        "software_type_id":        request.software_type_id,
         "label":            request.label,
         "tech_signals":     request.tech_signals,
         "primary_languages": request.primary_languages,
-        "parent_domain":    request.parent_domain,
+        "parent_software_type":    request.parent_software_type,
         "notes":            request.notes,
         "source":           "manual",
         "usage_count":      0,
         "created_at":       datetime.utcnow().isoformat(),
         "status":           "active"
     }
-    await storage_service.store_domain(request.domain_id, doc)
-    return {"created": True, "domain_id": request.domain_id}
+    await storage_service.store_software_type(request.software_type_id, doc)
+    return {"created": True, "software_type_id": request.software_type_id}
 
 
-@router.delete("/domains/{domain_id}")
-async def remove_domain(domain_id: str):
+@router.delete("/software_types/{software_type_id}")
+async def remove_software_type(software_type_id: str):
     """Soft delete — marks inactive, preserves history."""
-    await storage_service.delete_domain(domain_id)
-    return {"deleted": True, "domain_id": domain_id}
+    await storage_service.delete_software_type(software_type_id)
+    return {"deleted": True, "software_type_id": software_type_id}
 
 
 
@@ -233,23 +306,23 @@ def _suggest_cluster_name(frameworks, languages, ai_ml, patterns):
 # ── Gemini prompt integration ──────────────────────────────────────────────────
 
 @router.get("/prompt-fragment")
-async def get_domain_prompt_fragment():
+async def get_software_type_prompt_fragment():
     """
-    Returns the domain classification string injected into Gemini prompt.
-    ai_pipeline_rag._get_domain_options() calls this internally.
+    Returns the software_type classification string injected into Gemini prompt.
+    ai_pipeline_rag._get_software_type_options() calls this internally.
 
     Example output:
       "web_api | data_pipeline | ml_platform | ... | monitoring-infra | unknown"
 
-    New domains discovered by DBSCAN appear here automatically after approval.
-    Java equivalent: DomainDefinition.getAllDomainIds() used by GeminiServiceImpl.
+    New software_types discovered by DBSCAN appear here automatically after approval.
+    Java equivalent: SoftwareTypeDefinition.getAllSoftwareTypeIds() used by GeminiServiceImpl.
     """
-    domain_ids = [domain["_id"] for domain in await storage_service.get_domains()]
+    software_type_ids = [software_type["_id"] for software_type in await storage_service.get_software_types()]
 
     return {
-        "fragment":     " | ".join(domain_ids),
-        "domain_count": len(domain_ids),
-        "domains":      domain_ids
+        "fragment":     " | ".join(software_type_ids),
+        "software_type_count": len(software_type_ids),
+        "software_types":      software_type_ids
     }
 
 
@@ -300,7 +373,7 @@ async def cluster_preview(eps: float = 0.25, min_samples: int = 2):
                     "y":           float(X_2d[i][1]),
                     "cluster":     labels[i],
                     "repo":        metadata[i]["repo"],
-                    "domain":      metadata[i]["current_domain"],
+                    "software_type":      metadata[i]["current_software_type"],
                     "language":    metadata[i]["primary_language"],
                     "analysis_id": analysis_ids[i]
                 }

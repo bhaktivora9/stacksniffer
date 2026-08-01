@@ -233,7 +233,7 @@ def canonicalize_languages(raw: dict[str, int]) -> list[dict]:
     return [
         {
             "name": name,
-            "category": "languages",
+            "technology_role": "languages",
             "confidence": 1.0,
             "detection_source": "github_linguist",
             "byte_count": byte_count,

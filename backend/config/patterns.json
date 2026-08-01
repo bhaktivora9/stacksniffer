@@ -119,6 +119,16 @@
       "_discovered_in": "github:nestjs/nest",
       "_discovered_at": "2026-07-22T03:31:26.444882",
       "_note": "Add keywords after inspecting the repo's dependency files"
+    },
+    {
+      "name": "Flask",
+      "confidence": 0.5,
+      "detection_files": [],
+      "keywords": [],
+      "_status": "discovered_via_feedback",
+      "_discovered_in": "github:apache/airflow",
+      "_discovered_at": "2026-07-23T03:09:17.838269",
+      "_note": "Add keywords after inspecting the repo's dependency files"
     }
   ],
   "infra": [
@@ -156,6 +166,26 @@
       "_status": "discovered_via_feedback",
       "_discovered_in": "github:elastic/elasticsearch",
       "_discovered_at": "2026-07-22T03:02:27.419545",
+      "_note": "Add keywords after inspecting the repo's dependency files"
+    },
+    {
+      "name": "gRPC",
+      "confidence": 0.5,
+      "detection_files": [],
+      "keywords": [],
+      "_status": "discovered_via_feedback",
+      "_discovered_in": "github:qdrant/qdrant",
+      "_discovered_at": "2026-07-23T03:20:15.949153",
+      "_note": "Add keywords after inspecting the repo's dependency files"
+    },
+    {
+      "name": "tonic",
+      "confidence": 0.5,
+      "detection_files": [],
+      "keywords": [],
+      "_status": "discovered_via_feedback",
+      "_discovered_in": "github:qdrant/qdrant",
+      "_discovered_at": "2026-07-23T03:20:16.004226",
       "_note": "Add keywords after inspecting the repo's dependency files"
     }
   ],
@@ -252,6 +282,60 @@
       "_status": "discovered_via_feedback",
       "_discovered_in": "github:apache/airflow",
       "_discovered_at": "2026-07-22T03:08:37.860504",
+      "_note": "Add keywords after inspecting the repo's dependency files"
+    },
+    {
+      "name": "Sniffio",
+      "confidence": 0.5,
+      "detection_files": [],
+      "keywords": [],
+      "_status": "discovered_via_feedback",
+      "_discovered_in": "github:encode/httpx",
+      "_discovered_at": "2026-07-22T23:21:57.661480",
+      "_note": "Add keywords after inspecting the repo's dependency files"
+    },
+    {
+      "name": "anyio",
+      "confidence": 0.5,
+      "detection_files": [],
+      "keywords": [],
+      "_status": "discovered_via_feedback",
+      "_discovered_in": "github:encode/httpx",
+      "_discovered_at": "2026-07-23T02:51:45.558033",
+      "_note": "Add keywords after inspecting the repo's dependency files"
+    },
+    {
+      "name": "colorama",
+      "confidence": 0.5,
+      "detection_files": [],
+      "keywords": [],
+      "_status": "discovered_via_feedback",
+      "_discovered_in": "github:pallets/click",
+      "_discovered_at": "2026-07-23T03:08:01.293796",
+      "_note": "Add keywords after inspecting the repo's dependency files"
+    }
+  ],
+  "bundler": [
+    {
+      "name": "vite",
+      "confidence": 0.5,
+      "detection_files": [],
+      "keywords": [],
+      "_status": "discovered_via_feedback",
+      "_discovered_in": "github:bhaktivora9/stacksniffer",
+      "_discovered_at": "2026-07-22T08:15:42.203955",
+      "_note": "Add keywords after inspecting the repo's dependency files"
+    }
+  ],
+  "databases": [
+    {
+      "name": "PostgreSQL",
+      "confidence": 0.5,
+      "detection_files": [],
+      "keywords": [],
+      "_status": "discovered_via_feedback",
+      "_discovered_in": "github:apache/airflow",
+      "_discovered_at": "2026-07-23T03:10:09.201311",
       "_note": "Add keywords after inspecting the repo's dependency files"
     }
   ]

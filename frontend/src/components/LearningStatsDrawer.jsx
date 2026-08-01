@@ -161,7 +161,7 @@ export default function LearningStatsDrawer({ open, onClose }) {
                       <thead className="bg-bg">
                         <tr className="text-xs text-muted">
                           <th className="text-left px-3 py-2 font-normal">Tech</th>
-                          <th className="text-left px-3 py-2 font-normal">Category</th>
+                          <th className="text-left px-3 py-2 font-normal">TechnologyRole</th>
                           <th className="text-left px-3 py-2 font-normal">Confidence</th>
                           <th className="text-left px-3 py-2 font-normal">Direction</th>
                         </tr>
@@ -170,7 +170,7 @@ export default function LearningStatsDrawer({ open, onClose }) {
                         {changedPatterns.map((pattern, index) => (
                           <tr key={`${pattern.tech}-${index}`}>
                             <td className="px-3 py-2 font-mono text-xs text-text">{pattern.tech}</td>
-                            <td className="px-3 py-2 text-muted">{pattern.category}</td>
+                            <td className="px-3 py-2 text-muted">{pattern.technology_role}</td>
                             <td className="px-3 py-2 font-mono text-xs text-muted">
                               {pct(pattern.confidence)}
                             </td>

@@ -1,4 +1,5 @@
 import asyncio
+from pathlib import Path
 
 import backend.services.learning_service as learning_service
 import backend.services.storage_service as storage_service
@@ -20,26 +21,26 @@ def reset_memory():
         "stack_feedback": {},
         "insights_feedback": [],
         "quality_criteria": {},
-        "domains": {},
-        "dep_categories": [],
-        "dep_category_feedback": [],
+        "software_types": {},
+        "dep_technology_roles": [],
+        "dep_technology_role_feedback": [],
     })
 
 
 def rated_output(keyword="fastapi", tech="FastAPI"):
     return {
-        "domain": "library",
+        "software_type": "library",
         "pattern_matches": [
             {
                 "tech": tech,
-                "category": "frameworks",
+                "technology_role": "frameworks",
                 "matched_file": "pyproject.toml",
                 "matched_keyword": keyword,
                 "confidence": 0.95,
             },
             {
                 "tech": "Jest",
-                "category": "testing",
+                "technology_role": "testing",
                 "matched_file": ".github/workflows/test.yml",
                 "matched_keyword": "junit",
                 "confidence": 0.95,
@@ -48,7 +49,7 @@ def rated_output(keyword="fastapi", tech="FastAPI"):
     }
 
 
-def add_feedback(repo_key, domain_correct=True, wrong_techs=None, output=None):
+def add_feedback(repo_key, software_type_correct=True, wrong_techs=None, output=None):
     run(storage_service.store_feedback(
         repo_key=repo_key,
         commit_sha="sha-rated",
@@ -56,10 +57,26 @@ def add_feedback(repo_key, domain_correct=True, wrong_techs=None, output=None):
         rated_output=output or rated_output(),
         rated_embedding=[0.1, 0.2],
         feedback={
-            "domain_correct": domain_correct,
+            "software_type_correct": software_type_correct,
             "techs_wrong": wrong_techs or [],
         },
     ))
+
+
+def test_layer0_abstains_when_model_is_missing(monkeypatch):
+    missing = Path("tests/fixtures/does-not-exist/software_type_classifier.pkl")
+    monkeypatch.setattr(learning_service, "LAYER0_MODEL_PATH", missing)
+
+    assert learning_service.load_layer0() is None
+    assert run(learning_service.predict_software_type({})) is None
+
+
+def test_layer0_abstains_when_model_is_corrupt(monkeypatch):
+    corrupt = Path("backend/models/schemas.py").resolve()
+    monkeypatch.setattr(learning_service, "LAYER0_MODEL_PATH", corrupt)
+
+    assert learning_service.load_layer0() is None
+    assert run(learning_service.predict_software_type({})) is None
 
 
 def test_pattern_accuracy_uses_feedback_when_analyses_result_empty():
@@ -86,11 +103,11 @@ def test_pattern_accuracy_uses_rated_output_not_reanalyzed_live_stack():
     run(storage_service.upsert_repo_analysis(
         repo_key=repo_key,
         stack={
-            "domain": "web_app",
+            "software_type": "web_app",
             "pattern_matches": [
                 {
                     "tech": "React",
-                    "category": "frameworks",
+                    "technology_role": "frameworks",
                     "matched_file": "package.json",
                     "matched_keyword": "react",
                     "confidence": 0.95,

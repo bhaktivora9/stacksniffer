@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { GitFork as Github } from "lucide-react";
 import LoadingTerminal from "../components/LoadingTerminal";
+import CorpusSearchPanel from "../components/CorpusSearchPanel";
 import { API_BASE } from "../config/api";
 import { DEMO_RESULT } from "../data/demoResult";
 
@@ -9,7 +10,7 @@ const STEPS = [
   "Fetching repository",
   "Reading file tree",
   "Running pattern detection",
-  "AI domain classification",
+  "AI software_type classification",
   "Generating stack insights",
   "Analysis complete",
 ];
@@ -25,7 +26,7 @@ const HOW_IT_WORKS = [
   {
     step: "02",
     title: "Pattern rules + AI classify your stack",
-    desc: "500+ pattern rules detect languages, frameworks, and infra. Claude AI infers domain, architecture, and hidden signals.",
+    desc: "500+ pattern rules detect languages, frameworks, and infra. Claude AI infers software_type, architecture, and hidden signals.",
   },
   {
     step: "03",
@@ -55,6 +56,7 @@ export default function HomePage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [error, setError] = useState(null);
   const [rateLimitCountdown, setRateLimitCountdown] = useState(null);
+  const [activeTab, setActiveTab] = useState("analyze");
 
   const stepTimerRef = useRef(null);
   const inputRef = useRef(null);
@@ -213,11 +215,43 @@ export default function HomePage() {
               <span className="text-accent">instantly</span>
             </h1>
             <p className="text-muted text-base leading-relaxed max-w-md mx-auto">
-              Drop a GitHub URL. Get structured stack analysis — language, frameworks, domain, architecture, and AI reasoning.
+              Drop a GitHub URL. Get structured stack analysis — language, frameworks, software_type, architecture, and AI reasoning.
             </p>
           </div>
 
-          <div className="space-y-3">
+          <div
+            className="grid grid-cols-2 rounded-lg border border-border bg-surface p-1"
+            role="tablist"
+            aria-label="StackSniffer tools"
+          >
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === "analyze"}
+              onClick={() => {
+                setActiveTab("analyze");
+                setTimeout(() => inputRef.current?.focus(), 0);
+              }}
+              className={`rounded-md px-4 py-2 text-sm transition-colors ${
+                activeTab === "analyze" ? "bg-accent/15 text-accent" : "text-muted hover:text-text"
+              }`}
+            >
+              Analyze repository
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === "search"}
+              onClick={() => setActiveTab("search")}
+              className={`rounded-md px-4 py-2 text-sm transition-colors ${
+                activeTab === "search" ? "bg-accent/15 text-accent" : "text-muted hover:text-text"
+              }`}
+            >
+              Search learned stacks
+            </button>
+          </div>
+
+          <div className={activeTab === "analyze" ? "space-y-3" : "hidden"} role="tabpanel">
             <form onSubmit={handleSubmit} className="space-y-2">
               <div className="flex gap-2">
                 <input
@@ -265,13 +299,13 @@ export default function HomePage() {
             )}
           </div>
 
-          {loading && (
+          {activeTab === "analyze" && loading && (
             <div className="flex justify-center">
               <LoadingTerminal steps={STEPS} currentStep={currentStep} />
             </div>
           )}
 
-          {!loading && !rateLimitCountdown && (
+          {activeTab === "analyze" && !loading && !rateLimitCountdown && (
             <div className="flex flex-col items-center gap-2">
               <button
                 onClick={handleTryDemo}
@@ -281,6 +315,12 @@ export default function HomePage() {
                 Try demo — bhaktivora9/stacksniffer
               </button>
               <p className="text-xs text-muted font-sans">Instant preview · no API key needed</p>
+            </div>
+          )}
+
+          {activeTab === "search" && (
+            <div role="tabpanel">
+              <CorpusSearchPanel />
             </div>
           )}
         </div>

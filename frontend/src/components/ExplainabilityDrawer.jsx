@@ -59,12 +59,12 @@ export default function ExplainabilityDrawer({ isOpen, onClose, analysisId, demo
 
         {!loading && !fetchError && data && (
           <div className="p-5 space-y-6">
-            {data.domain_reasoning && (
+            {data.software_type_reasoning && (
               <section>
                 <h3 className="text-xs text-muted uppercase tracking-wider mb-2 font-sans">
-                  Domain reasoning
+                  SoftwareType reasoning
                 </h3>
-                <p className="text-sm text-text leading-relaxed">{data.domain_reasoning}</p>
+                <p className="text-sm text-text leading-relaxed">{data.software_type_reasoning}</p>
               </section>
             )}
 
@@ -146,7 +146,7 @@ export default function ExplainabilityDrawer({ isOpen, onClose, analysisId, demo
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-sm font-medium text-text">{inf.tech}</span>
-                          <span className="text-xs text-muted font-mono">{inf.category}</span>
+                          <span className="text-xs text-muted font-mono">{inf.technology_role}</span>
                         </div>
                         {inf.reasoning && (
                           <p className="mt-0.5 text-xs text-muted">{inf.reasoning}</p>

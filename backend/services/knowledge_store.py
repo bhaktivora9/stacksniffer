@@ -3,26 +3,20 @@ backend/services/knowledge_store.py
 
 Single owner of StackSniffer's deterministic dependency knowledge.
 
-STEP (a) SCOPE — read-only indirection over the five live ecosystem dep tables
-currently defined in dep_fallback.py. This step changes WHERE the tables come
-from, not WHAT they contain: same entries, same post-_seed_table shape, same
-classifications. 213 tests must stay green — any behavior change is a bug.
+SCOPE — read-only access to the five live ecosystem dependency tables loaded
+from config/dependency_knowledge.json. Classification mechanism remains in
+dep_fallback.py.
 
 DELIBERATELY OUT OF SCOPE (see conversation / build plan):
   - patterns.json: taxonomy administration with live writers (discovery.py,
-    stack_feedback_service.py, learning_service.py). Different knowledge domain,
+    stack_feedback_service.py, learning_service.py). Different knowledge software_type,
     different write profile, NOT on the layer-map critical path. Enters the store
     only if/when we centralize taxonomy admin.
-  - stack_detector.py's _PATTERNS: confirmed dead path, never imported. Excluded.
+  - stack_detector.py's _PATTERNS: confirmed dead path and removed. Excluded.
 
-STEP (b) — later — swaps load() to read a seed file (seeds/knowledge.yaml)
-instead of the in-code dicts, satisfying "no knowledge hardcoded in logic".
-STEP (c) — later — swaps the seed-file source for Mongo, adding the gated
-write-back path that lets the learning loop persist approvals.
-
-The interface below does not change across (a)->(b)->(c). Only load()'s source
-changes. That is the point of introducing the store now: it fixes the seam so
-the later data-source swaps touch one method, not every call site.
+A later storage-backed step can swap the seed-file source for Mongo and add the
+gated write-back path for approved learning. The interface remains stable when
+the source changes, so classification code stays independent of persistence.
 """
 
 from __future__ import annotations
