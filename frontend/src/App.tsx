@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Analytics } from "@vercel/analytics/react";
 import HomePage from "./pages/HomePage";
 import ResultsPage from "./pages/ResultsPage";
 import ReviewQueuePage from "./pages/ReviewQueuePage";
@@ -17,6 +18,7 @@ export default function App() {
         <Route path="/analytics" element={<AnalyticsPage />} />
         <Route path="/search" element={<SearchPage />} />
       </Routes>
+      <Analytics />
     </BrowserRouter>
   );
 }
