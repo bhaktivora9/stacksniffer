@@ -17,19 +17,19 @@ import logging
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from backend.routers import analyze        # POST /api/analyze
-from backend.routers import chat           # POST /api/chat/
-from backend.routers import feedback       # POST /api/feedback/{id}       (software_type RLHF)
-from backend.routers import stack_feedback # POST /api/stack-feedback/{id} (tech RLHF)
-from backend.routers import learning       # GET  /api/learning/stats
-from backend.routers import taxonomy       # POST /api/taxonomy/discover
-from backend.routers import insights_feedback #GET /api/insights-feedback/stats          → 404
+from routers import analyze        # POST /api/analyze
+from routers import chat           # POST /api/chat/
+from routers import feedback       # POST /api/feedback/{id}       (software_type RLHF)
+from routers import stack_feedback # POST /api/stack-feedback/{id} (tech RLHF)
+from routers import learning       # GET  /api/learning/stats
+from routers import taxonomy       # POST /api/taxonomy/discover
+from routers import insights_feedback #GET /api/insights-feedback/stats          → 404
 #GET /api/insights-feedback/quality-criteria → 404
 # Remove the try/except guard — replace with explicit import:
-from backend.routers import discovery
-from backend.routers import review
+from routers import discovery
+from routers import review
 
-from backend.services import storage_service
+from services import storage_service
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 LOG_CONFIG_PATH = ROOT_DIR / "logging_config.json"
@@ -172,7 +172,7 @@ async def health():
 
     classifier_active = False
     try:
-        from backend.services.learning_service import load_layer0
+        from services.learning_service import load_layer0
         classifier_active = load_layer0() is not None
     except Exception:
         pass

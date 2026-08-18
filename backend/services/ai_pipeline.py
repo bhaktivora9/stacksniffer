@@ -34,19 +34,21 @@ FIXED IN THIS REVISION
      caller shared the same list objects. Now deepcopy.
 """
 import asyncio
-from copy import deepcopy
-from dotenv import load_dotenv
-from services.embedding_service import embed_stack
-import backend.services.storage_service as storage_service
-from models.taxonomy import SOFTWARE_TYPE_DEFINITIONS, normalize_specific_identity
-import google.generativeai as genai
-from services.gemini_interactions import InteractionsModel
-from os import getenv
 import json
 import logging
+from copy import deepcopy
+from os import getenv
+
+import google.generativeai as genai
+from dotenv import load_dotenv
 from models.schemas import AiInference
+from models.taxonomy import SOFTWARE_TYPE_DEFINITIONS, normalize_specific_identity
+
+from services import storage_service
+from services.embedding_service import embed_stack
+from services.gemini_interactions import InteractionsModel
 from services.rag_filter import format_rag_context
-from services.safe_json import safe_parse_gemini_json, get_repair_counters
+from services.safe_json import get_repair_counters, safe_parse_gemini_json
 
 load_dotenv()
 
@@ -58,8 +60,7 @@ def _normalize_model_name(model_id: str | None, fallback: str) -> str:
     if not model_id:
         return fallback
     normalized = model_id.strip()
-    if normalized.startswith("models/"):
-        normalized = normalized[len("models/") :]
+    normalized = normalized.removeprefix("models/")
     if normalized in {
         "gemini-2.0-flash",
         "gemini-2.0-flash-001",
@@ -545,7 +546,7 @@ async def _record_emergent_pattern(name: str, software_type: str, repo: str, evi
 
 async def _get_valid_technology_roles() -> set[str]:
     try:
-        import backend.services.storage_service as storage_service
+        import services.storage_service as storage_service
         cats = await storage_service.get_valid_technology_roles()
         if cats:
             return set(cats)
@@ -556,7 +557,7 @@ async def _get_valid_technology_roles() -> set[str]:
 
 async def _record_emergent_technology_role(name: str, tech: str, repo: str) -> None:
     try:
-        import backend.services.storage_service as storage_service
+        import services.storage_service as storage_service
         await storage_service.record_emergent_technology_role(name, tech, repo)
         logger.info(
             "[ai_pipeline] emergent technology_role recorded: %r (tech=%s) from %s",
@@ -738,7 +739,7 @@ Return ONLY valid JSON:
 
         if declared_new and emergent and emergent not in valid_software_types:
             try:
-                import backend.services.storage_service as storage_service
+                import services.storage_service as storage_service
                 await storage_service.record_emergent_software_type(
                     name=emergent,
                     example_repo=repo_name or "unknown",

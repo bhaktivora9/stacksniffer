@@ -55,7 +55,7 @@ async def _load() -> set[str]:
 
     valid = set(BUILTIN_TECHNOLOGY_ROLES)
     try:
-        import backend.services.storage_service as storage_service
+        import services.storage_service as storage_service
         valid.update(await storage_service.get_valid_technology_roles())
     except Exception:
         # Storage down or function missing -> fall back to builtins. Never let a

@@ -1,6 +1,5 @@
 from fastapi import HTTPException, Path
-
-import backend.services.storage_service as storage_service
+from services import storage_service
 from services.repo_key import is_repo_key
 
 

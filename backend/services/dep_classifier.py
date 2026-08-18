@@ -270,7 +270,7 @@ def _render_prompt(repo_full_name: str, file_tree_sample: str, raw_deps_json: st
 async def _build_technology_role_feedback_context() -> str:
     """Human technology_role decisions, injected into the prompt to steer Gemini."""
     try:
-        import backend.services.storage_service as storage_service
+        import services.storage_service as storage_service
         decisions = await storage_service.get_technology_role_feedback_decisions()
     except Exception:
         return ""
@@ -306,7 +306,7 @@ def _is_deadline_or_timeout(exc: Exception) -> bool:
 async def _store_emergent_technology_roles(clean: list[dict], repo_full_name: str) -> None:
     """Persist any non-standard technology_role Gemini invented, for human review."""
     try:
-        import backend.services.storage_service as storage_service
+        import services.storage_service as storage_service
         valid_roles = await valid_technology_roles()
         for entry in clean:
             technology_role = entry["technology_role"]

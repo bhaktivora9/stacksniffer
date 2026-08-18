@@ -14,34 +14,30 @@ POST /api/dep-technology_roles/{technology_role}/feedback (discard | merge | pro
 """
 import asyncio
 import json
+import logging
 import time
 from contextvars import ContextVar
 from copy import deepcopy
-from uuid import uuid4
-import logging
 from os import getenv
 from typing import Literal
+from uuid import uuid4
 
+import services.github_service as github_service
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from sse_starlette.sse import EventSourceResponse
-
-import backend.services.github_service as github_service
 from models.schemas import (
     AnalyzeRequest,
     ArchitecturalLayer,
-    UsageScope,
     DetectedTech,
     StackAnalysis,
+    UsageScope,
 )
 from models.taxonomy import canonicalize_software_type
-from routers.deps import resolve_repo_key
 from services import storage_service
 from services.ai_pipeline import run_full_ai_pipeline
 from services.artifact_classifier import (
     assign_artifact_ownership,
     classify_artifacts,
 )
-from services.technology_role_registry import valid_technology_roles
 from services.dep_classifier import (
     apply_file_signals,
     classify_dependencies,
@@ -55,7 +51,6 @@ from services.github_service import (
     to_repo_metadata,
 )
 from services.layer_assignment import assign_missing_architectural_layers
-from services.technology_dedup import dedup_stack
 from services.manifest_parser import (
     filter_self_references_from_inferences,
     parse_manifest_dependencies,
@@ -70,8 +65,13 @@ from services.repo_key import (
     canonical_repo_key,
     repo_key_to_url,
 )
-from services.software_type_guard import guard_library_classification
 from services.safe_json import get_repair_counters
+from services.software_type_guard import guard_library_classification
+from services.technology_dedup import dedup_stack
+from services.technology_role_registry import valid_technology_roles
+from sse_starlette.sse import EventSourceResponse
+
+from routers.deps import resolve_repo_key
 
 router = APIRouter()
 logger = logging.getLogger(__name__)

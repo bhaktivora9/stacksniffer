@@ -18,7 +18,7 @@ from typing import Optional
 import json
 from pathlib import Path
 
-import backend.services.storage_service as storage_service
+import services.storage_service as storage_service
 
 router = APIRouter(prefix="/api/discovery", tags=["discovery"])
 

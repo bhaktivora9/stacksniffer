@@ -25,7 +25,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-import backend.services.storage_service as storage_service
+import services.storage_service as storage_service
 from routers.deps import resolve_repo_key
 from services.embedding_service import embed_stack
 
