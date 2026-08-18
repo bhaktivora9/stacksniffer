@@ -1,5 +1,5 @@
-from backend.models.schemas import DetectedTech
-from backend.services.technology_dedup import dedup_records, dedup_stack
+from models.schemas import DetectedTech
+from services.technology_dedup import dedup_records, dedup_stack
 
 
 def record(name, *, role="library", source="manifest_passthrough",

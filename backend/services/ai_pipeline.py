@@ -36,17 +36,17 @@ FIXED IN THIS REVISION
 import asyncio
 from copy import deepcopy
 from dotenv import load_dotenv
-from backend.services.embedding_service import embed_stack
+from services.embedding_service import embed_stack
 import backend.services.storage_service as storage_service
-from backend.models.taxonomy import SOFTWARE_TYPE_DEFINITIONS, normalize_specific_identity
+from models.taxonomy import SOFTWARE_TYPE_DEFINITIONS, normalize_specific_identity
 import google.generativeai as genai
-from backend.services.gemini_interactions import InteractionsModel
+from services.gemini_interactions import InteractionsModel
 from os import getenv
 import json
 import logging
-from backend.models.schemas import AiInference
-from backend.services.rag_filter import format_rag_context
-from backend.services.safe_json import safe_parse_gemini_json, get_repair_counters
+from models.schemas import AiInference
+from services.rag_filter import format_rag_context
+from services.safe_json import safe_parse_gemini_json, get_repair_counters
 
 load_dotenv()
 
@@ -448,7 +448,7 @@ def _filter_insights_techs(detections: dict, software_type: str) -> dict:
 
 async def _get_software_type_options() -> str:
     try:
-        from backend.services import storage_service
+        from services import storage_service
         software_types = await storage_service.get_software_types()
         names = [d["_id"] if isinstance(d, dict) else d for d in software_types]
         if names:
@@ -462,7 +462,7 @@ async def _get_software_type_options() -> str:
 
 async def _get_valid_software_types() -> set[str]:
     try:
-        from backend.services import storage_service
+        from services import storage_service
         return set(await storage_service.get_valid_software_types())
     except Exception as e:
         logger.debug("[ai_pipeline] Valid-software_type fetch failed: %s", e)
@@ -473,7 +473,7 @@ async def _get_valid_software_types() -> set[str]:
 
 async def _build_software_type_feedback_context() -> str:
     try:
-        from backend.services import storage_service
+        from services import storage_service
         decisions = await storage_service.get_software_type_feedback_decisions()
     except Exception:
         return ""
@@ -489,7 +489,7 @@ async def _get_pattern_options(software_type: str) -> list[str]:
     suggestion list leaves the model with no anchor at all.
     """
     try:
-        from backend.services import storage_service
+        from services import storage_service
         patterns = await storage_service.get_stack_patterns(software_type=software_type)
         names = [p["_id"] if isinstance(p, dict) else p for p in patterns]
         if names:
@@ -502,7 +502,7 @@ async def _get_pattern_options(software_type: str) -> list[str]:
 async def _get_known_patterns() -> set[str]:
     """Normalized set of every known pattern, for the is-this-new check."""
     try:
-        from backend.services import storage_service
+        from services import storage_service
         patterns = await storage_service.get_stack_patterns()
         names = [p["_id"] if isinstance(p, dict) else p for p in patterns]
         if names:
@@ -514,7 +514,7 @@ async def _get_known_patterns() -> set[str]:
 
 async def _build_pattern_feedback_context() -> str:
     try:
-        from backend.services import storage_service
+        from services import storage_service
         decisions = await storage_service.get_pattern_feedback_decisions()
     except Exception:
         return ""
@@ -527,7 +527,7 @@ async def _record_emergent_pattern(name: str, software_type: str, repo: str, evi
     Best-effort: recording must never break an analysis.
     """
     try:
-        from backend.services import storage_service
+        from services import storage_service
         await storage_service.record_emergent_pattern(
             name=name, software_type=software_type, example_repo=repo, evidence=evidence,
         )

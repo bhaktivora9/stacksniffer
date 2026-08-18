@@ -1,11 +1,11 @@
-from backend.models.schemas import (
+from models.schemas import (
     AnalysisResult,
     ArtifactCount,
     ArtifactType,
     DetectedTech,
     RepoData,
 )
-from backend.services.artifact_classifier import (
+from services.artifact_classifier import (
     artifact_for_manifest,
     assign_artifact_ownership,
     classify_artifacts,

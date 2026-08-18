@@ -5,9 +5,9 @@ from uuid import uuid4
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 
-from backend.models.schemas import ChatRequest
-from backend.services import chat_service, storage_service
-from backend.services.repo_key import is_repo_key
+from models.schemas import ChatRequest
+from services import chat_service, storage_service
+from services.repo_key import is_repo_key
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 

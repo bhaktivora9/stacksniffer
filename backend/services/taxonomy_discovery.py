@@ -33,7 +33,7 @@ async def load_embeddings_for_clustering() -> tuple[list, list, list]:
     Load all analyses that have embeddings.
     Returns: (embeddings, analysis_ids, metadata_list)
     """
-    from backend.services import storage_service
+    from services import storage_service
 
     analyses = await storage_service.get_all_analyses(with_embeddings_only=True)
 
@@ -350,7 +350,7 @@ async def store_discovered_taxonomy(
         "cluster_3": "infrastructure-tooling"
     }
     """
-    from backend.services import storage_service
+    from services import storage_service
 
     stored = []
     for cluster_label, software_type_name in approved_names.items():

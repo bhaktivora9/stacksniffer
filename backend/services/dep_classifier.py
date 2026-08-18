@@ -19,20 +19,20 @@ import logging
 import time
 from os import getenv
 import google.generativeai as genai
-from backend.services.cross_cutting_layer_fix import (
+from services.cross_cutting_layer_fix import (
     LAYER_INFERENCE_NULL_PREFERENCE,
     guard_cross_cutting_layer,
 )
-from backend.services.safe_json import get_repair_counters, safe_parse_gemini_json
-from backend.services.technology_role_registry import valid_technology_roles
-from backend.services.gemini_interactions import InteractionsModel
-from backend.services.ai_pipeline import (
+from services.safe_json import get_repair_counters, safe_parse_gemini_json
+from services.technology_role_registry import valid_technology_roles
+from services.gemini_interactions import InteractionsModel
+from services.ai_pipeline import (
     _build_generation_config,
     _dep_json_model,
     _DEP_CLASSIFICATION_MODEL,
     _MODEL as _SOFTWARE_TYPE_MODEL,
 )
-from backend.config.signals import FILE_SIGNALS, EXTENSION_SIGNALS
+from config.signals import FILE_SIGNALS, EXTENSION_SIGNALS
 
 logger = logging.getLogger(__name__)
 

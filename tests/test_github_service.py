@@ -1,4 +1,4 @@
-from backend.services.github_service import _build_headers, canonicalize_languages
+from services.github_service import _build_headers, canonicalize_languages
 
 
 def test_github_headers_use_requested_rest_api_version():

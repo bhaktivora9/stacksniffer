@@ -1,7 +1,7 @@
 from copy import deepcopy
 
-from backend.models.schemas import DetectedTech
-from backend.services.dep_fallback import (
+from models.schemas import DetectedTech
+from services.dep_fallback import (
     _CARGO,
     _GO,
     _MAVEN_GROUP,

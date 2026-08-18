@@ -12,7 +12,7 @@ Import path is a placeholder; adjust to where the guard lands.
 
 import pytest
 
-from backend.services.software_type_guard import (
+from services.software_type_guard import (
     guard_software_type,
     derive_type_from_artifacts,
 )

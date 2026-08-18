@@ -12,7 +12,7 @@ Run:  pytest tests/test_repo_key.py -v
 
 import pytest
 
-from backend.services.repo_key import (
+from services.repo_key import (
     RepoKeyError,
     canonical_repo_key,
     is_repo_key,

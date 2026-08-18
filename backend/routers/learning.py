@@ -18,8 +18,8 @@ Java equivalent events:
 import asyncio
 
 from fastapi import APIRouter, BackgroundTasks
-from backend.services import learning_service
-from backend.services import storage_service
+from services import learning_service
+from services import storage_service
 
 router = APIRouter(prefix="/api/learning", tags=["learning"])
 
@@ -116,7 +116,7 @@ async def reembed_corpus():
     Background task — returns immediately.
     """
     async def _reembed():
-        from backend.services.embedding_service import embed_stack, is_valid_embedding
+        from services.embedding_service import embed_stack, is_valid_embedding
         analyses = await storage_service.get_all_analyses()
         updated = 0
         for a in analyses:

@@ -1,5 +1,5 @@
-from backend.services.manifest_parser import parse_manifest_dependencies
-from backend.services.self_build_filter import (
+from services.manifest_parser import parse_manifest_dependencies
+from services.self_build_filter import (
     derive_repo_namespaces,
     filter_self_build_modules,
     is_self_build_module,

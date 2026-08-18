@@ -30,7 +30,7 @@ change takes effect on the next analysis.
 from __future__ import annotations
 
 import time
-from backend.services.storage_service import BUILTIN_TECHNOLOGY_ROLES
+from services.storage_service import BUILTIN_TECHNOLOGY_ROLES
 
 # The immutable core. These can never be discarded — they are the schema the
 # frontend, the seeder, and the ground truth are all built around. Emergent

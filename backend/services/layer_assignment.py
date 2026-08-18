@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from backend.models.schemas import (
+from models.schemas import (
     ArchitecturalLayer,
     ArtifactType,
     DetectedTech,
     RepositoryClassification,
 )
-from backend.services.cross_cutting_layer_fix import is_cross_cutting_utility
+from services.cross_cutting_layer_fix import is_cross_cutting_utility
 
 _TECHNOLOGY_ROLE_LAYERS = {
     "databases": "data",

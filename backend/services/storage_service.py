@@ -21,8 +21,8 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import ASCENDING, DESCENDING
 from pymongo.errors import DuplicateKeyError
 
-from backend.services.repo_key import parse_repo_key
-from backend.models.taxonomy import (
+from services.repo_key import parse_repo_key
+from models.taxonomy import (
     ACTIVE_TECHNOLOGY_ROLES,
     SOFTWARE_TYPE_DEFINITIONS,
     TechnologyRole,
@@ -1861,7 +1861,7 @@ async def store_emergent_technology_roles(entries: list[dict]) -> None:
 
 
 async def get_dep_technology_roles() -> list[dict]:
-    from backend.services.technology_role_registry import BUILTIN_TECHNOLOGY_ROLES
+    from services.technology_role_registry import BUILTIN_TECHNOLOGY_ROLES
     standard = [
         {"technology_role": c, "standard": True, "status": "active", "seen_count": 0}
         for c in BUILTIN_TECHNOLOGY_ROLES
@@ -2002,7 +2002,7 @@ async def apply_taxonomy_action(
                 {"active": active, "builtin": builtin, "status": status, "merge_into": merge_into})
     _invalidate_taxonomy_cache()
     if kind == "technology_role":
-        from backend.services.technology_role_registry import invalidate_cache
+        from services.technology_role_registry import invalidate_cache
         invalidate_cache()
     return {"ok": True, "kind": kind, "name": name, "action": action, "merge_into": merge_into}
 
@@ -2243,7 +2243,7 @@ async def seed_builtin_technology_roles() -> None:
     get_promoted_technology_roles() and the registry share one source. Run once at
     startup (or in seed_corpus).
     """
-    from backend.services.technology_role_registry import BUILTIN_TECHNOLOGY_ROLES
+    from services.technology_role_registry import BUILTIN_TECHNOLOGY_ROLES
     if _db is not None:
         for cat in BUILTIN_TECHNOLOGY_ROLES:
             await _db.dep_technology_roles.update_one(
@@ -2431,7 +2431,7 @@ async def discard_technology_role(name: str) -> dict:
     'library' or 'dev_tool' on future runs (the prompt's DISCARDED instruction).
     Builtins cannot be discarded.
     """
-    from backend.services.technology_role_registry import BUILTIN_TECHNOLOGY_ROLES
+    from services.technology_role_registry import BUILTIN_TECHNOLOGY_ROLES
     if name in BUILTIN_TECHNOLOGY_ROLES:
         return {"ok": False, "error": f"'{name}' is a builtin technology_role and cannot be discarded"}
 

@@ -241,7 +241,7 @@ async def apply_pattern(request: ApplyPatternRequest):
     if not request.tech_name or not request.technology_role:
         raise HTTPException(400, "tech_name and technology_role required")
 
-    from backend.services.technology_role_registry import valid_technology_roles
+    from services.technology_role_registry import valid_technology_roles
     valid = await valid_technology_roles()
     if request.technology_role not in valid:
         raise HTTPException(400, f"technology_role must be one of: {valid}")

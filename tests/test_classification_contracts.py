@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from backend.models.schemas import (
+from models.schemas import (
     ArchitecturalLayer,
     Artifact,
     AssignmentMethod,

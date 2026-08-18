@@ -2,7 +2,7 @@ import asyncio
 import json
 
 import backend.services.dep_classifier as dep_classifier
-from backend.services.dep_classifier import apply_file_signals
+from services.dep_classifier import apply_file_signals
 
 
 def _by_name(file_tree: list[str]) -> dict[str, dict]:

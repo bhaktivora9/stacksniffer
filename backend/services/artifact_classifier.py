@@ -11,7 +11,7 @@ import json
 import re
 from pathlib import PurePosixPath
 
-from backend.models.schemas import (
+from models.schemas import (
     Artifact,
     ArtifactCount,
     ArtifactType,

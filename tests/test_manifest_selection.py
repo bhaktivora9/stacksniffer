@@ -1,4 +1,4 @@
-from backend.services.manifest_parser import select_manifests
+from services.manifest_parser import select_manifests
 
 
 def test_namesake_manifest_jumps_partial_coverage_budget():

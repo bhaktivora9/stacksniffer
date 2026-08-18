@@ -1,7 +1,7 @@
 import asyncio
 
 import backend.services.storage_service as storage_service
-from backend.routers.taxonomy import (
+from routers.taxonomy import (
     list_specific_identity_counts,
     list_technology_roles,
     list_software_types,

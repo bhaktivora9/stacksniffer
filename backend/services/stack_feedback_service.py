@@ -198,7 +198,7 @@ async def compute_per_tech_accuracy() -> dict:
     Aggregate per-technology accuracy from all stack-level feedback in MongoDB.
     Returns dict: {tech_name: {correct, total, accuracy, false_positives, false_negatives}}
     """
-    from backend.services import storage_service as storage_service_rag
+    from services import storage_service as storage_service_rag
 
     all_feedback = await storage_service_rag.get_all_stack_feedback()
     if not all_feedback:

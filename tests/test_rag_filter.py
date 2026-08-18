@@ -1,4 +1,4 @@
-from backend.services.rag_filter import diagnose_rag_context, format_rag_context
+from services.rag_filter import diagnose_rag_context, format_rag_context
 
 
 def test_rag_filter_drops_non_teaching_and_weak_neighbors():

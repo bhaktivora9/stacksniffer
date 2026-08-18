@@ -2,7 +2,7 @@ import asyncio
 
 import pytest
 
-from backend.routers import analyze
+from routers import analyze
 
 
 DOCS = [

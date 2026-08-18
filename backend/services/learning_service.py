@@ -165,7 +165,7 @@ async def compute_pattern_accuracy_from_corpus() -> dict:
     NOTE: also a de-facto no-op today, since rated_output["pattern_matches"] is
     [] in the AI-first pipeline. Returns {} rather than erroring.
     """
-    from backend.services import storage_service
+    from services import storage_service
 
     all_feedback = await storage_service.get_all_feedback()
     if not all_feedback:
@@ -255,7 +255,7 @@ async def update_patterns_from_corpus(min_samples: int = 3) -> dict:
 
 
 async def get_learning_stats() -> dict:
-    from backend.services import storage_service
+    from services import storage_service
 
     feedback = await storage_service.get_all_feedback()
     analyses = await storage_service.get_all_analyses()
@@ -437,7 +437,7 @@ async def train_software_type_classifier() -> dict:
     Reads rated_embedding (the vector the human actually saw), never the live
     analyses_result embedding — so re-analysis can't shift the training target.
     """
-    from backend.services import storage_service
+    from services import storage_service
 
     labeled_data = await storage_service.get_labeled_training_data()
 
@@ -587,7 +587,7 @@ async def predict_software_type(stack: dict) -> dict | None:
 
         features = None
         if trained_dim == EMBEDDING_DIM:
-            from backend.services.embedding_service import embed_stack
+            from services.embedding_service import embed_stack
             emb = await embed_stack(stack)
             if _valid_embedding(emb):
                 features = emb
@@ -624,7 +624,7 @@ async def predict_software_type(stack: dict) -> dict | None:
 
 
 async def regression_report(repo_key: str) -> list[dict]:
-    from backend.services import storage_service
+    from services import storage_service
 
     events = await storage_service.get_analysis_events(repo_key)
     return [

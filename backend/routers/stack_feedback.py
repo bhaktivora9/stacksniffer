@@ -19,10 +19,10 @@ from typing import Optional
 from datetime import datetime
 import re
 
-from backend.services import storage_service as storage_service
-from backend.models.taxonomy import canonicalize_technology_role
-from backend.services import stack_feedback_service
-from backend.routers.deps import resolve_repo_key
+from services import storage_service as storage_service
+from models.taxonomy import canonicalize_technology_role
+from services import stack_feedback_service
+from routers.deps import resolve_repo_key
 
 router = APIRouter(prefix="/api/stack-feedback", tags=["stack-feedback"])
 
@@ -343,7 +343,7 @@ async def submit_technology_role_feedback(
     else:
         if not corrected_role:
             raise HTTPException(422, "corrected_role is required when correct=false")
-        from backend.services.technology_role_registry import valid_technology_roles
+        from services.technology_role_registry import valid_technology_roles
         valid = await valid_technology_roles()
         # Promoted emergent roles are canonical even when the locked v2 enum
         # predates them. Only apply enum alias normalization when the submitted

@@ -7,8 +7,8 @@ import hashlib
 import hmac
 import time
 
-from backend.models.schemas import ReviewActionRequest, ReviewItemKind
-from backend.services import storage_service
+from models.schemas import ReviewActionRequest, ReviewItemKind
+from services import storage_service
 
 router = APIRouter(prefix="/api/review", tags=["review"])
 security = HTTPBasic(auto_error=False)

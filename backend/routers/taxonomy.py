@@ -22,9 +22,9 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
 
-from backend.services import storage_service as storage_service
-from backend.services import taxonomy_discovery
-from backend.services.ai_pipeline import get_stack_pattern_taxonomy
+from services import storage_service as storage_service
+from services import taxonomy_discovery
+from services.ai_pipeline import get_stack_pattern_taxonomy
 
 router = APIRouter(prefix="/api/taxonomy", tags=["taxonomy"])
 

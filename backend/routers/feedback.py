@@ -13,9 +13,9 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
 
-from backend.services import storage_service as storage_service
-from backend.services.learning_service import penalize_patterns, reward_patterns
-from backend.routers.deps import resolve_repo_key
+from services import storage_service as storage_service
+from services.learning_service import penalize_patterns, reward_patterns
+from routers.deps import resolve_repo_key
 
 router = APIRouter(prefix="/api/feedback", tags=["feedback"])
 

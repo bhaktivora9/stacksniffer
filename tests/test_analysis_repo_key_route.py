@@ -1,4 +1,4 @@
-from backend.main import app
+from main import app
 
 
 def test_analysis_route_accepts_canonical_repo_key_path():

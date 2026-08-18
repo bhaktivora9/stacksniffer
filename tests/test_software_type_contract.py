@@ -1,12 +1,12 @@
-from backend.models.taxonomy import (
+from models.taxonomy import (
     SOFTWARE_TYPE_DEFINITIONS,
     SoftwareType,
     canonicalize_software_type,
     normalize_specific_identity,
 )
-from backend.services.ai_pipeline import _CLASSIFICATION_RULES
-from backend.services.storage_service import BUILTIN_SOFTWARE_TYPES
-from backend.models.schemas import StackAnalysis
+from services.ai_pipeline import _CLASSIFICATION_RULES
+from services.storage_service import BUILTIN_SOFTWARE_TYPES
+from models.schemas import StackAnalysis
 
 
 def test_software_type_consumers_share_one_canonical_vocabulary():

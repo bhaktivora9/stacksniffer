@@ -1,7 +1,7 @@
 import asyncio
 
-from backend.routers import stack_feedback
-from backend.services import storage_service
+from routers import stack_feedback
+from services import storage_service
 
 
 def run(coro):

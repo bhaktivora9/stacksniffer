@@ -1,7 +1,7 @@
 import asyncio
 
-from backend.routers import learning
-from backend.services import storage_service
+from routers import learning
+from services import storage_service
 
 
 def run(coro):

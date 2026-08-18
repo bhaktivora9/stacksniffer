@@ -1,4 +1,4 @@
-from backend.services.cross_cutting_layer_fix import (
+from services.cross_cutting_layer_fix import (
     guard_cross_cutting_layer,
     is_cross_cutting_utility,
     normalize_identity,

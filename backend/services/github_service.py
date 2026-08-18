@@ -23,9 +23,9 @@ from fnmatch import fnmatch
 import httpx
 from dotenv import load_dotenv
 
-from backend.models.schemas import RepoData
-from backend.services.manifest_parser import is_recognized_manifest, selected_product_manifest_paths
-from backend.services.repo_key import parse_repo_key
+from models.schemas import RepoData
+from services.manifest_parser import is_recognized_manifest, selected_product_manifest_paths
+from services.repo_key import parse_repo_key
 
 load_dotenv()
 

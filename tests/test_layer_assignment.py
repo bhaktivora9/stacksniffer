@@ -1,8 +1,8 @@
-from backend.models.schemas import (
+from models.schemas import (
     DetectedTech,
     RepositoryClassification,
 )
-from backend.services.layer_assignment import assign_missing_architectural_layers
+from services.layer_assignment import assign_missing_architectural_layers
 
 
 def _classification():

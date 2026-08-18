@@ -46,7 +46,7 @@ import xml.etree.ElementTree as ET
 from collections import defaultdict
 from pathlib import Path
 
-from backend.services.self_build_filter import filter_self_build_modules
+from services.self_build_filter import filter_self_build_modules
 
 # ── Manifest identification ───────────────────────────────────────────────────
 

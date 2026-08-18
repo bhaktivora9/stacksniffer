@@ -1,7 +1,7 @@
 from fastapi import HTTPException, Path
 
 import backend.services.storage_service as storage_service
-from backend.services.repo_key import is_repo_key
+from services.repo_key import is_repo_key
 
 
 async def resolve_repo_key(id: str = Path(...)) -> str:

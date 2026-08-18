@@ -72,7 +72,7 @@ _ECOSYSTEM_ALIASES = {
     "go": "go", "go.mod": "go",
 }
 
-from backend.services.knowledge_store import store as _KNOWLEDGE_STORE
+from services.knowledge_store import store as _KNOWLEDGE_STORE
 
 _CANONICAL_TABLES = _KNOWLEDGE_STORE.dep_tables()
 _NPM = _CANONICAL_TABLES["npm"]
@@ -95,7 +95,7 @@ def _ecosystem_tables() -> dict[str, dict]:
     """
     global _ECOSYSTEM_TABLES_CACHE
     if _ECOSYSTEM_TABLES_CACHE is None:
-        from backend.services.knowledge_store import store
+        from services.knowledge_store import store
         canonical = store.dep_tables()  # {"npm": {...}, "pypi": {...}, ...}
         _ECOSYSTEM_TABLES_CACHE = {
             alias: canonical[canon]
@@ -107,7 +107,7 @@ def _ecosystem_tables() -> dict[str, dict]:
 # Canonical-table references for the cross-ecosystem fallback and identity
 # checks used below. Sourced from the store, same shape as before.
 def _canonical_tables() -> dict[str, dict]:
-    from backend.services.knowledge_store import store
+    from services.knowledge_store import store
     return store.dep_tables()
 
 

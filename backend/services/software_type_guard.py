@@ -18,7 +18,7 @@ FIX:
 """
 from __future__ import annotations
 
-from backend.models.schemas import ArtifactType
+from models.schemas import ArtifactType
 
 _DEPLOYABLE_TYPES = {
     ArtifactType.DEPLOYABLE_SERVICE,

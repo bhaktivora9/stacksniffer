@@ -26,52 +26,52 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sse_starlette.sse import EventSourceResponse
 
 import backend.services.github_service as github_service
-from backend.models.schemas import (
+from models.schemas import (
     AnalyzeRequest,
     ArchitecturalLayer,
     UsageScope,
     DetectedTech,
     StackAnalysis,
 )
-from backend.models.taxonomy import canonicalize_software_type
-from backend.routers.deps import resolve_repo_key
-from backend.services import storage_service
-from backend.services.ai_pipeline import run_full_ai_pipeline
-from backend.services.artifact_classifier import (
+from models.taxonomy import canonicalize_software_type
+from routers.deps import resolve_repo_key
+from services import storage_service
+from services.ai_pipeline import run_full_ai_pipeline
+from services.artifact_classifier import (
     assign_artifact_ownership,
     classify_artifacts,
 )
-from backend.services.technology_role_registry import valid_technology_roles
-from backend.services.dep_classifier import (
+from services.technology_role_registry import valid_technology_roles
+from services.dep_classifier import (
     apply_file_signals,
     classify_dependencies,
 )
-from backend.services.embedding_service import embed_stack
-from backend.services.github_service import (
+from services.embedding_service import embed_stack
+from services.github_service import (
     GitHubRateLimitError,
     RepoNotFoundError,
     fetch_repo,
     get_head_sha,
     to_repo_metadata,
 )
-from backend.services.layer_assignment import assign_missing_architectural_layers
-from backend.services.technology_dedup import dedup_stack
-from backend.services.manifest_parser import (
+from services.layer_assignment import assign_missing_architectural_layers
+from services.technology_dedup import dedup_stack
+from services.manifest_parser import (
     filter_self_references_from_inferences,
     parse_manifest_dependencies,
 )
-from backend.services.quality_flags import (
+from services.quality_flags import (
     apply_confidence_demotions,
     apply_demotions_to_detections,
     compute_analysis_flags,
 )
-from backend.services.repo_key import (
+from services.repo_key import (
     RepoKeyError,
     canonical_repo_key,
     repo_key_to_url,
 )
-from backend.services.software_type_guard import guard_library_classification
-from backend.services.safe_json import get_repair_counters
+from services.software_type_guard import guard_library_classification
+from services.safe_json import get_repair_counters
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -643,7 +643,7 @@ async def _run_pipeline_body(repo_key: str, head_sha: str) -> dict:
     # (Three repos - fastapi, next.js, litellm - proved the old gate discards
     # everything on DEP_CLASSIFICATION_FAILED.)
     # ---------------------------------------------------------------------------
-    from backend.services.dep_fallback import (
+    from services.dep_fallback import (
         build_base_detections,
         collect_unresolved_tail,
         enrich_with_classifications,
@@ -862,7 +862,7 @@ async def _run_pipeline_body(repo_key: str, head_sha: str) -> dict:
     else:
         # Layer 0: trained software_type classifier (active after 50+ feedback items)
         try:
-            from backend.services.learning_service import predict_software_type
+            from services.learning_service import predict_software_type
             classifier_result = await predict_software_type(detections)
             if classifier_result and classifier_result["confidence"] >= 0.85:
                 logger.info(
