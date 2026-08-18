@@ -23,6 +23,7 @@ router = APIRouter(prefix="/api/feedback", tags=["feedback"])
 class FeedbackRequest(BaseModel):
     software_type_correct: bool
     correct_software_type: Optional[str] = None
+    approved_overlay_confirmed: bool = False
     confidence_felt: Optional[int] = None   # 1-5 user-perceived confidence
     techs_wrong: Optional[list[str]] = []
     techs_missing: Optional[list[str]] = []
@@ -37,7 +38,7 @@ class FeedbackResponse(BaseModel):
     message: str
 
 
-@router.post("/{id}", response_model=FeedbackResponse)
+@router.post("/{id:path}", response_model=FeedbackResponse)
 async def submit_feedback(
     id: str,
     feedback: FeedbackRequest,
@@ -59,6 +60,16 @@ async def submit_feedback(
     if not doc:
         raise HTTPException(404, "no analysis for this repo")
     stack = doc["stack"]
+    approved_overlay = None
+    if feedback.approved_overlay_confirmed:
+        approved_overlay = await storage_service.get_approved_software_type_correction(
+            repo_key, stack.get("software_type"),
+        )
+        if (
+            not approved_overlay
+            or approved_overlay.get("corrected_value") != feedback.correct_software_type
+        ):
+            raise HTTPException(409, "approved software_type overlay no longer matches")
     if not feedback.software_type_correct:
         if not feedback.correct_software_type:
             raise HTTPException(422, "correct_software_type is required when software_type_correct is false")
@@ -68,6 +79,7 @@ async def submit_feedback(
     feedback_doc = {
         "software_type_correct":        feedback.software_type_correct,
         "correct_software_type":        feedback.correct_software_type,
+        "approved_overlay_confirmed":   feedback.approved_overlay_confirmed,
         "confidence_felt":       feedback.confidence_felt,
         "techs_wrong":           feedback.techs_wrong or [],
         "techs_missing":         feedback.techs_missing or [],
@@ -84,9 +96,20 @@ async def submit_feedback(
         rated_embedding=doc.get("stack_embedding"),
         feedback=feedback_doc,
     )
-    if not feedback.software_type_correct:
-        await storage_service.upsert_correction(
-            repo_key, "software_type", feedback.correct_software_type
+    if not feedback.software_type_correct and not feedback.approved_overlay_confirmed:
+        assignment_method = "deterministic" if stack.get("layer0_prediction") else "ai_inferred"
+        await storage_service.upsert_software_type_correction(
+            pipeline_value=stack.get("software_type", "unknown"),
+            corrected_value=feedback.correct_software_type,
+            evidence={
+                "repo": (doc.get("repo") or {}).get("full_name"),
+                "repo_key": repo_key,
+                "analysis_id": id,
+                "source": "user",
+                "seen_count": 1,
+            },
+            assignment_method=assignment_method,
+            source="user",
         )
 
     pattern_matches = stack.get("pattern_matches", [])

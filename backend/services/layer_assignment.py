@@ -8,6 +8,7 @@ from backend.models.schemas import (
     DetectedTech,
     RepositoryClassification,
 )
+from backend.services.cross_cutting_layer_fix import is_cross_cutting_utility
 
 _TECHNOLOGY_ROLE_LAYERS = {
     "databases": "data",
@@ -26,6 +27,13 @@ def assign_missing_architectural_layers(
     artifacts = {artifact.name: artifact for artifact in classification.artifacts}
 
     for tech in technologies:
+        # The broad AI inference path can rediscover a manifest utility under a
+        # display name and give it a role that would otherwise imply backend.
+        # Cross-cutting identity is stronger evidence: preserve the honest null.
+        if tech.detection_source == "ai_inferred" and is_cross_cutting_utility(tech.name):
+            tech.architectural_layer = None
+            tech.layer_inference_status = "cross_cutting_null"
+            continue
         if tech.architectural_layer is not None:
             continue
 

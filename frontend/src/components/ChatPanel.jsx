@@ -3,11 +3,14 @@ import { MessageSquare, SendHorizontal as SendHorizonal, Mic, MicOff, Trash2, Co
 import AudioControls, { useAudioSpeech } from "./AudioControls";
 import { API_BASE } from "../config/api";
 
+const CHAT_MODEL_LABEL = import.meta.env.VITE_CHAT_MODEL_LABEL || "gemini-3.6-flash";
+
 function buildStarterQuestions(stack, repoName) {
   const software_type = stack?.software_type ?? "this software_type";
   const pattern = stack?.stack_pattern ?? "this pattern";
   const lang = stack?.primary_language ?? "the primary language";
   return [
+    "How was this stack detected?",
     `Why was ${software_type} chosen as the software_type?`,
     `What does "${pattern}" mean for this repo?`,
     "Which techs were AI-inferred and why?",
@@ -107,7 +110,7 @@ function MessageBubble({ msg, audioProps }) {
   );
 }
 
-export default function ChatPanel({ analysisId, stack, repoName }) {
+export default function ChatPanel({ analysisId, stack, repoName, floating = false }) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [sessionId, setSessionId] = useState(null);
@@ -232,8 +235,25 @@ export default function ChatPanel({ analysisId, stack, repoName }) {
     sendMessage();
   }
 
+  if (floating && !open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="chat-floating-button"
+        aria-label="Open stack chat"
+        title="Chat about this stack"
+      >
+        <MessageSquare size={24} aria-hidden="true" />
+        {messages.length > 0 && (
+          <span>{Math.floor(messages.length / 2)}</span>
+        )}
+      </button>
+    );
+  }
+
   return (
-    <div className="bg-surface border border-border rounded-lg overflow-hidden">
+    <div className={`${floating ? "chat-floating-panel " : ""}bg-surface border border-border rounded-lg overflow-hidden`}>
       <button
         onClick={() => setOpen((v) => !v)}
         className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-bg/50 transition-colors"
@@ -244,7 +264,7 @@ export default function ChatPanel({ analysisId, stack, repoName }) {
             Chat about{repoName ? ` ${repoName}` : " this repo"}
           </span>
           <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-accent/15 text-accent border border-accent/25">
-            gemini-2.0-flash
+            {CHAT_MODEL_LABEL}
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -344,7 +364,7 @@ export default function ChatPanel({ analysisId, stack, repoName }) {
               </button>
             </form>
             <p className="mt-1.5 text-[10px] font-mono text-muted text-center">
-              Powered by Gemini 2.0 Flash · Grounded in StackSniffer analysis
+              Powered by {CHAT_MODEL_LABEL} · Grounded in StackSniffer analysis
             </p>
           </div>
         </div>

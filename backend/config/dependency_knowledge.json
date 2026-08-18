@@ -1,4 +1,6 @@
 {
+  "_comment": "FIRST-RUN SEED ONLY. Live maintainer-approved knowledge is stored in MongoDB and this file may become stale.",
+  "seed_version": 1,
   "ecosystems": {
     "cargo": {
       "actix-web": {
@@ -269,6 +271,24 @@
       }
     },
     "maven": {
+      "com.carrotsearch:hppc": {
+        "technology_role": "library",
+        "layer": null,
+        "multi_role": false,
+        "secondary_roles": []
+      },
+      "com.ibm.icu:icu4j": {
+        "technology_role": "library",
+        "layer": null,
+        "multi_role": false,
+        "secondary_roles": []
+      },
+      "org.apache.commons:commons-math3": {
+        "technology_role": "library",
+        "layer": null,
+        "multi_role": false,
+        "secondary_roles": []
+      },
       "co.elastic.clients": {
         "technology_role": "databases",
         "layer": "data",

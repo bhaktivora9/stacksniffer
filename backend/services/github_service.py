@@ -434,7 +434,7 @@ async def fetch_repo(repo_url: str) -> RepoData:
         #   2. key files in tree  — tier-sorted (manifests, locks, config)
         #   3. root fallbacks     — not in tree; most 404 on any given repo
         #   4. CI workflows       — weakest evidence, first to be cut
-        product_manifests = list(selected_product_manifest_paths(file_tree))
+        product_manifests = list(selected_product_manifest_paths(file_tree, repo_name=repo))
         key_files_in_tree = sorted(_KEY_FILES & tree_set, key=lambda p: (_path_tier(p), p))
         root_fallbacks = [f for f in ALWAYS_TRY_ROOT if f not in tree_set]
 

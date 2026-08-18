@@ -8,8 +8,29 @@ load_dotenv()
 
 genai.configure(api_key=getenv("GEMINI_API_KEY", ""))
 
-CHAT_MODEL = getenv("GEMINI_CHAT_MODEL", "gemini-2.0-flash")
-MAX_CHAT_TOKENS = int(getenv("GEMINI_MAX_TOKENS_CHAT", 10000))
+def _normalize_chat_model(model_id: str | None, fallback: str = "gemini-3.6-flash") -> str:
+    if not model_id:
+        return fallback
+    normalized = model_id.strip()
+    if normalized.startswith("models/"):
+        normalized = normalized[len("models/") :]
+    if normalized in {
+        "gemini-2.0-flash",
+        "gemini-2.0-flash-001",
+        "gemini-2.0-flash-lite",
+        "gemini-2.0-flash-lite-001",
+        "gemini-2.5-flash",
+        "gemini-2.5-flash-lite",
+        "gemini-3.5-flash",
+        "gemini-3.5-flash-lite",
+    }:
+        return fallback
+    return normalized
+
+
+CHAT_MODEL = _normalize_chat_model(getenv("GEMINI_CHAT_MODEL"))
+MAX_CHAT_TOKENS = int(getenv("GEMINI_MAX_TOKENS_CHAT", 32768))
+CHAT_TIMEOUT_SECONDS = float(getenv("GEMINI_CHAT_TIMEOUT_SECONDS", 20.0))
 
 
 def build_system_prompt(analysis: dict) -> str:
@@ -96,7 +117,6 @@ async def stream_chat(
         system_instruction=system_instruction,
         generation_config=genai.types.GenerationConfig(
             max_output_tokens=MAX_CHAT_TOKENS,
-            temperature=0.3,
         ),
     )
 
@@ -113,11 +133,14 @@ async def stream_chat(
     try:
         # stream=False returns a GenerateContentResponse — access .text directly
         response = await asyncio.to_thread(
-            chat.send_message, user_message, stream=False
+            chat.send_message,
+            user_message,
+            stream=False,
+            request_options={"timeout": CHAT_TIMEOUT_SECONDS},
         )
         yield response.text
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         err = str(e)
         if "429" in err or "ResourceExhausted" in err or "quota" in err.lower():
             yield "Gemini rate limit reached. Please wait a minute and try again."

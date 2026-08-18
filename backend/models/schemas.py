@@ -1,7 +1,7 @@
 from enum import Enum
+from typing import Optional
 
 from pydantic import BaseModel, Field, model_validator
-from typing import Optional
 
 
 class ArtifactType(str, Enum):
@@ -47,6 +47,7 @@ class AssignmentMethod(str, Enum):
     AI_INFERRED = "ai_inferred"
     EMERGENT = "emergent"
     PROVISIONAL = "provisional"
+    MAINTAINER_APPROVED = "maintainer_approved"
 
 
 class UsageScope(str, Enum):
@@ -62,6 +63,57 @@ class Artifact(BaseModel):
     path: str = Field(min_length=1)
     primary: bool = False
     subordinate_to: Optional[str] = None
+
+
+class ReviewStatus(str, Enum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+
+
+class ReviewItemKind(str, Enum):
+    CORRECTION = "correction"
+    CLASSIFIER_DIAGNOSIS = "classifier_diagnosis"
+    EMERGENT_TYPE = "emergent_type"
+    EMERGENT_ROLE = "emergent_role"
+
+
+class ReviewSource(str, Enum):
+    USER = "user"
+    AI_PIPELINE = "ai_pipeline"
+    MAINTAINER = "maintainer"
+    UNKNOWN = "unknown"
+
+
+class ReviewItem(BaseModel):
+    id: str
+    kind: ReviewItemKind
+    status: ReviewStatus = ReviewStatus.PENDING
+    pipeline_value: str
+    proposed_value: str | None = None
+    evidence: dict[str, object] = Field(default_factory=dict)
+    assignment_method: str | None = None
+    source: ReviewSource | str = ReviewSource.USER
+    seen_count: int = 0
+    created_by: str | None = None
+    reviewed_by: str | None = None
+    created_at: str | None = None
+    reviewed_at: str | None = None
+    note: str | None = None
+
+
+class ReviewActionRequest(BaseModel):
+    target_value: str | None = None
+    merge_into: str | None = None
+    merge_target: str | None = None
+    note: str | None = None
+
+
+class ReviewDecisionResponse(BaseModel):
+    item_id: str
+    status: ReviewStatus
+    kind: ReviewItemKind
+    message: str
 
 
 class RepositoryClassification(BaseModel):
@@ -105,8 +157,10 @@ class RepositoryClassification(BaseModel):
 
 
 class ArchitecturalLayer(BaseModel):
-    primary: ArchitecturalLayerName
-    secondary: list[ArchitecturalLayerName] = Field(default_factory=list)
+    # String-backed so maintainer-approved emergent layers remain representable;
+    # built-in values still originate from ArchitecturalLayerName.
+    primary: str
+    secondary: list[str] = Field(default_factory=list)
     assignment_method: AssignmentMethod
     confidence: float = Field(ge=0.0, le=1.0)
     disambiguation_pending: bool = False
@@ -124,15 +178,15 @@ class DetectedTech(BaseModel):
     name: str
     confidence: float
     detection_source: str
-    version: Optional[str] = None
+    version: str | None = None
     technology_role: str
-    scope: Optional[str] = None
-    origin: Optional[str] = None
-    matched_file: Optional[str] = None
-    version_spec: Optional[str] = None
-    manifest_frequency: Optional[int] = None
-    file_count: Optional[int] = None
-    emergent_technology_role: Optional[str] = None
+    scope: str | None = None
+    origin: str | None = None
+    matched_file: str | None = None
+    version_spec: str | None = None
+    manifest_frequency: int | None = None
+    file_count: int | None = None
+    emergent_technology_role: str | None = None
     byte_count: Optional[int] = None
     byte_share: Optional[float] = None
     assignment_method: Optional[str] = None
@@ -185,21 +239,28 @@ class StackAnalysis(BaseModel):
     )
 
     software_type: str
+    software_type_ai: str | None = None
+    software_type_ai_reasoning: str = ""
     software_type_confidence: float
     software_type_reasoning: str
+    specific_identity: str | None = None
     architecture_style: str
     why_this_stack: str
     ecosystem_context: str
     stack_pattern: str
     notable_combinations: list[str]
     missing_patterns: list[str]
+    dep_classification_failed: bool = False
+    dep_classification_fail_reason: str = "none"
+    repair_counters: dict[str, dict[str, int]] = Field(default_factory=dict)
     ai_classification_used: bool
-    layer0_prediction: Optional[dict] = None
-    software_type_disagreement: Optional[dict] = None
+    layer0_prediction: dict | None = None
+    software_type_disagreement: dict | None = None
 
     pattern_matches: list[PatternMatch]
     ai_inferences: list[AiInference]
     confidence_breakdown: dict
+    software_type_confidence_original: float | None = None
     ai_calls_made: int
     files_analyzed: int
     patterns_checked: int
@@ -224,11 +285,11 @@ class RepoData(BaseModel):
     owner: str
     name: str
     full_name: str
-    description: Optional[str] = None
+    description: str | None = None
     stars: int
     forks: int
     topics: list[str]
-    license: Optional[str] = None
+    license: str | None = None
     default_branch: str
     created_at: str
     updated_at: str
@@ -236,11 +297,22 @@ class RepoData(BaseModel):
     file_contents: dict[str, str]
 
 
+class SoftwareTypeAI(BaseModel):
+    value: str
+    reasoning: str = ""
+
+
+class SoftwareTypeProvenance(BaseModel):
+    pipeline: str
+    ai: SoftwareTypeAI
+
+
 class AnalysisResult(BaseModel):
     analysis_id: str
     repo: RepoData
     stack: StackAnalysis
-    repository_classification: Optional[RepositoryClassification] = None
+    software_type: SoftwareTypeProvenance
+    repository_classification: RepositoryClassification | None = None
 
 
 class AnalyzeRequest(BaseModel):
@@ -253,6 +325,7 @@ class ExplainabilityReport(BaseModel):
     pattern_matches: list[PatternMatch]
     ai_inferences: list[AiInference]
     software_type_reasoning: str
+    specific_identity: str | None = None
     confidence_breakdown: dict
     ai_calls_made: int
     processing_time_ms: int

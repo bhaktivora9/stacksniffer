@@ -9,7 +9,11 @@ but explicit rather than automatic — a FastAPI requirement.
 """
 from contextlib import asynccontextmanager
 from os import getenv
-
+from pathlib import Path
+from tempfile import gettempdir
+import json
+import logging.config
+import logging
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -23,11 +27,92 @@ from backend.routers import insights_feedback #GET /api/insights-feedback/stats 
 #GET /api/insights-feedback/quality-criteria → 404
 # Remove the try/except guard — replace with explicit import:
 from backend.routers import discovery
+from backend.routers import review
 
 from backend.services import storage_service
 
-load_dotenv()
+ROOT_DIR = Path(__file__).resolve().parent.parent
+LOG_CONFIG_PATH = ROOT_DIR / "logging_config.json"
 
+
+def _log_path() -> Path:
+    """Keep runtime output outside the source tree watched by uvicorn reload."""
+    configured_path = getenv("STACKSNIFFER_LOG_PATH")
+    if configured_path:
+        return Path(configured_path).expanduser().resolve()
+    return Path(gettempdir()) / "stacksniffer" / "server_output.log"
+
+
+class _SafeAsciiFormatter(logging.Formatter):
+    """Avoid UnicodeEncodeError on Windows consoles (cp1252) by ASCII-fallback logs."""
+
+    def format(self, record: logging.LogRecord) -> str:
+        msg = super().format(record)
+        # Keep logs readable even when Unicode glyphs slip into source strings.
+        return (
+            msg.encode("ascii", errors="backslashreplace").decode("ascii")
+        )
+
+
+def _configure_logging() -> None:
+    try:
+        if LOG_CONFIG_PATH.exists():
+            with LOG_CONFIG_PATH.open("r", encoding="utf-8") as fp:
+                config = json.load(fp)
+            file_handler = config.get("handlers", {}).get("file")
+            if isinstance(file_handler, dict):
+                log_path = _log_path()
+                log_path.parent.mkdir(parents=True, exist_ok=True)
+                file_handler["filename"] = str(log_path)
+            logging.config.dictConfig(config)
+    except Exception:
+        # Safe fallback; app startup should never be blocked by logging config.
+        pass
+
+
+_configure_logging()
+load_dotenv(ROOT_DIR / ".env")
+
+def _ensure_file_logging() -> None:
+    log_path = _log_path()
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+
+    file_handler_name = "stacksniffer-file"
+    loggers = [
+        logging.getLogger(),
+        logging.getLogger("uvicorn"),
+        logging.getLogger("uvicorn.error"),
+        logging.getLogger("uvicorn.access"),
+        logging.getLogger("backend"),
+    ]
+    formatter = _SafeAsciiFormatter(
+        "%(asctime)s - %(levelname)s %(message)s", "%Y-%m-%d %H:%M:%S"
+    )
+    for target_logger in loggers:
+        already_attached = any(
+            getattr(handler, "name", "") == file_handler_name
+            or (
+                isinstance(handler, logging.FileHandler)
+                and Path(handler.baseFilename).resolve() == log_path.resolve()
+            )
+            for handler in target_logger.handlers
+        )
+        if already_attached:
+            continue
+        file_handler = logging.FileHandler(log_path, mode="a", encoding="utf-8")
+        file_handler.setLevel(logging.INFO)
+        file_handler.set_name(file_handler_name)
+        file_handler.setFormatter(formatter)
+        target_logger.addHandler(file_handler)
+        target_logger.setLevel(logging.INFO)
+
+
+def _allowed_origins() -> list[str]:
+    configured = getenv(
+        "ALLOWED_ORIGINS",
+        "http://localhost:5173,http://localhost:3000",
+    )
+    return [origin.strip() for origin in configured.split(",") if origin.strip()]
 
 
 @asynccontextmanager
@@ -36,6 +121,7 @@ async def lifespan(app: FastAPI):
     Startup/shutdown lifecycle.
     Java equivalent: ApplicationRunner + @PreDestroy in StackSnifferApplication.java
     """
+    _ensure_file_logging()
     await storage_service.init_db()
     await storage_service.seed_builtin_technology_roles()
     yield
@@ -53,11 +139,7 @@ app = FastAPI(
 # Update allow_origins with your Vercel URL before deploying
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://localhost:3000",
-        # "https://your-app.vercel.app",  # uncomment after deploy
-    ],
+    allow_origins=_allowed_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -74,14 +156,7 @@ app.include_router(stack_feedback.router)
 app.include_router(learning.router)
 app.include_router(taxonomy.router)
 app.include_router(insights_feedback.router)
-
-# Discovery router — add when stack_discovery_service.py is in place
-try:
-    from backend.routers import discovery
-    app.include_router(discovery.router)
-except ImportError:
-    pass  # discovery router not yet created — safe to skip
-
+app.include_router(review.router)
 
 # ── Health endpoint ───────────────────────────────────────────────────────────
 # Java equivalent: HealthController.java
@@ -105,9 +180,10 @@ async def health():
     return {
         "status":             "ok",
         "version":            "1.0.0",
+        "pipeline_version":   storage_service.PIPELINE_VERSION,
         "ai_enabled":         bool(getenv("GEMINI_API_KEY")),
         "ai_provider":        "gemini",
-        "ai_model":           getenv("GEMINI_ANALYSIS_MODEL", "gemini-2.5-flash"),
+        "ai_model":           getenv("GEMINI_ANALYSIS_MODEL", "gemini-3.5-flash"),
         "storage":            stats.get("storage", "memory"),
         "total_analyses":     stats.get("total_analyses", 0),
         "with_embeddings":    stats.get("with_embeddings", 0),
@@ -118,3 +194,4 @@ async def health():
         "classifier_active":  classifier_active,
         "rag_active":         stats.get("with_embeddings", 0) >= 5,
     }
+

@@ -93,6 +93,32 @@ def test_single_artifact_is_the_root_service():
     assert artifact_for_manifest("app/routes.py", classification) == artifact.name
 
 
+def test_fastapi_single_package_repo_marks_fastapi_artifact_primary():
+    repo = _repo(
+        name="fastapi",
+        file_tree=[
+            "pyproject.toml",
+            "app/main.py",
+        ],
+        file_contents={
+            "pyproject.toml": (
+                '[project]\\nname = "fastapi"\\n'
+                'dependencies = ["fastapi>=0.100", "uvicorn>=0.23"]\\n'
+            ),
+            "app/main.py": "from fastapi import FastAPI\\n",
+        },
+    )
+
+    classification = classify_artifacts(repo)
+    assert classification.artifact_count == ArtifactCount.SINGLE
+    assert len(classification.artifacts) == 1
+    artifact = classification.artifacts[0]
+    assert artifact.name == "fastapi"
+    assert artifact.path == "/"
+    assert artifact.primary is True
+    assert artifact.type == ArtifactType.DEPLOYABLE_SERVICE
+
+
 def test_influxdb_is_service_with_subordinate_ui():
     result = classify_artifacts(MULTI_ARTIFACT_REPO)
     assert result.artifact_count == ArtifactCount.MULTI
@@ -128,6 +154,7 @@ def test_manifest_ownership_resolves_ui_but_not_shared_workspace_root():
             "packages/web/package.json": '{"name": "web", "dependencies": {"react": "^18"}}',
         },
     )
+
     classification = classify_artifacts(monorepo)
     assert classification.artifact_count == ArtifactCount.MULTI
     assert {artifact.name for artifact in classification.artifacts} == {"api", "web"}
@@ -258,13 +285,43 @@ def test_internal_cargo_libraries_collapse_into_single_binary_artifact():
     classification = classify_artifacts(repo)
 
     assert classification.artifact_count == ArtifactCount.SINGLE
-    assert classification.artifacts[0].name == "database-server"
+    assert classification.artifacts[0].name == "database"
     assert classification.artifacts[0].path == "/"
     assert classification.artifacts[0].type == ArtifactType.DEPLOYABLE_SERVICE
     assert (
         artifact_for_manifest("crates/storage/Cargo.toml", classification)
-        == "database-server"
+        == "database"
     )
+
+
+def test_containerized_cli_entrypoint_does_not_imply_a_service():
+    repo = _repo(
+        name="repo-tool",
+        file_tree=["Cargo.toml", "src/main.rs", "Dockerfile"],
+        file_contents={
+            "Cargo.toml": '[package]\nname = "repo-tool"',
+            "Dockerfile": 'ENTRYPOINT ["repo-tool"]',
+        },
+    )
+
+    classification = classify_artifacts(repo)
+
+    assert classification.artifacts[0].type == ArtifactType.CLI_TOOL
+
+
+def test_exposed_port_promotes_a_containerized_binary_to_service():
+    repo = _repo(
+        name="repo-server",
+        file_tree=["Cargo.toml", "src/main.rs", "Dockerfile"],
+        file_contents={
+            "Cargo.toml": '[package]\nname = "repo-server"',
+            "Dockerfile": 'EXPOSE 8080\nENTRYPOINT ["repo-server"]',
+        },
+    )
+
+    classification = classify_artifacts(repo)
+
+    assert classification.artifacts[0].type == ArtifactType.DEPLOYABLE_SERVICE
 
 
 def test_pure_library_workspace_collapses_to_genuine_library():
@@ -334,3 +391,166 @@ def test_single_artifact_owns_technologies_without_manifest_evidence():
     assign_artifact_ownership([tech], classification)
 
     assert tech.belongs_to_artifact == classification.artifacts[0].name
+
+
+def test_namesake_package_beats_incidental_web_and_docs_outputs():
+    repo = _repo(
+        name="next.js",
+        file_tree=[
+            "package.json",
+            "packages/next/package.json",
+            "packages/next/index.js",
+            "packages/bundle-analyzer/package.json",
+            "packages/bundle-analyzer/src/App.tsx",
+            "docs/package.json",
+        ],
+        file_contents={
+            "package.json": '{"private":true,"workspaces":["packages/*"]}',
+            "packages/next/package.json": '{"name":"next"}',
+            "packages/bundle-analyzer/package.json": (
+                '{"name":"bundle-analyzer","dependencies":{"react":"18"}}'
+            ),
+            "docs/package.json": '{"name":"next-docs","dependencies":{"react":"18"}}',
+        },
+    )
+
+    classification = classify_artifacts(repo)
+    primary = next(artifact for artifact in classification.artifacts if artifact.primary)
+    assert primary.name == "next"
+    assert primary.path == "/packages/next"
+
+
+def test_conventional_server_module_is_primary_product_fallback():
+    repo = _repo(
+        name="elasticsearch",
+        file_tree=[
+            "build.gradle",
+            "server/build.gradle",
+            "server/src/main/java/org/elasticsearch/bootstrap/Elasticsearch.java",
+            "distribution/tools/cli/build.gradle",
+            "distribution/tools/cli/src/main/java/Main.java",
+            "docs/package.json",
+        ],
+        file_contents={
+            "build.gradle": "group = 'elasticsearch-build'",
+            "server/build.gradle": "apply plugin: 'elasticsearch.internal-java'",
+            "distribution/tools/cli/build.gradle": (
+                "plugins { id 'application' }\nmainClass = 'Main'"
+            ),
+            "docs/package.json": '{"name":"elasticsearch-docs","dependencies":{"react":"18"}}',
+        },
+    )
+
+    classification = classify_artifacts(repo)
+    primary = next(artifact for artifact in classification.artifacts if artifact.primary)
+    assert primary.name == "server"
+    assert primary.path == "/server"
+    assert primary.type == ArtifactType.DEPLOYABLE_SERVICE
+
+    technologies = [
+        DetectedTech(
+            name="org.apache.lucene:lucene-core",
+            confidence=0.85,
+            detection_source="manifest_table",
+            technology_role="library",
+            matched_file="build.gradle",
+        ),
+        DetectedTech(
+            name="Lucene",
+            confidence=0.8,
+            detection_source="ai_inferred",
+            technology_role="library",
+        ),
+        DetectedTech(
+            name="Java",
+            confidence=1.0,
+            detection_source="github_linguist",
+            technology_role="languages",
+        ),
+    ]
+    assign_artifact_ownership(technologies, classification)
+    assert [tech.belongs_to_artifact for tech in technologies] == [
+        "server", "server", None,
+    ]
+
+
+def test_elasticsearch_fixture_remote_cannot_become_primary_artifact():
+    fixture = (
+        "build-tools-internal/src/integTest/resources/org/elasticsearch/"
+        "gradle/internal/fake_git/remote"
+    )
+    repo = _repo(
+        name="elasticsearch",
+        file_tree=[
+            "build.gradle",
+            "server/build.gradle",
+            "server/src/main/java/org/elasticsearch/bootstrap/Elasticsearch.java",
+            f"{fixture}/build.gradle",
+        ],
+        file_contents={
+            "build.gradle": "group = 'elasticsearch-build'",
+            "server/build.gradle": "apply plugin: 'elasticsearch.internal-java'",
+            f"{fixture}/build.gradle": "plugins { id 'java-library' }",
+        },
+    )
+
+    classification = classify_artifacts(repo)
+    primary = next(artifact for artifact in classification.artifacts if artifact.primary)
+    assert primary.name == "server"
+    assert primary.path == "/server"
+    assert all("fake_git" not in artifact.path for artifact in classification.artifacts)
+    assert all(artifact.name != "remote" for artifact in classification.artifacts)
+
+
+def test_non_product_filter_is_segment_exact_and_keeps_real_modules():
+    repo = _repo(
+        name="product",
+        file_tree=[
+            "server/build.gradle",
+            "src/latest/build.gradle",
+            "qa/smoke/build.gradle",
+            "examples/demo/build.gradle",
+        ],
+        file_contents={
+            "server/build.gradle": "apply plugin: 'internal-java'",
+            "src/latest/build.gradle": "plugins { id 'application' }",
+            "qa/smoke/build.gradle": "plugins { id 'application' }",
+            "examples/demo/build.gradle": "plugins { id 'application' }",
+        },
+    )
+
+    classification = classify_artifacts(repo)
+    paths = {artifact.path for artifact in classification.artifacts}
+    assert "/server" in paths
+    assert "/src/latest" in paths
+    assert all(not path.startswith(("/qa/", "/examples/")) for path in paths)
+
+
+def test_namesake_api_library_outranks_incidental_migrator_binary():
+    repo = _repo(
+        name="slf4j",
+        file_tree=[
+            "pom.xml",
+            "slf4j-api/pom.xml",
+            "slf4j-api/src/main/java/org/slf4j/Logger.java",
+            "slf4j-simple/pom.xml",
+            "slf4j-migrator/pom.xml",
+            "slf4j-migrator/src/main/java/org/slf4j/migrator/Main.java",
+        ],
+        file_contents={
+            "pom.xml": "<packaging>pom</packaging><modules></modules>",
+            "slf4j-api/pom.xml": "<packaging>jar</packaging>",
+            "slf4j-simple/pom.xml": "<packaging>jar</packaging>",
+            "slf4j-migrator/pom.xml": (
+                "<packaging>jar</packaging><mainClass>"
+                "org.slf4j.migrator.Main</mainClass>"
+            ),
+        },
+    )
+
+    classification = classify_artifacts(repo)
+    primary = next(artifact for artifact in classification.artifacts if artifact.primary)
+
+    assert primary.name == "slf4j-api"
+    assert primary.path == "/slf4j-api"
+    assert primary.type == ArtifactType.LIBRARY

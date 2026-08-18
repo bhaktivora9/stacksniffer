@@ -16,69 +16,44 @@ Phase 2a: classify_dependencies()
 import asyncio
 import json
 import logging
-import re
 import time
-
-from backend.services.technology_role_registry import is_builtin, valid_technology_roles
+from os import getenv
+import google.generativeai as genai
+from backend.services.cross_cutting_layer_fix import (
+    LAYER_INFERENCE_NULL_PREFERENCE,
+    guard_cross_cutting_layer,
+)
+from backend.services.safe_json import get_repair_counters, safe_parse_gemini_json
+from backend.services.technology_role_registry import valid_technology_roles
+from backend.services.gemini_interactions import InteractionsModel
+from backend.services.ai_pipeline import (
+    _build_generation_config,
+    _dep_json_model,
+    _DEP_CLASSIFICATION_MODEL,
+    _MODEL as _SOFTWARE_TYPE_MODEL,
+)
+from backend.config.signals import FILE_SIGNALS, EXTENSION_SIGNALS
 
 logger = logging.getLogger(__name__)
 
-GEMINI_REQUEST_TIMEOUT_SECONDS = 40.0
+def _env_float(name: str, default: float) -> float:
+    try:
+        return float(getenv(name, str(default)))
+    except (TypeError, ValueError):
+        logger.warning(
+            "[dep_classifier] invalid float for %s, using default %.1fs",
+            name,
+            default,
+        )
+        return default
+
+
+GEMINI_REQUEST_TIMEOUT_SECONDS = _env_float("GEMINI_REQUEST_TIMEOUT_SECONDS", 40.0)
+_DEP_CLASSIFICATION_MAX_TOKENS = int(getenv("GEMINI_MAX_TOKENS_DEP_CLASSIFICATION", 32768))
+_DEP_CLASSIFICATION_CHUNK_SIZE = 30
+_DEP_CLASSIFICATION_MAX_RETRIES = 2
 
 # ── Phase 0: File signals ─────────────────────────────────────────────────────
-
-FILE_SIGNALS: dict[str, tuple[str, str, float]] = {
-    "Dockerfile":           ("Docker",         "infra",      1.0),
-    "docker-compose.yml":   ("Docker",         "infra",      1.0),
-    "docker-compose.yaml":  ("Docker",         "infra",      1.0),
-    "Chart.yaml":           ("Kubernetes",     "infra",      1.0),
-    "skaffold.yaml":        ("Skaffold",       "infra",      1.0),
-    "go.mod":               ("Go",             "languages",  1.0),
-    "Cargo.toml":           ("Rust",           "languages",  1.0),
-    "Gemfile":              ("Ruby",           "languages",  0.99),
-    "composer.json":        ("PHP",            "languages",  0.99),
-    "pubspec.yaml":         ("Flutter",        "frameworks", 1.0),
-    "mix.exs":              ("Elixir",         "languages",  1.0),
-    "rebar.config":         ("Erlang",         "languages",  1.0),
-    "manage.py":            ("Django",         "frameworks", 1.0),
-    "angular.json":         ("Angular",        "frameworks", 1.0),
-    "next.config.js":       ("Next.js",        "frameworks", 1.0),
-    "next.config.ts":       ("Next.js",        "frameworks", 1.0),
-    "nuxt.config.js":       ("Nuxt.js",        "frameworks", 1.0),
-    "nuxt.config.ts":       ("Nuxt.js",        "frameworks", 1.0),
-    "svelte.config.js":     ("SvelteKit",      "frameworks", 1.0),
-    ".scalafmt.conf":       ("Scala",          "languages",  1.0),
-    "build.sbt":            ("Scala",          "languages",  1.0),
-    "mix.lock":             ("Elixir",         "languages",  0.95),
-    ".github/workflows/":   ("GitHub Actions", "infra",      1.0),
-}
-
-EXTENSION_SIGNALS: dict[str, tuple[str, str, float]] = {
-    ".py":    ("Python",     "languages", 0.99),
-    ".js":    ("JavaScript", "languages", 0.99),
-    ".jsx":   ("JavaScript", "languages", 0.99),
-    ".ts":    ("TypeScript", "languages", 0.99),
-    ".tsx":   ("TypeScript", "languages", 0.99),
-    ".go":    ("Go",         "languages", 0.99),
-    ".rs":    ("Rust",       "languages", 0.99),
-    ".java":  ("Java",       "languages", 0.99),
-    ".kt":    ("Kotlin",     "languages", 0.99),
-    ".kts":   ("Kotlin",     "languages", 0.95),
-    ".swift": ("Swift",      "languages", 0.99),
-    ".rb":    ("Ruby",       "languages", 0.99),
-    ".c":     ("C",          "languages", 0.95),
-    ".cpp":   ("C++",        "languages", 0.95),
-    ".cc":    ("C++",        "languages", 0.95),
-    ".cs":    ("C#",         "languages", 0.99),
-    ".scala": ("Scala",      "languages", 0.99),
-    ".ex":    ("Elixir",     "languages", 0.99),
-    ".exs":   ("Elixir",     "languages", 0.95),
-    ".hs":    ("Haskell",    "languages", 0.99),
-    ".lua":   ("Lua",        "languages", 0.99),
-    ".ml":    ("OCaml",      "languages", 0.99),
-    ".dart":  ("Dart",       "languages", 0.99),
-    ".zig":   ("Zig",        "languages", 0.99),
-}
 
 _MIN_EXT_COUNT = 2
 
@@ -245,6 +220,40 @@ _ARCHITECTURAL_LAYERS = {
 _MAX_AI_LAYER_CONFIDENCE = 0.80
 
 
+def _log_truncation_stage(raw_response, *, chunk_no: int, total_chunks: int) -> None:
+    try:
+        candidates = getattr(raw_response, "candidates", None)
+        if candidates:
+            finish_reason = str(getattr(candidates[0], "finish_reason", "")).lower()
+            if "max" in finish_reason and "token" in finish_reason:
+                logger.warning(
+                    "[dep_classifier] generation chunk=%s/%s truncated by model: %s",
+                    chunk_no,
+                    total_chunks,
+                    finish_reason,
+                )
+                return
+    except Exception:
+        pass
+
+    try:
+        usage = getattr(raw_response, "usage_metadata", None)
+        output_tokens = getattr(usage, "candidates_token_count", None)
+        if (
+            output_tokens is not None
+            and output_tokens >= _DEP_CLASSIFICATION_MAX_TOKENS
+        ):
+            logger.warning(
+                "[dep_classifier] generation chunk=%s/%s hit max_output_tokens=%s (observed=%s)",
+                chunk_no,
+                total_chunks,
+                _DEP_CLASSIFICATION_MAX_TOKENS,
+                output_tokens,
+            )
+    except Exception:
+        pass
+
+
 def _render_prompt(repo_full_name: str, file_tree_sample: str, raw_deps_json: str) -> str:
     """
     Fill the prompt WITHOUT str.format(). Explicit replace means braces in the
@@ -256,19 +265,6 @@ def _render_prompt(repo_full_name: str, file_tree_sample: str, raw_deps_json: st
         .replace("«FILE_TREE_SAMPLE»", file_tree_sample)
         .replace("«RAW_DEPS_JSON»", raw_deps_json)
     )
-
-
-def _extract_json_array(text: str) -> str:
-    """Pull a JSON array out of a Gemini response regardless of fences or prose."""
-    text = (text or "").strip()
-    fence = re.match(r"^```(?:json)?\s*\n?(.*?)\n?```\s*$", text, re.DOTALL)
-    if fence:
-        text = fence.group(1).strip()
-    if not text.startswith("["):
-        start, end = text.find("["), text.rfind("]")
-        if start != -1 and end > start:
-            text = text[start:end + 1]
-    return text
 
 
 async def _build_technology_role_feedback_context() -> str:
@@ -298,13 +294,23 @@ async def _build_technology_role_feedback_context() -> str:
     return "\n".join(lines)
 
 
+def _is_deadline_or_timeout(exc: Exception) -> bool:
+    text = str(exc).lower()
+    if "deadline" in text or "deadline_exceeded" in text:
+        return True
+    if "504" in text:
+        return True
+    return type(exc).__name__ in {"DeadlineExceeded", "ReadTimeout", "TimeoutError"}
+
+
 async def _store_emergent_technology_roles(clean: list[dict], repo_full_name: str) -> None:
     """Persist any non-standard technology_role Gemini invented, for human review."""
     try:
         import backend.services.storage_service as storage_service
+        valid_roles = await valid_technology_roles()
         for entry in clean:
             technology_role = entry["technology_role"]
-            if not is_builtin(technology_role):
+            if technology_role not in valid_roles:
                 await storage_service.record_emergent_technology_role(
                     name=technology_role,
                     example_tech=entry["name"],
@@ -318,7 +324,7 @@ async def classify_dependencies(
     raw_deps: list[dict],
     file_tree: list[str],
     repo_full_name: str,
-    _json_model,
+    _json_model=None,
 ) -> list[dict]:
     """
     Phase 2a: Gemini classifies the PRODUCT dependency list into tech records.
@@ -349,7 +355,7 @@ async def classify_dependencies(
 
     unique_deps = sorted(
         classifiable, key=lambda d: _SCOPE_PRIORITY.get(d.get("scope", "optional"), 1)
-    )[:100]
+    )
 
     deps_for_prompt = [
         {
@@ -359,97 +365,218 @@ async def classify_dependencies(
         for d in unique_deps
     ]
 
+    if not deps_for_prompt:
+        return []
+
+    valid = await valid_technology_roles()
+    clean: list[dict] = []
+    observed: list[dict] = []
+
     # Everything that can throw now lives INSIDE the try, so a prompt-build or
     # feedback-fetch error is logged with a full traceback instead of escaping
     # as an opaque DEP_CLASSIFICATION_FAILED.
-    response = None
     try:
         feedback_context = await _build_technology_role_feedback_context()
-        prompt = _render_prompt(
-            repo_full_name=repo_full_name,
-            file_tree_sample=json.dumps(file_tree[:40]),
-            raw_deps_json=json.dumps(deps_for_prompt, indent=2),
-        ) + feedback_context
+        base_prompt = "\n\n" + LAYER_INFERENCE_NULL_PREFERENCE + feedback_context
+        file_tree_sample = json.dumps(file_tree[:40])
 
-        print(
-            f"[dep_classifier] Gemini start "
-            f"(product_tail={len(unique_deps)}, unresolved_tail={len(seen)})"
-        )
-        call_started = time.monotonic()
-        response = await asyncio.to_thread(
-            _json_model.generate_content,
-            prompt,
-            request_options={"timeout": GEMINI_REQUEST_TIMEOUT_SECONDS},
-        )
-        print(
-            f"[dep_classifier] Gemini call took "
-            f"{time.monotonic() - call_started:.1f}s "
-            f"(product_tail={len(unique_deps)})"
-        )
-        result = json.loads(_extract_json_array(response.text or ""))
+        for chunk_index in range(0, len(deps_for_prompt), _DEP_CLASSIFICATION_CHUNK_SIZE):
+            chunk = deps_for_prompt[chunk_index : chunk_index + _DEP_CLASSIFICATION_CHUNK_SIZE]
+            prompt = _render_prompt(
+                repo_full_name=repo_full_name,
+                file_tree_sample=file_tree_sample,
+                raw_deps_json=json.dumps(chunk, indent=2),
+            ) + base_prompt
 
-        if not isinstance(result, list):
-            logger.warning("[dep_classifier] Gemini returned %s, not a list", type(result).__name__)
-            return []
-
-        valid = await valid_technology_roles()
-        clean: list[dict] = []
-        observed: list[dict] = []
-        for entry in result:
-            if not isinstance(entry, dict):
-                continue
-            name = (entry.get("name") or "").strip()
-            cat = entry.get("technology_role", "library")
-            if not name:
-                continue
-            try:
-                confidence = float(entry.get("confidence", 0.75))
-            except (TypeError, ValueError):
-                confidence = 0.75
-            if "architectural_layer" not in entry:
-                layer = None
-                layer_resolution = "missing"
+            chunk_no = (chunk_index // _DEP_CLASSIFICATION_CHUNK_SIZE) + 1
+            total_chunks = (len(deps_for_prompt) + _DEP_CLASSIFICATION_CHUNK_SIZE - 1) // _DEP_CLASSIFICATION_CHUNK_SIZE
+            logger.info(
+                "[dep_classifier] Gemini start (chunk=%s/%s, product_tail=%s, unresolved_tail=%s)",
+                chunk_no,
+                total_chunks,
+                len(chunk),
+                len(seen),
+            )
+            call_started = time.monotonic()
+            model = _json_model or _dep_json_model
+            response = None
+            if _json_model is not None:
+                candidate_model_ids = [None]
             else:
-                layer = entry.get("architectural_layer")
-                if layer is None:
-                    layer_resolution = "llm_null"
-                elif layer not in _ARCHITECTURAL_LAYERS:
-                    logger.warning(
-                        "[dep_classifier] Off-enum architectural layer %r for %s",
-                        layer,
-                        name,
-                    )
-                    layer = None
-                    layer_resolution = "off_enum"
-                else:
-                    layer_resolution = "resolved"
-            try:
-                layer_confidence = float(entry.get("layer_confidence", confidence))
-            except (TypeError, ValueError):
-                layer_confidence = confidence
-            normalized = {
-                "name": name, "technology_role": cat,
-                "confidence": max(0.0, min(1.0, confidence)),
-                "architectural_layer": layer,
-                "layer_confidence": max(
-                    0.0,
-                    min(_MAX_AI_LAYER_CONFIDENCE, layer_confidence),
-                ),
-                "layer_resolution": layer_resolution,
-                "scope": entry.get("scope", "required"),
-                "packages": entry.get("packages", []),
-                "reasoning": entry.get("reasoning", ""),
-            }
-            observed.append(normalized)
-            if cat in valid:
-                clean.append(normalized)
+                candidate_model_ids = [
+                    _DEP_CLASSIFICATION_MODEL,
+                    "gemini-3.5-flash-lite",
+                    _SOFTWARE_TYPE_MODEL,
+                    "gemini-3.5-flash",
+                ]
+            seen_models: list[str] = []
+            last_error: Exception | None = None
 
-        print(f"[dep_classifier] classified {len(clean)} techs from {len(unique_deps)} packages")
+            for candidate in candidate_model_ids:
+                if candidate is not None:
+                    if candidate in seen_models:
+                        continue
+                    seen_models.append(candidate)
+                    candidate_model = InteractionsModel(
+                        candidate,
+                        generation_config=_build_generation_config(
+                            _DEP_CLASSIFICATION_MAX_TOKENS,
+                            model_id=candidate,
+                        ),
+                        legacy_model_factory=lambda c=candidate: genai.GenerativeModel(
+                            c,
+                            generation_config=_build_generation_config(
+                                _DEP_CLASSIFICATION_MAX_TOKENS,
+                                model_id=c,
+                            ),
+                        ),
+                    )
+                else:
+                    candidate_model = model
+
+                last_candidate_error: Exception | None = None
+                for retry_no in range(0, _DEP_CLASSIFICATION_MAX_RETRIES + 1):
+                    try:
+                        response = await asyncio.to_thread(
+                            candidate_model.generate_content,
+                            prompt,
+                            request_options={"timeout": GEMINI_REQUEST_TIMEOUT_SECONDS},
+                            generation_config=_build_generation_config(
+                                _DEP_CLASSIFICATION_MAX_TOKENS,
+                                model_id=(candidate or getattr(model, "_model", _DEP_CLASSIFICATION_MODEL)),
+                            ),
+                        )
+                        break
+                    except TypeError:
+                        response = await asyncio.to_thread(
+                            candidate_model.generate_content,
+                            prompt,
+                            request_options={"timeout": GEMINI_REQUEST_TIMEOUT_SECONDS},
+                        )
+                        break
+                    except Exception as e:
+                        last_candidate_error = e
+                        if candidate is not None and "404" in str(e) and "no longer available" in str(e).lower():
+                            break
+                        if _is_deadline_or_timeout(e) and retry_no < _DEP_CLASSIFICATION_MAX_RETRIES:
+                            await asyncio.sleep(0.4 * (2 ** retry_no))
+                            continue
+                        break
+                if response is not None:
+                    break
+                if candidate is not None and "404" in str(last_candidate_error or "") and "no longer available" in str(last_candidate_error or "").lower():
+                    last_error = last_candidate_error
+                    logger.warning(
+                        "[dep_classifier] model %s unavailable, trying fallback",
+                        candidate,
+                    )
+                    continue
+                if last_candidate_error:
+                    if candidate is None:
+                        raise last_candidate_error
+                    last_error = last_candidate_error
+                    raise last_candidate_error
+
+            if response is None:
+                if last_error is None:
+                    raise RuntimeError("dep_classifier: no candidate model succeeded")
+                raise last_error
+            _log_truncation_stage(
+                response,
+                chunk_no=chunk_no,
+                total_chunks=total_chunks,
+            )
+            logger.info(
+                "[dep_classifier] Gemini call took %.1fs (chunk=%s/%s)",
+                time.monotonic() - call_started,
+                chunk_no,
+                total_chunks,
+            )
+
+            parsed = safe_parse_gemini_json(
+                response.text or "",
+                expect="array",
+                site="dep_classifier",
+                on_repair=lambda stage: logger.warning(
+                    "[dep_classifier] parse_repair stage=%s chunk=%s/%s count=%s",
+                    stage, chunk_no, total_chunks,
+                    get_repair_counters().get("dep_classifier", {}).get(stage, 0),
+                ),
+            )
+            if not isinstance(parsed, list):
+                logger.warning("[dep_classifier] Gemini returned %s for chunk %s, not a list", type(parsed).__name__, chunk_no)
+                continue
+
+            for entry in parsed:
+                if not isinstance(entry, dict):
+                    continue
+                name = (entry.get("name") or "").strip()
+                cat = entry.get("technology_role", "library")
+                if not name:
+                    continue
+                try:
+                    confidence = float(entry.get("confidence", 0.75))
+                except (TypeError, ValueError):
+                    confidence = 0.75
+                if "architectural_layer" not in entry:
+                    layer = None
+                    layer_resolution = "missing"
+                else:
+                    layer = entry.get("architectural_layer")
+                    if layer is None:
+                        layer_resolution = "llm_null"
+                    elif layer not in _ARCHITECTURAL_LAYERS:
+                        logger.warning(
+                            "[dep_classifier] Off-enum architectural layer %r for %s",
+                            layer,
+                            name,
+                        )
+                        layer = None
+                        layer_resolution = "off_enum"
+                    else:
+                        layer_resolution = "resolved"
+                guarded_layer = guard_cross_cutting_layer(
+                    name, layer, packages=entry.get("packages", []),
+                )
+                if guarded_layer is None and layer is not None:
+                    logger.info(
+                        "[dep_classifier] Overrode cross-cutting layer %s for %s to null",
+                        layer, name,
+                    )
+                    layer_resolution = "cross_cutting_null"
+                layer = guarded_layer
+                try:
+                    layer_confidence = float(entry.get("layer_confidence", confidence))
+                except (TypeError, ValueError):
+                    layer_confidence = confidence
+                normalized = {
+                    "name": name, "technology_role": cat,
+                    "confidence": max(0.0, min(1.0, confidence)),
+                    "architectural_layer": layer,
+                    "layer_confidence": max(
+                        0.0,
+                        min(_MAX_AI_LAYER_CONFIDENCE, layer_confidence),
+                    ),
+                    "layer_resolution": layer_resolution,
+                    "scope": entry.get("scope", "required"),
+                    "packages": entry.get("packages", []),
+                    "reasoning": entry.get("reasoning", ""),
+                }
+                observed.append(normalized)
+                if cat in valid:
+                    clean.append(normalized)
+
+        logger.info(
+            "[dep_classifier] classified %s techs from %s packages",
+            len(clean),
+            len(unique_deps),
+        )
         await _store_emergent_technology_roles(observed, repo_full_name)
         return clean
 
     except json.JSONDecodeError as e:
-        raw = response.text[:800] if response is not None else "<generate_content raised>"
+        response_text = locals().get("response") and locals()["response"].text
+        raw = (response_text or "")[:800] if response_text is not None else "<generate_content raised>"
         logger.error("[dep_classifier] JSON parse failed: %s", e)
         logger.error("[dep_classifier] raw Gemini output: %r", raw)
         return []
@@ -460,5 +587,9 @@ async def classify_dependencies(
         # in full, instead of as a truncated symptom.
         import traceback
         logger.error("[dep_classifier] failed:\n%s", traceback.format_exc())
-        print(f"[dep_classifier] failed with {type(e).__name__}: {e}")
+        logger.error(
+            "[dep_classifier] failed with %s: %s",
+            type(e).__name__,
+            e,
+        )
         return []

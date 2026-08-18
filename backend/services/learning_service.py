@@ -259,26 +259,9 @@ async def get_learning_stats() -> dict:
 
     feedback = await storage_service.get_all_feedback()
     analyses = await storage_service.get_all_analyses()
+    storage_stats = await storage_service.get_stats()
     events = await storage_service.get_analysis_events()
     disagreements = await storage_service.get_software_type_disagreements()
-    accuracy = await compute_pattern_accuracy_from_corpus()
-
-    patterns = _load_patterns()
-    total_patterns = sum(len(e) for e in patterns.values() if isinstance(e, list))
-
-    DEFAULT_CONFIDENCE = 0.90
-    changed_patterns = []
-    for technology_role, entries in patterns.items():
-        if not isinstance(entries, list):
-            continue
-        for entry in entries:
-            conf = entry.get("confidence", DEFAULT_CONFIDENCE)
-            if abs(conf - DEFAULT_CONFIDENCE) > 0.05:
-                changed_patterns.append({
-                    "tech": entry["name"], "technology_role": technology_role, "confidence": conf,
-                    "direction": "increased" if conf > DEFAULT_CONFIDENCE else "decreased",
-                })
-
     # Count samples that could actually train a classifier — labeled AND with a
     # usable embedding. "50 feedback rows" of empty-embedding rows trains nothing.
     trainable = sum(
@@ -286,28 +269,123 @@ async def get_learning_stats() -> dict:
         if (f.get("rated_embedding") or f.get("stack_embedding"))
         and (f.get("correct_software_type") or (f.get("rated_output") or {}).get("software_type"))
     )
+    layer0_analyses = [
+        analysis for analysis in analyses
+        if ((analysis.get("stack") or {}).get("layer0_prediction"))
+    ]
+
+    def _analysis_key(row: dict) -> tuple[str | None, str | None, str | None]:
+        return (
+            row.get("repo_key") or row.get("analysis_id") or row.get("_id"),
+            row.get("commit_sha"),
+            row.get("pipeline_version"),
+        )
+
+    def _confidence_band(confidence) -> str:
+        if confidence is None:
+            return "unknown"
+        try:
+            value = float(confidence)
+        except (TypeError, ValueError):
+            return "unknown"
+        if value >= 0.8:
+            return "high"
+        if value >= 0.5:
+            return "medium"
+        return "low"
+
+    layer0_by_key = {}
+    for analysis in layer0_analyses:
+        key = _analysis_key(analysis)
+        if all(key):
+            layer0_by_key[key] = analysis
+
+    layer0_total = len(layer0_by_key)
+    confidence_bands = {
+        "high": {"label": "High confidence", "min_confidence": 0.8, "total": 0, "disagreements": 0},
+        "medium": {"label": "Medium confidence", "min_confidence": 0.5, "max_confidence": 0.8, "total": 0, "disagreements": 0},
+        "low": {"label": "Low confidence", "max_confidence": 0.5, "total": 0, "disagreements": 0},
+        "unknown": {"label": "Unknown confidence", "total": 0, "disagreements": 0},
+    }
+    for analysis in layer0_by_key.values():
+        prediction = (analysis.get("stack") or {}).get("layer0_prediction") or {}
+        band = _confidence_band(prediction.get("confidence"))
+        confidence_bands[band]["total"] += 1
+
+    layer0_disagreement_rows = []
+    for row in disagreements:
+        key = _analysis_key(row)
+        if row.get("layer0") and all(key) and key in layer0_by_key:
+            layer0_disagreement_rows.append(row)
+            prediction = (layer0_by_key[key].get("stack") or {}).get("layer0_prediction") or {}
+            band = _confidence_band(prediction.get("confidence"))
+            confidence_bands[band]["disagreements"] += 1
+
+    layer0_disagreement_count = len(layer0_disagreement_rows)
+    layer0_agreements = max(0, layer0_total - layer0_disagreement_count)
+    layer0_agreement_rate = (
+        layer0_agreements / layer0_total
+        if layer0_total
+        else None
+    )
+    for band in confidence_bands.values():
+        band["agreements"] = max(0, band["total"] - band["disagreements"])
+        band["agreement_rate"] = (
+            band["agreements"] / band["total"]
+            if band["total"]
+            else None
+        )
+
+    disagreement_examples = []
+    for row in sorted(layer0_disagreement_rows, key=lambda item: str(item.get("created_at") or ""), reverse=True)[:25]:
+        key = _analysis_key(row)
+        layer0 = row.get("layer0") or {}
+        current_layer0 = ((layer0_by_key.get(key) or {}).get("stack") or {}).get("layer0_prediction") or {}
+        gemini = row.get("gemini") or {}
+        disagreement_examples.append({
+            "repo_key": row.get("repo_key"),
+            "commit_sha": row.get("commit_sha"),
+            "pipeline_version": row.get("pipeline_version"),
+            "layer0_software_type": layer0.get("software_type"),
+            "layer0_confidence": current_layer0.get("confidence", layer0.get("confidence")),
+            "layer0_confidence_band": _confidence_band(current_layer0.get("confidence", layer0.get("confidence"))),
+            "primary_software_type": row.get("selected_software_type") or gemini.get("software_type"),
+            "primary_confidence": row.get("selected_confidence") or gemini.get("confidence"),
+            "guard_corrected": bool(row.get("guard_corrected")),
+            "training_status": row.get("training_status"),
+            "created_at": row.get("created_at"),
+        })
 
     return {
         "corpus_size": len(analyses),
+        "total_analyses": storage_stats.get("total_analyses", len(analyses)),
         "feedback_collected": len(feedback),
         "trainable_samples": trainable,
         "repos_with_feedback": len({f.get("repo_key") for f in feedback if f.get("repo_key")}),
         "corrections_count": await storage_service.count_corrections(),
-        "layer0_disagreements": len(disagreements),
+        "layer0_predictions_total": layer0_total,
+        "layer0_agreements": layer0_agreements,
+        "layer0_disagreements": layer0_disagreement_count,
+        "layer0_agreement_rate": layer0_agreement_rate,
+        "layer0_confidence_bands": confidence_bands,
+        "layer0_disagreement_examples": disagreement_examples,
         "layer0_pending_human_validation": sum(
             1
-            for row in disagreements
+            for row in layer0_disagreement_rows
             if row.get("training_status") == "pending_human_validation"
         ),
+        "layer0": {
+            "mode": "advisory_shadow",
+            "predictions_total": layer0_total,
+            "agreements": layer0_agreements,
+            "disagreements": layer0_disagreement_count,
+            "agreement_rate": layer0_agreement_rate,
+            "confidence_bands": confidence_bands,
+            "disagreement_examples": disagreement_examples,
+        },
         "pipeline_versions_seen": sorted(
             {e.get("pipeline_version") for e in events if e.get("pipeline_version")}
         ),
-        "patterns_total": total_patterns,
-        "patterns_changed_by_learning": len(changed_patterns),
-        "keyword_accuracy_computed": len(accuracy),
-        "top_changed_patterns": sorted(
-            changed_patterns, key=lambda x: abs(x["confidence"] - DEFAULT_CONFIDENCE), reverse=True
-        )[:5],
         "training_pipeline": {
             "status": "ready" if trainable >= MIN_LABELED_SAMPLES else "collecting_data",
             "current_feedback": len(feedback),

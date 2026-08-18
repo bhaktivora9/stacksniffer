@@ -2,29 +2,16 @@ import { useState, useEffect } from "react";
 import { useParams, useLocation, useNavigate, Link } from "react-router-dom";
 import { GitFork as Github, RefreshCw } from "lucide-react";
 import StackPanel from "../components/StackPanel";
-import ExplainabilityDrawer from "../components/ExplainabilityDrawer";
 import ChatPanel from "../components/ChatPanel";
 import SoftwareTypeFeedbackBar from "../components/SoftwareTypeFeedbackBar";
 import FeedbackToast from "../components/FeedbackToast";
-import LearningStatsDrawer from "../components/LearningStatsDrawer";
-import SimilarReposCard from "../components/SimilarReposCard";
-import StackAccuracyPanel from "../components/StackAccuracyPanel";
-import PendingTechnologyRoleReview from "../components/PendingTechnologyRoleReview";
-import CorpusSearchPanel from "../components/CorpusSearchPanel";
+import AppShell from "../components/AppShell";
+import ProvenanceResult from "../components/ProvenanceResult";
+import TopNavigation from "../components/TopNavigation";
 import { API_BASE } from "../config/api";
 import { DEMO_RESULT } from "../data/demoResult";
 
 const DEMO_ID = "demo-stacksniffer-v1";
-
-const SNIPPETS = {
-  curl: (id) => `curl ${API_BASE}/api/analyze/${id}`,
-  python: (id) =>
-    `import httpx\nr = httpx.get("${API_BASE}/api/analyze/${id}")\ndata = r.json()`,
-  node: (id) =>
-    `const r = await fetch('${API_BASE}/api/analyze/${id}');\nconst data = await r.json();`,
-  similar: (_id, software_type) =>
-    `curl ${API_BASE}/api/analyses/software_type/${software_type ?? "{software_type}"}`,
-};
 
 function useHealthStatus() {
   const [health, setHealth] = useState(null);
@@ -38,7 +25,13 @@ function useHealthStatus() {
 }
 
 export default function ResultsPage() {
-  const { analysisId } = useParams();
+  const { analysisId: routeAnalysisId } = useParams();
+  let analysisId = routeAnalysisId || "";
+  try {
+    analysisId = decodeURIComponent(analysisId);
+  } catch {
+    // Keep the original value when a malformed percent sequence is supplied.
+  }
   const location = useLocation();
   const navigate = useNavigate();
   const health = useHealthStatus();
@@ -51,21 +44,15 @@ export default function ResultsPage() {
   });
   const [loading, setLoading] = useState(!isDemo && !location.state?.result);
   const [error, setError] = useState(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [learningOpen, setLearningOpen] = useState(false);
   const [toasts, setToasts] = useState([]);
   const [feedbackState, setFeedbackState] = useState({});
-  const [copied, setCopied] = useState(false);
-  const [idCopied, setIdCopied] = useState(false);
-  const [snippetLang, setSnippetLang] = useState("curl");
-  const [snippetCopied, setSnippetCopied] = useState(false);
   const [hardRefreshing, setHardRefreshing] = useState(false);
 
   useEffect(() => {
     if (isDemo || result) return;
     (async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/analyze/${analysisId}`);
+        const res = await fetch(`${API_BASE}/api/analyze/${encodeURIComponent(analysisId)}`);
         if (!res.ok) throw new Error(`Analysis not found (${res.status})`);
         const data = await res.json();
         setResult(data);
@@ -89,30 +76,6 @@ export default function ResultsPage() {
     }
     setFeedbackState(nextState);
   }, [result?.request_id, result?.repo_key, result?.stack]);
-
-  async function copyJson() {
-    try {
-      await navigator.clipboard.writeText(JSON.stringify(result, null, 2));
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {}
-  }
-
-  async function copyId() {
-    try {
-      await navigator.clipboard.writeText(analysisId);
-      setIdCopied(true);
-      setTimeout(() => setIdCopied(false), 2000);
-    } catch {}
-  }
-
-  async function copySnippet() {
-    try {
-      await navigator.clipboard.writeText(SNIPPETS[snippetLang](analysisId, result?.stack?.software_type));
-      setSnippetCopied(true);
-      setTimeout(() => setSnippetCopied(false), 2000);
-    } catch {}
-  }
 
   function repoUrlForRefresh() {
     if (result?.repo?.html_url) return result.repo.html_url;
@@ -169,16 +132,27 @@ export default function ResultsPage() {
       headers: { "Content-Type": "application/json" },
       ...options,
     });
-    if (!res.ok) throw new Error(`Stack feedback failed (${res.status})`);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      const detail = Array.isArray(body.detail)
+        ? body.detail.map((item) => item.msg).filter(Boolean).join("; ")
+        : body.detail;
+      throw new Error(detail || `Stack feedback failed (${res.status})`);
+    }
     return res.json();
   }
 
-  async function handleTechCorrect(techName) {
+  async function handleTechCorrect(techName, currentRole) {
     const previous = feedbackState[techName] ?? null;
     setFeedbackState((state) => ({ ...state, [techName]: "pending" }));
     try {
       await postStackFeedback(
-        `${API_BASE}/api/stack-feedback/${analysisId}/tech/${encodeURIComponent(techName)}/correct`
+        currentRole
+          ? `${API_BASE}/api/stack-feedback/${analysisId}/tech/${encodeURIComponent(techName)}/role`
+          : `${API_BASE}/api/stack-feedback/${analysisId}/tech/${encodeURIComponent(techName)}/correct`,
+        currentRole
+          ? { body: JSON.stringify({ current_role: currentRole, correct: true }) }
+          : {}
       );
       setFeedbackState((state) => ({ ...state, [techName]: "correct" }));
       showToast(`${techName} confirmed`, "success");
@@ -186,6 +160,67 @@ export default function ResultsPage() {
     } catch (err) {
       setFeedbackState((state) => ({ ...state, [techName]: previous }));
       showToast(err.message || "Stack feedback failed", "error");
+      return false;
+    }
+  }
+
+  async function handleSoftwareTypeFeedback(correct, correctedType = null) {
+    try {
+      await postStackFeedback(`${API_BASE}/api/feedback/${encodeURIComponent(analysisId)}`, {
+        body: JSON.stringify({ software_type_correct: correct, correct_software_type: correctedType }),
+      });
+      showToast(correct ? "Software type confirmed" : `Software type correction submitted: ${correctedType}`, correct ? "success" : "warn");
+      return true;
+    } catch (err) {
+      showToast(err.message || "Software type feedback failed", "error");
+      return false;
+    }
+  }
+
+  async function handleTechRoleCorrection(techName, currentRole, correctedRole, reason) {
+    const previous = feedbackState[techName] ?? null;
+    setFeedbackState((state) => ({ ...state, [techName]: "pending" }));
+    try {
+      await postStackFeedback(
+        `${API_BASE}/api/stack-feedback/${analysisId}/tech/${encodeURIComponent(techName)}/role`,
+        { body: JSON.stringify({ current_role: currentRole, correct: false, corrected_role: correctedRole, reason }) }
+      );
+      setFeedbackState((state) => ({ ...state, [techName]: "correction_pending" }));
+      showToast(
+        `${techName}: ${currentRole} → ${correctedRole} queued for maintainer review`,
+        "success",
+      );
+      return true;
+    } catch (err) {
+      setFeedbackState((state) => ({ ...state, [techName]: previous }));
+      showToast(err.message || "Technology role correction failed", "error");
+      return false;
+    }
+  }
+
+  async function handleLayerCorrection(techName, currentLayer, correctedLayer, reason) {
+    const previous = feedbackState[techName] ?? null;
+    setFeedbackState((state) => ({ ...state, [techName]: "pending" }));
+    try {
+      await postStackFeedback(
+        `${API_BASE}/api/stack-feedback/${analysisId}/tech/${encodeURIComponent(techName)}/layer`,
+        {
+          body: JSON.stringify({
+            current_layer: currentLayer,
+            corrected_layer: correctedLayer,
+            reason,
+          }),
+        },
+      );
+      setFeedbackState((state) => ({ ...state, [techName]: "correction_pending" }));
+      showToast(
+        `${techName}: ${currentLayer || "unassigned"} → ${correctedLayer} queued for maintainer review`,
+        "success",
+      );
+      return true;
+    } catch (err) {
+      setFeedbackState((state) => ({ ...state, [techName]: previous }));
+      showToast(err.message || "Architectural layer correction failed", "error");
       return false;
     }
   }
@@ -211,7 +246,7 @@ export default function ResultsPage() {
   async function handleMissingTech(missingTechs) {
     try {
       await postStackFeedback(
-        `${API_BASE}/api/stack-feedback/${analysisId}`,
+        `${API_BASE}/api/stack-feedback/by-id/${analysisId}`,
         { body: JSON.stringify({ tech_evaluations: [], missing_techs: missingTechs }) }
       );
       showToast(
@@ -240,13 +275,6 @@ export default function ResultsPage() {
       showToast(err.message || "Primary language correction failed", "error");
       return false;
     }
-  }
-
-  function handleSoftwareTypeChange(software_type) {
-    setResult((current) => ({
-      ...current,
-      stack: { ...current.stack, software_type },
-    }));
   }
 
   const healthDot = health?.status === "ok" ? "bg-green" : "bg-amber";
@@ -280,17 +308,32 @@ export default function ResultsPage() {
     stack.software_type_reasoning.toLowerCase().startsWith("trained classifier:");
 
   return (
-    <div className="min-h-screen bg-bg flex flex-col">
-      <header className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-bg/95 backdrop-blur-sm px-6 py-3 flex items-center justify-between">
+    <AppShell bare
+      health={health}
+      processingTime={stack.processing_time_ms}
+      actions={!isDemo ? (
+        <button
+          onClick={handleHardRefresh}
+          disabled={hardRefreshing}
+          className="inline-flex items-center gap-1.5 rounded border border-border/60 bg-surface/60 px-2.5 py-1.5 text-[11px] text-muted transition hover:border-accent/50 hover:text-accent disabled:cursor-wait disabled:opacity-60"
+          title="Re-run analysis without using the cached result"
+        >
+          <RefreshCw size={13} className={hardRefreshing ? "animate-spin" : ""} />
+          <span className="hidden sm:inline">{hardRefreshing ? "Refreshing" : "Hard refresh"}</span>
+        </button>
+      ) : null}
+    >
+      <TopNavigation health={health} actions={!isDemo ? <button type="button" className="rbtn" onClick={handleHardRefresh} disabled={hardRefreshing}><RefreshCw size={13} className={hardRefreshing ? "animate-spin" : ""} /> {hardRefreshing ? "Refreshing" : "Hard refresh"}</button> : null} />
+      <header className="result-header result-header-legacy">
         <div className="flex items-center gap-3">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#58a6ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg className="hidden" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#58a6ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 17.8" />
             <path d="M10 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8" />
             <path d="M14 2v4a2 2 0 0 0 2 2h4" />
             <path d="M14 17.8c-1.1 2-3.33 2.67-5 1.2-1.67-1.47-1.67-3.93 0-5.4l3-2.6" />
           </svg>
           <div className="flex items-baseline gap-2">
-            <span className="font-mono text-sm font-semibold text-accent tracking-tight">StackSniffer</span>
+            <span className="result-brand">Stack<b>Sniffer</b></span>
             <span className="font-mono text-[11px] text-muted hidden sm:block">// stack detection engine</span>
           </div>
         </div>
@@ -303,6 +346,12 @@ export default function ResultsPage() {
               </span>
             </div>
           )}
+          <a
+            href="/review"
+            className="text-sm text-muted hover:text-text transition-colors font-sans"
+          >
+            Review queue
+          </a>
           <span className="text-xs text-muted font-mono hidden sm:block">
             {stack.processing_time_ms}ms
           </span>
@@ -334,7 +383,7 @@ export default function ResultsPage() {
         </div>
       </header>
 
-      <main className="flex-1 px-6 pt-20 pb-8 max-w-3xl mx-auto w-full space-y-4">
+      <main className="result-main">
         {isDemo && (
           <div className="flex items-center gap-2 px-4 py-2.5 bg-accent/10 border border-accent/20 rounded text-xs font-mono text-accent">
             <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
@@ -359,7 +408,9 @@ export default function ResultsPage() {
           </div>
         )}
 
-        <StackPanel
+        <ProvenanceResult result={result} feedbackState={feedbackState} onSoftwareTypeFeedback={handleSoftwareTypeFeedback} onTechCorrect={handleTechCorrect} onTechWrong={handleTechWrong} onRoleCorrection={handleTechRoleCorrection} onLayerCorrection={handleLayerCorrection} />
+
+        <div className="hidden"><StackPanel
           stack={stack}
           repo={repo}
           repositoryClassification={result.repository_classification}
@@ -367,6 +418,8 @@ export default function ResultsPage() {
           feedbackState={feedbackState}
           onTechCorrect={handleTechCorrect}
           onTechWrong={handleTechWrong}
+          onTechRoleCorrection={handleTechRoleCorrection}
+          onLayerCorrection={handleLayerCorrection}
           onMissingTech={handleMissingTech}
           onPrimaryLanguageChange={handlePrimaryLanguageChange}
           afterInsights={
@@ -374,160 +427,36 @@ export default function ResultsPage() {
               <SoftwareTypeFeedbackBar
                 analysisId={analysisId}
                 currentSoftwareType={stack.software_type}
+                pipelineSoftwareType={result.software_type?.pipeline ?? stack.software_type}
+                aiSoftwareType={result.software_type?.ai?.value ?? stack.software_type_ai ?? stack.software_type}
+                aiReasoning={result.software_type?.ai?.reasoning ?? stack.software_type_ai_reasoning ?? stack.software_type_reasoning}
+                specificIdentity={stack.specific_identity}
+                softwareTypeOverlay={result.software_type_overlay}
                 softwareTypeConfidence={stack.software_type_confidence}
                 ragInfluenced={Boolean(stack.rag_influenced || stack.rag_repos_retrieved)}
                 similarReposUsed={stack.similar_repos_used ?? stack.rag_repos_retrieved ?? 0}
                 classifierUsed={classifierUsed}
                 detectedTechs={feedbackTechs}
                 onToast={showToast}
-                onSoftwareTypeChange={handleSoftwareTypeChange}
               />
-              <SimilarReposCard analysisId={analysisId} />
             </>
           }
-        />
+        /></div>
 
-        <PendingTechnologyRoleReview
-          triggered={[
-            ...(result.emergent_technology_roles ?? stack.emergent_technology_roles ?? []),
-            ...(result.emergent_software_type ?? stack.emergent_software_type
-              ? [result.emergent_software_type ?? stack.emergent_software_type]
-              : []),
-          ]}
-          onToast={showToast}
-        />
-
-        <CorpusSearchPanel />
-
-        <div>
-          <div className="flex items-center gap-2 flex-wrap">
-          <button
-            onClick={() => setDrawerOpen((v) => !v)}
-            className="text-sm text-accent hover:text-accent/80 transition-colors font-sans"
-          >
-            {drawerOpen ? "Hide detection details ↑" : "How was this detected? ↓"}
-          </button>
-            <span className="text-sm text-muted">·</span>
-            <button
-              onClick={() => setLearningOpen(true)}
-              className="text-sm text-accent hover:text-accent/80 transition-colors font-sans"
-            >
-              Learning stats
-            </button>
-          </div>
-          <ExplainabilityDrawer
-            isOpen={drawerOpen}
-            onClose={() => setDrawerOpen(false)}
-            analysisId={analysisId}
-            demoData={isDemo ? { ...stack, analysis_id: analysisId } : null}
-          />
-          <LearningStatsDrawer open={learningOpen} onClose={() => setLearningOpen(false)} />
-        </div>
-
-        <ChatPanel
-          analysisId={analysisId}
-          stack={stack}
-          repoName={repo?.full_name}
-        />
-
-        <div className="bg-surface border border-border rounded-lg overflow-hidden">
-          <div className="px-5 py-3 border-b border-border flex items-center gap-2">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#58a6ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-              <polyline points="15 3 21 3 21 9" />
-              <line x1="10" x2="21" y1="14" y2="3" />
-            </svg>
-            <span className="text-sm font-medium text-text">Use this analysis</span>
-          </div>
-
-          <div className="px-5 py-4 space-y-4">
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-xs text-muted uppercase tracking-wider font-sans">Analysis ID</span>
-                <button
-                  onClick={copyId}
-                  className="text-xs text-muted hover:text-text transition-colors font-mono"
-                >
-                  {idCopied ? "Copied!" : "Copy"}
-                </button>
-              </div>
-              <code className="block font-mono text-sm text-accent break-all bg-bg border border-border rounded px-3 py-2">
-                {analysisId}
-              </code>
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex gap-1 flex-wrap">
-                  {["curl", "python", "node", "similar"].map((lang) => (
-                    <button
-                      key={lang}
-                      onClick={() => setSnippetLang(lang)}
-                      className={`text-xs font-mono px-2.5 py-1 rounded transition-colors ${
-                        snippetLang === lang
-                          ? "bg-accent/15 text-accent border border-accent/30"
-                          : "text-muted hover:text-text border border-transparent"
-                      }`}
-                    >
-                      {lang === "similar" ? "find similar" : lang}
-                    </button>
-                  ))}
-                </div>
-                <button
-                  onClick={copySnippet}
-                  className="text-xs text-muted hover:text-text transition-colors font-mono"
-                >
-                  {snippetCopied ? "Copied!" : "Copy"}
-                </button>
-              </div>
-              <pre className="bg-bg border border-border rounded px-3 py-3 font-mono text-xs text-text overflow-x-auto whitespace-pre-wrap leading-relaxed">
-                {SNIPPETS[snippetLang](analysisId, result?.stack?.software_type)}
-              </pre>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <p className="text-xs text-muted font-sans">
-                Pass this request_id to genREADME or any tool that needs stack context
-              </p>
-              {!isDemo && (
-                health?.storage === "memory" ? (
-                  <span className="text-xs font-mono text-amber border border-amber/30 bg-amber/10 px-2 py-0.5 rounded">
-                    In-memory storage — analyses lost on restart
-                  </span>
-                ) : health?.storage === "mongodb" ? (
-                  <span className="text-xs font-mono text-muted">
-                    Cached in MongoDB · expires in 7 days
-                  </span>
-                ) : null
-              )}
-            </div>
-          </div>
-        </div>
-
-        <StackAccuracyPanel />
-
-        <div className="flex items-center justify-between pt-1">
-          <button
-            onClick={copyJson}
-            className="flex items-center gap-2 text-sm text-muted hover:text-text border border-border hover:border-muted px-3 py-2 rounded transition-colors font-sans"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect width="8" height="4" x="8" y="2" rx="1" ry="1" />
-              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-            </svg>
-            {copied ? "Copied!" : "Copy analysis JSON"}
-          </button>
-          <span className="font-mono text-xs text-muted">
-            {new Date().toISOString().slice(0, 10)}
-          </span>
-        </div>
       </main>
 
-      <footer className="border-t border-border px-6 py-4 text-center font-mono text-xs text-muted">
+        <footer className="border-t border-border px-6 py-4 text-center font-mono text-xs text-muted">
         StackSniffer v1.0 · Detection engine only · genREADME calls this API
       </footer>
 
-      <div className="fixed bottom-6 right-6 z-[90] flex flex-col items-end gap-2 pointer-events-none">
+      <ChatPanel
+        analysisId={analysisId}
+        stack={stack}
+        repoName={repo?.full_name}
+        floating
+      />
+
+      <div className="fixed bottom-24 right-6 z-[90] flex flex-col items-end gap-2 pointer-events-none">
         {toasts.map((toast) => (
           <FeedbackToast
             key={toast.id}
@@ -537,6 +466,6 @@ export default function ResultsPage() {
           />
         ))}
       </div>
-    </div>
+    </AppShell>
   );
 }

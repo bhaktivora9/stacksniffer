@@ -46,6 +46,8 @@ import xml.etree.ElementTree as ET
 from collections import defaultdict
 from pathlib import Path
 
+from backend.services.self_build_filter import filter_self_build_modules
+
 # ── Manifest identification ───────────────────────────────────────────────────
 
 MANIFEST_LIMIT = 25
@@ -180,6 +182,7 @@ def manifest_origin(path: str) -> str:
 def select_manifests(
     file_tree: list[str],
     limit: int = MANIFEST_LIMIT,
+    repo_name: str = "",
 ) -> tuple[list[dict], list[str]]:
     """
     Select manifests to parse from the file tree.
@@ -198,12 +201,27 @@ def select_manifests(
     if len(product) > limit:
         flags.append("PARTIAL_MANIFEST_COVERAGE")
         root   = [m for m in product if "/" not in m["path"]]
+        repo_key = re.sub(r"[^a-z0-9]", "", repo_name.casefold())
+        repo_aliases = {repo_key}
+        for suffix in ("js", "py"):
+            if repo_key.endswith(suffix) and len(repo_key) > len(suffix):
+                repo_aliases.add(repo_key[:-len(suffix)])
+        namesake = [
+            m for m in product
+            if repo_key and any(
+                re.sub(r"[^a-z0-9]", "", part.casefold()) in repo_aliases
+                for part in Path(m["path"]).parts[:-1]
+            )
+        ]
         by_top: dict[str, dict] = {}
         for item in product:
             parts = item["path"].split("/")
             if len(parts) > 1 and parts[0] not in by_top:
                 by_top[parts[0]] = item
-        selected_paths = {m["path"] for m in (root + list(by_top.values()))[:limit]}
+        prioritized = list(dict.fromkeys(
+            m["path"] for m in root + namesake + list(by_top.values())
+        ))[:limit]
+        selected_paths = set(prioritized)
         selected = [m for m in product if m["path"] in selected_paths]
 
     selected_paths = {m["path"] for m in selected}
@@ -216,9 +234,34 @@ def select_manifests(
 def selected_product_manifest_paths(
     file_tree: list[str],
     limit: int = MANIFEST_LIMIT,
+    repo_name: str = "",
 ) -> list[str]:
-    manifests, _ = select_manifests(file_tree, limit)
+    manifests, _ = select_manifests(file_tree, limit, repo_name)
     return [m["path"] for m in manifests if m["origin"] == "product" and m["parsed"]]
+
+
+def _extract_root_group(path: str, content: str) -> str | None:
+    """Extract the repository namespace from a root Maven or Gradle manifest."""
+    basename = Path(path).name
+    if basename == "pom.xml":
+        try:
+            root = ET.fromstring(content)
+        except ET.ParseError:
+            return None
+        namespace = {"m": root.tag.split("}")[0].strip("{")} if "}" in root.tag else {}
+        prefix = "m:" if namespace else ""
+        group = root.findtext(f"{prefix}groupId", default="", namespaces=namespace)
+        if not group:
+            group = root.findtext(
+                f"{prefix}parent/{prefix}groupId", default="", namespaces=namespace,
+            )
+        return group.strip() or None
+    if basename in ("build.gradle", "build.gradle.kts"):
+        match = re.search(
+            r"(?m)^\s*group\s*(?:=\s*)?[\"']([^\"']+)[\"']", content,
+        )
+        return match.group(1).strip() if match else None
+    return None
 
 
 # ── Main extraction function ──────────────────────────────────────────────────
@@ -244,7 +287,8 @@ def parse_manifest_dependencies(
       manifests_selected: list of {path, origin, parsed} for UI audit
       flags:              parse warnings (MANIFEST_PARSE_FAILED, PARTIAL_MANIFEST_COVERAGE, etc.)
     """
-    manifests_selected, flags = select_manifests(file_tree)
+    repo_name = repo_full_name.rsplit("/", 1)[-1]
+    manifests_selected, flags = select_manifests(file_tree, repo_name=repo_name)
     selected_paths = {
         m["path"] for m in manifests_selected
         if m["origin"] == "product" and m["parsed"]
@@ -252,6 +296,7 @@ def parse_manifest_dependencies(
 
     parsed_project_names: set[str] = set()
     raw_deps_all: list[dict] = []
+    root_group: str | None = None
 
     for path in selected_paths:
         content = file_contents.get(path)
@@ -265,6 +310,8 @@ def parse_manifest_dependencies(
             continue
 
         deps, project_names, parse_flags = _parse_by_type(path, content)
+        if "/" not in Path(path).as_posix():
+            root_group = root_group or _extract_root_group(path, content)
         parsed_project_names.update(
             _normalize_name(name) for name in project_names if name
         )
@@ -295,6 +342,14 @@ def parse_manifest_dependencies(
             continue
         raw_deps.append(dep)
 
+    dropped_self_build: list[dict] = []
+    raw_deps = filter_self_build_modules(
+        raw_deps,
+        root_group=root_group,
+        repo_full_name=repo_full_name,
+        on_drop=dropped_self_build.append,
+    )
+
     return {
         "raw_deps":           raw_deps,
         "project_names":      parsed_project_names,
@@ -302,6 +357,8 @@ def parse_manifest_dependencies(
         "flags": sorted(set([
             *flags,
             *[f"SELF_REFERENCE_EXCLUDED:{name}" for name in excluded_self_refs],
+            *[f"SELF_BUILD_MODULE_EXCLUDED:{dep.get('name', '')}"
+              for dep in dropped_self_build],
         ])),
     }
 

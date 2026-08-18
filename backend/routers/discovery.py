@@ -37,8 +37,6 @@ class ApplyPatternRequest(BaseModel):
 async def get_associations():
     """
     Tech co-occurrence rules from corpus analyses.
-    Used by AiInsightsCard dropdown to show corpus-derived stack patterns.
-
     Returns: {rules: [{stack_pattern, software_type, tech_combo, count}]}
     Java equivalent: AssociationRuleLearner.getFrequentRules()
     """

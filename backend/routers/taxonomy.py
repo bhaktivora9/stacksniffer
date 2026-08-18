@@ -151,6 +151,13 @@ async def list_software_types():
     ]}
 
 
+@router.get("/specific_identities")
+async def list_specific_identity_counts():
+    """Return observed finer-grained identities ranked for promotion review."""
+    identities = await storage_service.get_specific_identity_counts()
+    return {"specific_identities": identities, "count": len(identities)}
+
+
 @router.get("/technology_roles")
 async def list_technology_roles():
     technology_roles = await storage_service.get_technology_roles()

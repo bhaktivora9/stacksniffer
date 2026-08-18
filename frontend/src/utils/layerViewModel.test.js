@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { buildArtifactLayerGroups } from "./layerViewModel.js";
+import { buildArtifactLayerGroups, buildLanguageSummary } from "./layerViewModel.js";
 
 const singleArtifact = {
   artifact_count: "single",
@@ -55,3 +55,28 @@ test("single artifact groups its deterministic layers without special casing", (
   assert.equal(groups[0].layers[0].techs[0].name, "FastAPI");
 });
 
+test("language summary separates the configured primary language from the others", () => {
+  const summary = buildLanguageSummary({
+    primary_language: "Rust",
+    languages: [
+      { name: "Shell", byte_share: 0.1 },
+      { name: "Rust", byte_share: 0.8 },
+      { name: "Python", byte_share: 0.1 },
+    ],
+  });
+
+  assert.equal(summary.primary.name, "Rust");
+  assert.deepEqual(summary.otherLanguages.map((language) => language.name), ["Shell", "Python"]);
+});
+
+test("language summary falls back to the measured primary language", () => {
+  const summary = buildLanguageSummary({
+    languages: [
+      { name: "Go", is_primary: true },
+      { name: "Shell", is_primary: false },
+    ],
+  });
+
+  assert.equal(summary.primary.name, "Go");
+  assert.deepEqual(summary.otherLanguages.map((language) => language.name), ["Shell"]);
+});

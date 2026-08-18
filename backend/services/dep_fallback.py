@@ -140,11 +140,18 @@ _DEV_TOOLING = {
     "@types/node", "setuptools", "wheel", "pip", "twine", "build",
 }
 
-_TEST_SCOPES = {"test", "testing"}
-
-
 def _norm(name: str) -> str:
     return (name or "").strip().lower()
+
+
+def _dedupe_identity_key(name: str | None) -> str:
+    """Aggressive key scoped only to deduplication within one analysis.
+
+    Separator-only package-name collisions are possible across a global corpus,
+    so this must not become a storage or cross-repository identity.
+    """
+    normalized = (name or "").strip().casefold()
+    return re.sub(r"[-_.\s]+", "", normalized)
 
 
 def _maven_group(name: str) -> str:
@@ -164,6 +171,9 @@ def _maven_lookup_key(name: str, table: dict[str, dict]) -> str:
     preserves specific mappings while allowing curated parent groups to cover
     their subgroups.
     """
+    coordinate = _norm(name)
+    if coordinate in table:
+        return coordinate
     group = _norm(_maven_group(name))
     matches = [
         key
@@ -292,10 +302,12 @@ def build_base_detections(raw_deps: list[dict]) -> list[dict]:
         name = (dep.get("name") or "").strip()
         if not name:
             continue
-        key = _norm(name)
-        if key in seen:
+        identity_key = _dedupe_identity_key(name)
+        if identity_key in seen:
             continue
-        seen.add(key)
+        seen.add(identity_key)
+
+        key = _norm(name)
 
         ecosystem = dep.get("ecosystem") or dep.get("matched_file")
         scope = dep.get("scope")
@@ -317,22 +329,12 @@ def build_base_detections(raw_deps: list[dict]) -> list[dict]:
             seed = table.get(key.split("/", 1)[1])
         multi_role = bool(seed and seed.get("multi_role"))
 
-        # Only an explicit test scope implies a testing architectural role.
-        # Dev scope controls usage/display but does not turn compilers, build
-        # tools, type packages, or frontend utilities into testing technology.
-        if _norm(scope) in _TEST_SCOPES:
-            if technology_role != "testing":
-                technology_role = "testing"
-                confidence = min(confidence, 0.70)
-            layer_assignment = {
-                "primary": "testing",
-                "secondary": [],
-                "assignment_method": "deterministic",
-                "confidence": confidence,
-                "disambiguation_pending": False,
-            }
-        else:
-            layer_assignment = _layer_assignment(seed, confidence)
+        # Dependency groups describe how a package is used, not what it is.
+        # Test/dev membership belongs exclusively in usage_scope. A curated
+        # package keeps its intrinsic role/layer; an unknown package remains
+        # unresolved for the consolidated classifier instead of being guessed
+        # as testing.
+        layer_assignment = _layer_assignment(seed, confidence)
 
         out.append({
             "name": name,
@@ -358,7 +360,7 @@ def collect_unresolved_tail(
 ) -> list[dict]:
     """Return only deps still unresolved after the complete deterministic pass."""
     unresolved_names = {
-        _norm(dep.get("name"))
+        _dedupe_identity_key(dep.get("name"))
         for dep in base_detections
         if dep.get("fallback_tier") in {"heuristic", "passthrough"}
         and dep.get("architectural_layer") is None
@@ -366,7 +368,7 @@ def collect_unresolved_tail(
     return [
         dep
         for dep in raw_deps
-        if _norm(dep.get("name")) in unresolved_names
+        if _dedupe_identity_key(dep.get("name")) in unresolved_names
     ]
 
 
@@ -385,13 +387,13 @@ def enrich_with_classifications(
     if not classifications:
         return base
 
-    by_name = {_norm(d["name"]): d for d in base}
+    by_name = {_dedupe_identity_key(d["name"]): d for d in base}
 
     for cls in classifications:
         name = (cls.get("name") or "").strip()
         if not name:
             continue
-        key = _norm(name)
+        key = _dedupe_identity_key(name)
         existing = by_name.get(key)
         inferred_layer = cls.get("architectural_layer")
         layer_assignment = (
@@ -416,7 +418,7 @@ def enrich_with_classifications(
                 "name": name,
                 "technology_role": cls.get("technology_role", "library"),
                 "confidence": cls.get("confidence", 0.80),
-                "detection_source": "manifest",
+                "detection_source": "ai_inferred",
                 "scope": cls.get("scope", "required"),
                 "origin": None,
                 "matched_file": None,
@@ -430,6 +432,17 @@ def enrich_with_classifications(
             }
             continue
 
+        # A differently-spelled AI twin is a hallucinated alias, not new
+        # evidence. Preserve the manifest record byte-for-byte. Curated table
+        # and provisional detections likewise outrank AI even when Gemini
+        # echoes the exact package spelling.
+        if name != existing["name"] or existing["fallback_tier"] in {
+            "table",
+            "provisional",
+            "learned",
+        }:
+            continue
+
         # Relabel: Gemini beats a heuristic or a passthrough, but not a table
         # hit we are confident about.
         if existing["fallback_tier"] in ("heuristic", "passthrough", "dev_tool"):
@@ -437,7 +450,10 @@ def enrich_with_classifications(
         existing["confidence"] = max(
             existing["confidence"], cls.get("confidence", 0.0)
         )
-        existing["detection_source"] = "manifest"
+        # The dependency was discovered in a manifest, but its role/layer was
+        # supplied by AI. Preserve both facts instead of collapsing provenance
+        # to the ambiguous generic value `manifest`.
+        existing["detection_source"] = "manifest_ai_inferred"
         if existing["fallback_tier"] not in ("table", "provisional"):
             existing["fallback_tier"] = "ai_classified"
             # Tail entries have no deterministic layer. Trust the layer returned

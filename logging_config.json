@@ -3,30 +3,50 @@
     "disable_existing_loggers": false,
     "formatters": {
         "default": {
-            "()": "uvicorn.logging.DefaultFormatter",
-            "fmt": "%(asctime)s - %(levelprefix)s %(message)s",
-            "use_colors": false
+            "format": "%(asctime)s - %(levelname)s %(message)s",
+            "datefmt": "%Y-%m-%d %H:%M:%S"
         }
     },
     "handlers": {
-        "file": {
-            "class": "logging.FileHandler",
-            "filename": "server_output.log",
+        "console": {
+            "class": "logging.StreamHandler",
             "formatter": "default"
         }
     },
+    "root": {
+        "level": "INFO",
+        "handlers": ["console"]
+    },
     "loggers": {
         "uvicorn": {
-            "handlers": ["file"],
-            "level": "INFO"
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": false
         },
         "uvicorn.error": {
             "level": "INFO",
-            "handlers": ["file"]
+            "handlers": ["console"],
+            "propagate": false
         },
         "uvicorn.access": {
-            "handlers": ["file"],
-            "level": "INFO"
+            "level": "INFO",
+            "handlers": ["console"],
+            "propagate": false
+        },
+        "backend": {
+            "level": "INFO",
+            "handlers": ["console"],
+            "propagate": false
+        },
+        "watchfiles": {
+            "level": "WARNING",
+            "handlers": ["console"],
+            "propagate": false
+        },
+        "watchfiles.main": {
+            "level": "WARNING",
+            "handlers": ["console"],
+            "propagate": false
         }
     }
 }

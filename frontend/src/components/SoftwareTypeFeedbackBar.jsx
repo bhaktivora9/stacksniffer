@@ -2,16 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { Check, X } from "lucide-react";
 import { API_BASE } from "../config/api";
 
-const FALLBACK_SOFTWARE_TYPES = [
-  { id: "database", label: "Database" },
-  { id: "data_pipeline", label: "Data Pipeline" },
-  { id: "ml_platform", label: "ML Platform" },
-  { id: "infra_tool", label: "Infra Tool" },
-  { id: "web_app", label: "Web App" },
-  { id: "library", label: "Library" },
-  { id: "unknown", label: "Unknown", sentinel: true },
-];
-
 const SOFTWARE_TYPE_STYLES = {
   web_api: "bg-accent/10 text-accent border-accent/25",
   data_pipeline: "bg-amber/10 text-amber border-amber/25",
@@ -47,13 +37,17 @@ function prettySoftwareType(software_type) {
 export default function SoftwareTypeFeedbackBar({
   analysisId,
   currentSoftwareType,
+  pipelineSoftwareType,
+  aiSoftwareType,
+  aiReasoning,
+  specificIdentity,
+  softwareTypeOverlay,
   softwareTypeConfidence = 0,
   ragInfluenced,
   similarReposUsed = 0,
   classifierUsed,
   detectedTechs = [],
   onToast,
-  onSoftwareTypeChange,
 }) {
   const [selected, setSelected] = useState(null);
   const [formOpen, setFormOpen] = useState(false);
@@ -62,24 +56,45 @@ export default function SoftwareTypeFeedbackBar({
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [corrected, setCorrected] = useState(false);
-  const [softwareTypeOptions, setSoftwareTypeOptions] = useState(FALLBACK_SOFTWARE_TYPES);
+  const [softwareTypeOptions, setSoftwareTypeOptions] = useState([]);
+  const [taxonomyError, setTaxonomyError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
     fetch(`${API_BASE}/api/taxonomy/software_types`)
       .then((response) => response.ok ? response.json() : Promise.reject(response.status))
       .then((data) => {
-        if (!cancelled && data.software_types?.length) setSoftwareTypeOptions(data.software_types);
+        if (!cancelled && data.software_types?.length) {
+          setSoftwareTypeOptions(data.software_types);
+          setSelectedSoftwareType((selectedType) =>
+            data.software_types.some((option) => option.id === selectedType)
+              ? selectedType
+              : data.software_types[0].id
+          );
+          setTaxonomyError("");
+        } else if (!cancelled) {
+          setSoftwareTypeOptions([]);
+          setTaxonomyError("No software types are configured");
+        }
       })
-      .catch(() => { if (!cancelled) setSoftwareTypeOptions(FALLBACK_SOFTWARE_TYPES); });
+      .catch(() => {
+        if (!cancelled) {
+          setSoftwareTypeOptions([]);
+          setTaxonomyError("Software types could not be loaded");
+        }
+      });
     return () => { cancelled = true; };
   }, []);
 
   const confidencePct = Math.round((softwareTypeConfidence ?? 0) * 100);
-  const softwareTypeClass = corrected
+  const overlayValue = softwareTypeOverlay?.corrected_value
+    ? softwareTypeOverlay.corrected_value
+    : currentSoftwareType;
+  const overlayShown = Boolean(softwareTypeOverlay?.pipeline_value && softwareTypeOverlay?.corrected_value);
+  const softwareTypeClass = corrected || overlayShown
     ? "bg-amber/10 text-amber border-amber/30"
     : SOFTWARE_TYPE_STYLES[currentSoftwareType] ?? SOFTWARE_TYPE_STYLES.unknown;
-  const leftBorderColor = corrected
+  const leftBorderColor = corrected || overlayShown
     ? "#d29922"
     : SOFTWARE_TYPE_BORDER_COLORS[currentSoftwareType] ?? SOFTWARE_TYPE_BORDER_COLORS.unknown;
 
@@ -112,8 +127,16 @@ export default function SoftwareTypeFeedbackBar({
     if (submitted || submitting) return;
     setSelected("up");
     const ok = await submitFeedback(
-      { software_type_correct: true },
-      "Thanks - pattern confidence updated",
+      overlayShown
+        ? {
+            software_type_correct: false,
+            correct_software_type: overlayValue,
+            approved_overlay_confirmed: true,
+          }
+        : { software_type_correct: true },
+      overlayShown
+        ? `Confirmed corrected software type: ${prettySoftwareType(overlayValue)}`
+        : "Confirmed pipeline software type",
       "success"
     );
     if (!ok) setSelected(null);
@@ -126,6 +149,7 @@ export default function SoftwareTypeFeedbackBar({
   }
 
   async function handleSubmitCorrection() {
+    if (!softwareTypeOptions.some((option) => option.id === selectedSoftwareType)) return;
     const ok = await submitFeedback(
       {
         software_type_correct: false,
@@ -137,7 +161,6 @@ export default function SoftwareTypeFeedbackBar({
     );
     if (ok) {
       setCorrected(true);
-      onSoftwareTypeChange?.(selectedSoftwareType);
     }
   }
 
@@ -157,9 +180,23 @@ export default function SoftwareTypeFeedbackBar({
           <div className="min-w-0 flex-1 space-y-2">
             <div className="flex items-center gap-2 flex-wrap">
               <span className={`text-xs font-mono px-2.5 py-1 rounded-full border ${softwareTypeClass}`}>
-                Software type: {prettySoftwareType(currentSoftwareType)}
-                {corrected ? " (corrected)" : ""}
+                Software type: {prettySoftwareType(pipelineSoftwareType || currentSoftwareType)} (pipeline)
+                {overlayShown && (
+                  <> &rarr; {prettySoftwareType(overlayValue)} (corrected)</>
+                )}
+                {corrected && !overlayShown ? " (submitted for review)" : ""}
               </span>
+              <span className="text-xs font-mono px-2.5 py-1 rounded-full border border-ai-purple/25 bg-ai-purple/10 text-ai-purple">
+                AI: {prettySoftwareType(aiSoftwareType)}
+              </span>
+              {specificIdentity && (
+                <span
+                  className="text-xs font-mono px-2.5 py-1 rounded-full border border-teal-300/25 bg-teal-400/10 text-teal-300"
+                  title="Observed finer-grained identity; this does not change the canonical software type"
+                >
+                  Specific identity: {prettySoftwareType(specificIdentity)}
+                </span>
+              )}
               {ragInfluenced && (
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-teal-400/10 text-teal-300 border border-teal-300/25">
                   RAG-informed - {similarReposUsed} repos retrieved
@@ -171,6 +208,12 @@ export default function SoftwareTypeFeedbackBar({
                 </span>
               )}
             </div>
+            {aiReasoning && (
+              <div className="max-w-3xl rounded border border-border/60 bg-bg/50 px-3 py-2 text-xs leading-relaxed text-muted">
+                <span className="mr-2 font-mono uppercase tracking-wider text-ai-purple">AI reasoning</span>
+                {aiReasoning}
+              </div>
+            )}
             <div className="flex items-center gap-2">
               <div className="h-1.5 flex-1 max-w-xs rounded-full bg-border overflow-hidden">
                 <div
@@ -229,6 +272,7 @@ export default function SoftwareTypeFeedbackBar({
                   className="block h-8 w-44 appearance-auto rounded border border-border bg-bg px-2 text-xs font-mono text-text outline-none focus:border-accent disabled:opacity-60"
                   style={{ width: "11rem", backgroundColor: "#0d1117", color: "#e6edf3" }}
                 >
+                  {softwareTypeOptions.length === 0 && <option value="">Unavailable</option>}
                   {softwareTypeOptions.map((software_type) => (
                     <option key={software_type.id} value={software_type.id}>
                       {software_type.label}
@@ -239,11 +283,12 @@ export default function SoftwareTypeFeedbackBar({
               <button
                 type="button"
                 onClick={handleSubmitCorrection}
-                disabled={submitted || submitting}
+                disabled={submitted || submitting || !softwareTypeOptions.some((option) => option.id === selectedSoftwareType)}
                 className="h-8 rounded border border-amber/30 bg-amber/10 px-3 text-xs font-mono text-amber transition-colors hover:bg-amber/15 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {submitting ? "Submitting..." : submitted ? "Recorded" : "Submit correction"}
               </button>
+              {taxonomyError && <span className="text-[10px] text-red-400">{taxonomyError}</span>}
             </div>
 
             <div>

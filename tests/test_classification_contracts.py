@@ -7,7 +7,22 @@ from backend.models.schemas import (
     AssignmentMethod,
     DetectedTech,
     RepositoryClassification,
+    SoftwareTypeProvenance,
 )
+
+
+def test_software_type_provenance_contract():
+    value = SoftwareTypeProvenance.model_validate({
+        "pipeline": "unknown",
+        "ai": {
+            "value": "ml_platform",
+            "reasoning": "Repository exposes an ML orchestration platform.",
+        },
+    })
+
+    assert value.pipeline == "unknown"
+    assert value.ai.value == "ml_platform"
+    assert value.ai.reasoning.startswith("Repository exposes")
 
 
 def test_single_artifact_contract():

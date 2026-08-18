@@ -21,5 +21,14 @@ dist-ssr
 *.sln
 *.sw?
 .env
-*.pytest-cache
+frontend/.env
+*.pytest-cache/.*
+.pytest_cache/
+frontend/.pytest_cache/
+frontend/pytest-cache-files*/
 __pycache__/
+*.py[cod]
+.*py[cod]
+frontend/vite-dev.err
+analyses.json
+seed_ground_truth_v2_prev.json

@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { Check, Plus, Trash2, X } from "lucide-react";
-import AiInsightsCard from "./AiInsightsCard";
 import { API_BASE } from "../config/api";
-import { buildArtifactLayerGroups } from "../utils/layerViewModel";
+import { buildArtifactLayerGroups, buildLanguageSummary, LAYER_ORDER } from "../utils/layerViewModel";
 
 const FALLBACK_TECHNOLOGY_ROLES = [
   "languages", "frameworks", "databases", "messaging",
@@ -24,9 +23,17 @@ function humanizeTechnologyRole(technology_role) {
     .join(" ");
 }
 
-function ArtifactLayerView({ stack, classification, groups }) {
+function ArtifactLayerView({
+  stack, classification, groups, feedbackState, onTechCorrect,
+  onTechWrong, onTechRoleCorrection, onLayerCorrection, technologyRoles,
+}) {
   const artifactGroups = groups ?? buildArtifactLayerGroups(stack, classification);
   if (!artifactGroups.length) return null;
+  const { primary, otherLanguages } = buildLanguageSummary(stack);
+
+  const languageShare = (language) => (
+    language?.byte_share != null ? `${(language.byte_share * 100).toFixed(1)}%` : null
+  );
 
   return (
     <section className="rounded-lg border border-border bg-surface overflow-hidden">
@@ -43,9 +50,47 @@ function ArtifactLayerView({ stack, classification, groups }) {
             {classification.artifact_count === "multi" ? "s" : ""}
           </span>
         </div>
+        {(primary || otherLanguages.length > 0) && (
+          <div className="mt-4 grid gap-3 border-t border-border/70 pt-3 sm:grid-cols-[auto_1fr]">
+            {primary && (
+              <div>
+                <div className="mb-1 text-[10px] font-mono uppercase tracking-wider text-muted">
+                  Primary language
+                </div>
+                <span className="inline-flex items-center gap-2 rounded border border-accent/30 bg-accent/10 px-2.5 py-1 text-sm font-medium text-accent">
+                  {primary.name}
+                  {languageShare(primary) && (
+                    <span className="text-[10px] font-mono text-muted">{languageShare(primary)}</span>
+                  )}
+                </span>
+              </div>
+            )}
+            {otherLanguages.length > 0 && (
+              <div>
+                <div className="mb-1 text-[10px] font-mono uppercase tracking-wider text-muted">
+                  Other languages
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {otherLanguages.map((language) => (
+                    <span key={language.name} className="inline-flex items-center gap-1.5 rounded border border-border bg-bg px-2 py-1 text-xs text-text">
+                      {language.name}
+                      {languageShare(language) && (
+                        <span className="text-[9px] font-mono text-muted">{languageShare(language)}</span>
+                      )}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      <div className="divide-y divide-border">
+      <div
+        className="max-h-[32rem] divide-y divide-border overflow-y-auto overscroll-contain"
+        tabIndex={0}
+        aria-label="Architecture analysis"
+      >
         {artifactGroups.map(({ artifact, layers }) => {
           return (
             <div key={artifact.name} className="px-5 py-4">
@@ -66,45 +111,31 @@ function ArtifactLayerView({ stack, classification, groups }) {
                 {layers.map(({ layer, techs: layerTechs }) => (
                   <div
                     key={layer}
-                    className={`grid gap-2 sm:grid-cols-[9rem_1fr] ${
-                      layer === "testing" ? "opacity-60" : ""
-                    }`}
+                    className="grid gap-2 sm:grid-cols-[9rem_1fr]"
                   >
-                    <div className="pt-1 text-[10px] font-mono uppercase tracking-wider text-muted">
+                    <div
+                      className={`pt-1 text-[10px] font-mono uppercase tracking-wider ${
+                        layer === "testing" ? "text-amber" : "text-muted"
+                      }`}
+                    >
                       {humanizeTechnologyRole(layer)}
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                       {layerTechs.map((tech) => {
                         const method = tech.architectural_layer.assignment_method;
                         return (
-                          <span
+                          <TechPill
                             key={`${artifact.name}-${layer}-${tech.name}`}
-                            title={`${method} · ${Math.round(
-                              tech.architectural_layer.confidence * 100
-                            )}% layer confidence`}
-                            className={`inline-flex items-center gap-1.5 rounded border border-border bg-bg px-2 py-1 text-xs text-text ${
-                              tech.usage_scope === "dev" || tech.usage_scope === "test"
-                                ? "opacity-50"
-                                : ""
-                            }`}
-                          >
-                            {tech.name}
-                            <span
-                              className={`text-[8px] font-mono uppercase ${
-                                method === "deterministic"
-                                  ? "text-green"
-                                  : method === "provisional"
-                                  ? "text-amber"
-                                  : "text-ai-purple"
-                              }`}
-                            >
-                              {method === "deterministic"
-                                ? "map"
-                                : method === "provisional"
-                                ? "pending"
-                                : "ai"}
-                            </span>
-                          </span>
+                            tech={tech}
+                            status={feedbackState?.[tech.name] ?? null}
+                            onCorrect={onTechCorrect}
+                            onWrong={onTechWrong}
+                            onRoleCorrection={onTechRoleCorrection}
+                            onLayerCorrection={onLayerCorrection}
+                            technologyRoles={technologyRoles}
+                            showConfidence={false}
+                            badge={method === "deterministic" ? "map" : method === "provisional" ? "pending" : "ai"}
+                          />
                         );
                       })}
                     </div>
@@ -143,16 +174,45 @@ function SourceDot({ source }) {
   return null;
 }
 
-function TechPill({ tech, status, onCorrect, onWrong, isPrimary = false, showConfidence = true }) {
+function TechPill({
+  tech, status, onCorrect, onWrong, onRoleCorrection, onLayerCorrection, technologyRoles = [],
+  isPrimary = false, showConfidence = true, badge = null,
+}) {
   const [wrongOpen, setWrongOpen] = useState(false);
   const [wrongType, setWrongType] = useState("false_positive");
   const [reason, setReason] = useState("");
+  const roleIds = technologyRoles.map((role) => role.id ?? role);
+  const replacementRoles = roleIds.filter((role) => role !== tech.technology_role);
+  const [correctedRole, setCorrectedRole] = useState(replacementRoles[0] ?? "library");
+  const currentLayer = tech.architectural_layer?.primary ?? null;
+  const replacementLayers = LAYER_ORDER.filter((layer) => layer !== currentLayer);
+  const [correctedLayer, setCorrectedLayer] = useState(replacementLayers[0] ?? "backend");
   const pct = Math.round((tech.confidence ?? 0) * 100);
-  const confirmed = status === "correct";
+  const confirmed = status === "correct" || status === "role_corrected";
   const falsePositive = status === "false_positive";
-  const pending = status === "pending";
+  const pending = status === "pending" || status === "correction_pending";
 
   async function confirmWrong() {
+    if (wrongType === "role_wrong") {
+      const ok = await onRoleCorrection?.(
+        tech.name, tech.technology_role, correctedRole, reason
+      );
+      if (ok) {
+        setWrongOpen(false);
+        setReason("");
+      }
+      return;
+    }
+    if (wrongType === "layer_wrong") {
+      const ok = await onLayerCorrection?.(
+        tech.name, currentLayer, correctedLayer, reason
+      );
+      if (ok) {
+        setWrongOpen(false);
+        setReason("");
+      }
+      return;
+    }
     const label =
       wrongType === "source_wrong"
         ? "Detection source is wrong"
@@ -190,6 +250,7 @@ function TechPill({ tech, status, onCorrect, onWrong, isPrimary = false, showCon
           {tech.version && (
             <span className="text-xs text-muted font-mono shrink-0">{tech.version}</span>
           )}
+          {badge && <span className="text-[8px] font-mono uppercase text-ai-purple">{badge}</span>}
         </div>
         {showConfidence && (
           <div className="shrink-0 flex items-center gap-1">
@@ -206,12 +267,22 @@ function TechPill({ tech, status, onCorrect, onWrong, isPrimary = false, showCon
             FP
           </span>
         )}
+        {status === "role_corrected" && (
+          <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-green/10 text-green border border-green/25">
+            role updated
+          </span>
+        )}
+        {status === "correction_pending" && (
+          <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber/10 text-amber border border-amber/25">
+            review pending
+          </span>
+        )}
         <div className={`flex items-center gap-1 transition-opacity duration-150 ${
           confirmed || falsePositive ? "opacity-100" : "opacity-0 group-hover:opacity-100"
         }`}>
           <button
             type="button"
-            onClick={() => onCorrect?.(tech.name)}
+            onClick={() => onCorrect?.(tech.name, tech.technology_role)}
             disabled={confirmed || falsePositive || pending}
             className={`inline-flex h-[14px] w-[14px] items-center justify-center border-0 p-0 transition-colors duration-150 ${
               confirmed ? "text-green" : "text-muted hover:text-green"
@@ -236,7 +307,7 @@ function TechPill({ tech, status, onCorrect, onWrong, isPrimary = false, showCon
 
       <div
         className="overflow-hidden transition-all duration-150"
-        style={{ maxHeight: wrongOpen ? "150px" : "0px", opacity: wrongOpen ? 1 : 0 }}
+        style={{ maxHeight: wrongOpen ? "260px" : "0px", opacity: wrongOpen ? 1 : 0 }}
       >
         <div className="mt-2 rounded border border-border bg-surface px-3 py-2 space-y-2">
           <label className="flex items-center gap-2 text-xs text-muted">
@@ -250,6 +321,50 @@ function TechPill({ tech, status, onCorrect, onWrong, isPrimary = false, showCon
             />
             This tech is not actually used (false positive)
           </label>
+          <label className="flex items-center gap-2 text-xs text-muted">
+            <input
+              type="radio"
+              name={`${tech.name}-wrong-type`}
+              value="role_wrong"
+              checked={wrongType === "role_wrong"}
+              onChange={(event) => setWrongType(event.target.value)}
+              className="accent-accent"
+            />
+            Technology role is wrong
+          </label>
+          {wrongType === "role_wrong" && (
+            <select
+              value={correctedRole}
+              onChange={(event) => setCorrectedRole(event.target.value)}
+              className="w-full rounded border border-border bg-bg px-2 py-1 text-xs text-text outline-none focus:border-accent"
+            >
+              {replacementRoles.map((role) => (
+                <option key={role} value={role}>{humanizeTechnologyRole(role)}</option>
+              ))}
+            </select>
+          )}
+          <label className="flex items-center gap-2 text-xs text-muted">
+            <input
+              type="radio"
+              name={`${tech.name}-wrong-type`}
+              value="layer_wrong"
+              checked={wrongType === "layer_wrong"}
+              onChange={(event) => setWrongType(event.target.value)}
+              className="accent-accent"
+            />
+            Architectural layer is wrong
+          </label>
+          {wrongType === "layer_wrong" && (
+            <select
+              value={correctedLayer}
+              onChange={(event) => setCorrectedLayer(event.target.value)}
+              className="w-full rounded border border-border bg-bg px-2 py-1 text-xs text-text outline-none focus:border-accent"
+            >
+              {replacementLayers.map((layer) => (
+                <option key={layer} value={layer}>{humanizeTechnologyRole(layer)}</option>
+              ))}
+            </select>
+          )}
           <label className="flex items-center gap-2 text-xs text-muted">
             <input
               type="radio"
@@ -432,6 +547,8 @@ export default function StackPanel({
   feedbackState = {},
   onTechCorrect,
   onTechWrong,
+  onTechRoleCorrection,
+  onLayerCorrection,
   onMissingTech,
   onPrimaryLanguageChange,
 }) {
@@ -443,11 +560,29 @@ export default function StackPanel({
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`${API_BASE}/api/taxonomy/technology_roles`)
-      .then((response) => response.ok ? response.json() : Promise.reject(response.status))
-      .then((data) => { if (!cancelled && data.technology_roles?.length) setTechnologyRoleOptions(data.technology_roles); })
-      .catch(() => { if (!cancelled) setTechnologyRoleOptions(FALLBACK_TECHNOLOGY_ROLES); });
-    return () => { cancelled = true; };
+    const loadTechnologyRoles = () => {
+      fetch(`${API_BASE}/api/taxonomy/technology_roles`, { cache: "no-store" })
+        .then((response) => response.ok ? response.json() : Promise.reject(response.status))
+        .then((data) => {
+          if (!cancelled && data.technology_roles?.length) {
+            setTechnologyRoleOptions(data.technology_roles);
+          }
+        })
+        .catch(() => {
+          if (!cancelled) setTechnologyRoleOptions(FALLBACK_TECHNOLOGY_ROLES);
+        });
+    };
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") loadTechnologyRoles();
+    };
+    loadTechnologyRoles();
+    window.addEventListener("focus", loadTechnologyRoles);
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("focus", loadTechnologyRoles);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
   }, []);
 
   const builtinTechnologyRoleIds = technologyRoleOptions.map((technology_role) => technology_role.id);
@@ -558,14 +693,18 @@ export default function StackPanel({
         )}
       </div>
 
-      <AiInsightsCard stack={stack} analysisId={analysisId} />
-
       {afterInsights}
 
       <ArtifactLayerView
         stack={stack}
         classification={repositoryClassification}
         groups={artifactLayerGroups}
+        feedbackState={feedbackState}
+        onTechCorrect={onTechCorrect}
+        onTechWrong={onTechWrong}
+        onTechRoleCorrection={onTechRoleCorrection}
+        onLayerCorrection={onLayerCorrection}
+        technologyRoles={technologyRoleOptions}
       />
 
       {!hasArtifactLayerView && (
@@ -634,6 +773,9 @@ export default function StackPanel({
                   status={feedbackState[primaryLanguage.name] ?? null}
                   onCorrect={onTechCorrect}
                   onWrong={onTechWrong}
+                  onRoleCorrection={onTechRoleCorrection}
+                  onLayerCorrection={onLayerCorrection}
+                  technologyRoles={technologyRoleOptions}
                   isPrimary
                   showConfidence={false}
                 />
@@ -719,6 +861,9 @@ export default function StackPanel({
                             status={feedbackState[tech.name] ?? null}
                             onCorrect={onTechCorrect}
                             onWrong={onTechWrong}
+                            onRoleCorrection={onTechRoleCorrection}
+                            onLayerCorrection={onLayerCorrection}
+                            technologyRoles={technologyRoleOptions}
                           />
                         ))}
                       </div>

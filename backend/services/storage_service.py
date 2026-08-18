@@ -10,8 +10,10 @@ from __future__ import annotations
 from copy import deepcopy
 from datetime import datetime, timedelta
 from os import getenv
+from pathlib import Path
 from uuid import uuid4
 import logging
+import math
 import time
 
 from dotenv import load_dotenv
@@ -20,24 +22,31 @@ from pymongo import ASCENDING, DESCENDING
 from pymongo.errors import DuplicateKeyError
 
 from backend.services.repo_key import parse_repo_key
+from backend.models.taxonomy import (
+    ACTIVE_TECHNOLOGY_ROLES,
+    SOFTWARE_TYPE_DEFINITIONS,
+    TechnologyRole,
+    canonicalize_technology_role_safe,
+    is_active_technology_role,
+)
 
-load_dotenv()
+ROOT_DIR = Path(__file__).resolve().parents[2]
+load_dotenv(ROOT_DIR / ".env")
 logger = logging.getLogger(__name__)
 
-PIPELINE_VERSION = getenv("PIPELINE_VERSION", "3.0.0")
-BUILTIN_SOFTWARE_TYPES: tuple[dict, ...] = (
-    {"_id": "database", "label": "Database", "builtin": True, "active": True, "order": 1},
-    {"_id": "data_pipeline", "label": "Data Pipeline", "builtin": True, "active": True, "order": 2},
-    {"_id": "ml_platform", "label": "ML Platform", "builtin": True, "active": True, "order": 3},
-    {"_id": "infra_tool", "label": "Infra Tool", "builtin": True, "active": True, "order": 4},
-    {"_id": "web_app", "label": "Web App", "builtin": True, "active": True, "order": 5},
-    {"_id": "library", "label": "Library", "builtin": True, "active": True, "order": 6},
-    {"_id": "unknown", "label": "Unknown", "builtin": True, "active": True, "order": 99, "sentinel": True},
+PIPELINE_VERSION = getenv("PIPELINE_VERSION", "local")
+BUILTIN_SOFTWARE_TYPES: tuple[dict, ...] = tuple(
+    {
+        "_id": definition.software_type.value,
+        "label": definition.label,
+        "builtin": True,
+        "active": True,
+        "order": 99 if definition.sentinel else index,
+        **({"sentinel": True} if definition.sentinel else {}),
+    }
+    for index, definition in enumerate(SOFTWARE_TYPE_DEFINITIONS, start=1)
 )
-BUILTIN_TECHNOLOGY_ROLES: tuple[str, ...] = (
-    "languages", "frameworks", "databases", "messaging",
-    "ai_ml", "infra", "testing", "library",
-)
+BUILTIN_TECHNOLOGY_ROLES: tuple[str, ...] = ACTIVE_TECHNOLOGY_ROLES
 _TAXONOMY_CACHE_TTL = 30.0
 _software_type_cache: tuple[float, list[dict]] | None = None
 _technology_role_cache: tuple[float, list[dict]] | None = None
@@ -48,12 +57,15 @@ ALLOWED_CORRECTION_FIELDS = {
     "notable_combinations",
     "software_type",
     "primary_language",
+    "technology_role_overrides",
+    "architectural_layer_overrides",
 }
 _LIST_STORES = {
     "analysis_events",
     "insights_feedback",
     "dep_technology_roles",
     "dep_technology_role_feedback",
+    "correction_events",
 }
 
 _client = None
@@ -73,6 +85,10 @@ _memory_store: dict = {
     "taxonomy_software_types": {},
     "taxonomy_technology_roles": {},
     "software_type_disagreements": {},
+    "review_items": {},
+    "correction_events": [],
+    "software_type_corrections": {},
+    "learned_technology_mappings": {},
 }
 
 
@@ -91,20 +107,31 @@ def _invalidate_taxonomy_cache() -> None:
 
 
 async def seed_builtin_software_types() -> None:
+    canonical_ids = {software_type["_id"] for software_type in BUILTIN_SOFTWARE_TYPES}
     if _db is not None:
+        await _db.taxonomy_software_types.update_many(
+            {"builtin": True, "_id": {"$nin": list(canonical_ids)}},
+            {"$set": {"active": False, "deprecated": True, "updated_at": _now()}},
+        )
         for software_type in BUILTIN_SOFTWARE_TYPES:
             await _db.taxonomy_software_types.update_one(
                 {"_id": software_type["_id"]},
-                {"$setOnInsert": {
-                    **{key: value for key, value in software_type.items() if key != "_id"},
-                    "created_at": _now(),
-                }},
+                {
+                    "$set": {key: value for key, value in software_type.items() if key != "_id"},
+                    "$setOnInsert": {"created_at": _now()},
+                },
                 upsert=True,
             )
     else:
         store = _memory("taxonomy_software_types")
+        for software_type_id, record in store.items():
+            if record.get("builtin") is True and software_type_id not in canonical_ids:
+                record.update({"active": False, "deprecated": True, "updated_at": _now()})
         for software_type in BUILTIN_SOFTWARE_TYPES:
-            store.setdefault(software_type["_id"], {**software_type, "created_at": _now()})
+            existing = store.setdefault(
+                software_type["_id"], {"_id": software_type["_id"], "created_at": _now()}
+            )
+            existing.update(software_type)
     _invalidate_taxonomy_cache()
 
 
@@ -114,25 +141,37 @@ async def seed_builtin_taxonomy_technology_roles() -> None:
             "_id": technology_role,
             "label": technology_role.replace("_", " ").title(),
             "builtin": True,
-            "active": True,
+            "active": is_active_technology_role(technology_role),
+            "status": "active" if is_active_technology_role(technology_role) else "inactive",
             "order": index,
         }
-        for index, technology_role in enumerate(BUILTIN_TECHNOLOGY_ROLES, start=1)
+        for index, technology_role in enumerate(
+            (role.value for role in TechnologyRole), start=1
+        )
     ]
     if _db is not None:
         for record in records:
             await _db.taxonomy_technology_roles.update_one(
                 {"_id": record["_id"]},
-                {"$setOnInsert": {
-                    **{key: value for key, value in record.items() if key != "_id"},
-                    "created_at": _now(),
-                }},
+                {
+                    "$set": {
+                        "label": record["label"], "builtin": True,
+                        "order": record["order"],
+                    },
+                    "$setOnInsert": {
+                        "active": record["active"], "status": record["status"],
+                        "created_at": _now(),
+                    },
+                },
                 upsert=True,
             )
     else:
         store = _memory("taxonomy_technology_roles")
         for record in records:
-            store.setdefault(record["_id"], {**record, "created_at": _now()})
+            existing = store.setdefault(record["_id"], {**record, "created_at": _now()})
+            existing.update({
+                "label": record["label"], "builtin": True, "order": record["order"],
+            })
     _invalidate_taxonomy_cache()
 
 
@@ -264,30 +303,52 @@ async def init_db() -> None:
     _client = AsyncIOMotorClient(uri, serverSelectionTimeoutMS=5000)
     _db = _client[getenv("MONGODB_DB", "stacksniffer")]
 
-    await _db.analyses_result.create_index("provider")
-    await _db.analyses_result.create_index("owner")
-    await _db.analyses_result.create_index("name")
+    # Core lookup/filter indexes used by active query paths.
     await _db.analyses_result.create_index("stack.software_type")
     await _db.analyses_result.create_index("stack.stack_pattern")
     await _db.analyses_result.create_index("pipeline_version")
     await _db.analyses_result.create_index("stack_embedding", sparse=True)
 
     await _db.analyses_request.create_index("repo_key")
-    await _db.analyses_request.create_index("created_at")
+    # Corrections are read by (repo_key, field) via _id and repo_key in queries.
     await _db.corrections.create_index("repo_key")
+    await _db.learned_technology_mappings.create_index("technology_key", unique=True)
     await _db.feedback.create_index("repo_key")
-    await _db.feedback.create_index("created_at")
     await _db.analysis_events.create_index("repo_key")
-    await _db.analysis_events.create_index("created_at")
     await _db.software_type_disagreements.create_index(
         [("repo_key", ASCENDING), ("commit_sha", ASCENDING), ("pipeline_version", ASCENDING)],
         unique=True,
     )
+    await _db.review_items.create_index("kind")
+    await _db.review_items.create_index([("kind", ASCENDING), ("status", ASCENDING), ("created_at", DESCENDING)])
+    await _db.review_items.create_index("status")
+    await _db.review_items.create_index("pipeline_value")
+    await _db.correction_events.create_index(
+        [("resolution", ASCENDING), ("submitted_at", DESCENDING)]
+    )
+    await _db.correction_events.create_index("review_item_id")
+    # Corrections are repository-scoped.  A global pipeline-value mapping such
+    # as deployable_service -> library would incorrectly relabel every service.
+    old_index = await _db.software_type_corrections.index_information()
+    if old_index.get("pipeline_value_1", {}).get("unique"):
+        await _db.software_type_corrections.drop_index("pipeline_value_1")
+    async for row in _db.software_type_corrections.find(
+        {"repo_key": {"$exists": False}}, {"evidence": 1},
+    ):
+        evidence = row.get("evidence") or {}
+        repo_key = evidence.get("repo_key")
+        if not repo_key and evidence.get("repo"):
+            repo_key = f"github:{evidence['repo']}"
+        if repo_key:
+            await _db.software_type_corrections.update_one(
+                {"_id": row["_id"]}, {"$set": {"repo_key": repo_key}},
+            )
+    await _db.software_type_corrections.create_index(
+        [("repo_key", ASCENDING), ("pipeline_value", ASCENDING)], unique=True,
+    )
 
     await _db.stack_feedback.create_index("analysis_id")
-    await _db.stack_feedback.create_index("created_at")
     await _db.insights_feedback.create_index("analysis_id")
-    await _db.insights_feedback.create_index("created_at")
     await _db.software_types.create_index("software_type_id", unique=True)
     await _db.dep_technology_roles.create_index("technology_role", unique=True)
     await _db.dep_technology_role_feedback.create_index("technology_role", unique=True)
@@ -296,6 +357,7 @@ async def init_db() -> None:
     await seed_builtin_software_types()
     await seed_builtin_taxonomy_technology_roles()
     await seed_builtin_technology_roles()   # idempotent, safe every boot
+    await sync_pending_technology_roles_to_review_queue()
     logger.info("MongoDB connected: %s", getenv("MONGODB_DB", "stacksniffer"))
     print(f"MongoDB connected: {getenv('MONGODB_DB', 'stacksniffer')}")
 
@@ -546,6 +608,450 @@ async def upsert_correction(repo_key: str, field: str, value) -> None:
     store[doc["_id"]] = doc
 
 
+def _review_id(kind: str, pipeline_value: str, repo_key: str | None = None) -> str:
+    normalized = (pipeline_value or "unknown").strip().replace(" ", "_").casefold()
+    if repo_key:
+        return f"{kind}:{normalized}:{repo_key}"
+    return f"{kind}:{normalized}:{str(uuid4())}"
+
+
+async def append_correction_event(
+    *, correction_field: str, pipeline_value: str, proposed_value: str,
+    evidence: dict, assignment_method: str | None, actor: str | None,
+    resolution: str = "pending_review",
+    event_kind: str = "human_correction",
+    actor_kind: str | None = None,
+) -> str:
+    """Append one immutable correction trigger; never collapse repeat sightings."""
+    event_id = str(uuid4())
+    doc = {
+        "_id": event_id,
+        "event_id": event_id,
+        "correction_field": correction_field,
+        "event_kind": event_kind,
+        "pipeline_value": pipeline_value,
+        "proposed_value": proposed_value,
+        "repo_key": evidence.get("repo_key"),
+        "repo": evidence.get("repo"),
+        "analysis_id": evidence.get("analysis_id"),
+        "trigger_ref": evidence.get("analysis_id"),
+        "assignment_method": assignment_method,
+        "actor": actor,
+        "actor_kind": actor_kind or ("system" if actor == "system" else "user"),
+        "resolution": resolution,
+        "submitted_at": _now().isoformat(),
+        "approved_at": None,
+        "approved_by": None,
+        "review_item_id": None,
+    }
+    if _db is not None:
+        await _db.correction_events.insert_one(doc)
+    else:
+        _memory("correction_events").append(doc)
+    return event_id
+
+
+async def link_correction_event(event_id: str, review_item_id: str) -> None:
+    payload = {"review_item_id": review_item_id}
+    if _db is not None:
+        await _db.correction_events.update_one({"_id": event_id}, {"$set": payload})
+        return
+    for row in _memory("correction_events"):
+        if row.get("_id") == event_id:
+            row.update(payload)
+            return
+
+
+async def resolve_correction_events(
+    event_ids: list[str], *, resolution: str, actor: str,
+) -> None:
+    if not event_ids:
+        return
+    payload = {
+        "resolution": resolution,
+        "approved_at": _now().isoformat() if resolution == "approved" else None,
+        "approved_by": actor if resolution == "approved" else None,
+    }
+    if _db is not None:
+        await _db.correction_events.update_many({"_id": {"$in": event_ids}}, {"$set": payload})
+        return
+    for row in _memory("correction_events"):
+        if row.get("_id") in event_ids:
+            row.update(payload)
+
+
+async def get_correction_events(
+    resolution: str | None = None, limit: int = 500,
+) -> list[dict]:
+    query = {"resolution": resolution} if resolution else {}
+    capped = max(1, min(limit, 2000))
+    if _db is not None:
+        return await _db.correction_events.find(query, {"_id": 0}).sort(
+            "submitted_at", DESCENDING,
+        ).limit(capped).to_list(capped)
+    rows = [
+        deepcopy(row) for row in _memory("correction_events")
+        if not resolution or row.get("resolution") == resolution
+    ]
+    return sorted(rows, key=lambda row: row.get("submitted_at", ""), reverse=True)[:capped]
+
+
+def _to_review_item_doc(
+    kind: str,
+    pipeline_value: str,
+    proposed_value: str | None,
+    evidence: dict,
+    assignment_method: str | None,
+    source: str = "ai_pipeline",
+    status: str = "pending",
+    item_id: str | None = None,
+    created_by: str | None = None,
+    reviewed_by: str | None = None,
+    note: str | None = None,
+) -> dict:
+    now = _now().isoformat()
+    return {
+        "_id": item_id or str(uuid4()),
+        "kind": kind,
+        "status": status,
+        "pipeline_value": pipeline_value or "unknown",
+        "proposed_value": proposed_value,
+        "evidence": dict(evidence or {}),
+        "assignment_method": assignment_method,
+        "source": source,
+        "seen_count": int(evidence.get("seen_count", 0) or 0),
+        "created_by": created_by,
+        "reviewed_by": reviewed_by,
+        "created_at": now,
+        "reviewed_at": None,
+        "note": note,
+    }
+
+
+async def upsert_software_type_correction(
+    pipeline_value: str,
+    corrected_value: str,
+    evidence: dict,
+    assignment_method: str | None = None,
+    source: str = "user",
+) -> str:
+    corrected = (corrected_value or "").strip()
+    if not corrected:
+        raise ValueError("corrected_value is required")
+
+    pipeline = (pipeline_value or "unknown").strip()
+    event_id = await append_correction_event(
+        correction_field="software_type",
+        pipeline_value=pipeline,
+        proposed_value=corrected,
+        evidence=evidence,
+        assignment_method=assignment_method,
+        actor=None,
+        actor_kind="user",
+    )
+    return await create_review_item(
+        kind="correction",
+        pipeline_value=pipeline,
+        proposed_value=corrected,
+        evidence=evidence,
+        assignment_method=assignment_method,
+        source=source,
+        repo_key=evidence.get("repo_key"),
+        trigger_event_id=event_id,
+    )
+
+async def get_software_type_corrections() -> dict[str, str]:
+    if _db is not None:
+        rows = await _db.software_type_corrections.find(
+            {}, {"pipeline_value": 1, "corrected_value": 1}
+        ).to_list(200)
+        return {
+            row["pipeline_value"]: row["corrected_value"]
+            for row in rows
+            if row.get("pipeline_value") and row.get("corrected_value")
+        }
+    return {
+        row.get("pipeline_value"): row.get("corrected_value")
+        for row in _memory("software_type_corrections").values()
+        if row.get("pipeline_value") and row.get("corrected_value")
+    }
+
+
+async def get_software_type_correction_rows() -> list[dict]:
+    if _db is not None:
+        return await _db.software_type_corrections.find(
+            {},
+            {"_id": 0},
+        ).to_list(500)
+    return list(_memory("software_type_corrections").values())
+
+
+async def approve_software_type_correction(
+    pipeline_value: str, corrected_value: str, *, repo_key: str,
+    evidence: dict | None = None, assignment_method: str | None = None,
+    source_event_ids: list[str] | None = None,
+) -> None:
+    payload = {
+        "pipeline_value": (pipeline_value or "unknown").strip(),
+        "corrected_value": (corrected_value or "").strip(),
+        "repo_key": repo_key,
+        "evidence": dict(evidence or {}),
+        "assignment_method": assignment_method,
+        "updated_at": _now(),
+        "source": "maintainer_approved",
+        "source_event_ids": list(source_event_ids or []),
+    }
+    if _db is not None:
+        await _db.software_type_corrections.update_one(
+            {"repo_key": repo_key, "pipeline_value": payload["pipeline_value"]},
+            {"$set": payload},
+            upsert=True,
+        )
+        return
+    store = _memory("software_type_corrections")
+    store[repo_key] = payload
+
+
+async def get_approved_software_type_correction(
+    repo_key: str, pipeline_value: str | None,
+) -> dict | None:
+    if not pipeline_value:
+        return None
+    query = {
+        "repo_key": repo_key,
+        "pipeline_value": pipeline_value,
+        "source": "maintainer_approved",
+    }
+    if _db is not None:
+        return await _db.software_type_corrections.find_one(query, {"_id": 0})
+    row = _memory("software_type_corrections").get(repo_key)
+    if row and all(row.get(key) == value for key, value in query.items()):
+        return deepcopy(row)
+    return None
+
+
+async def create_review_item(
+    kind: str,
+    pipeline_value: str,
+    proposed_value: str | None,
+    evidence: dict,
+    assignment_method: str | None = None,
+    source: str = "ai_pipeline",
+    repo_key: str | None = None,
+    trigger_event_id: str | None = None,
+) -> str:
+    pipeline_norm = (pipeline_value or "unknown").strip()
+    item_id = _review_id(kind, pipeline_norm, repo_key)
+    if kind == "correction" and evidence.get("tech_name"):
+        tech_key = str(evidence["tech_name"]).strip().replace(" ", "_").casefold()
+        item_id = f"{item_id}:{tech_key}"
+    doc = _to_review_item_doc(
+        kind=kind,
+        pipeline_value=pipeline_norm,
+        proposed_value=proposed_value,
+        evidence=evidence,
+        assignment_method=assignment_method,
+        source=source,
+        item_id=item_id,
+    )
+    doc["trigger_event_ids"] = [trigger_event_id] if trigger_event_id else []
+    trigger_key = "|".join((
+        str(evidence.get("repo_key") or evidence.get("repo") or "unknown").casefold(),
+        str(evidence.get("tech_name") or evidence.get("correction_field") or kind).casefold(),
+        pipeline_norm.casefold(),
+    ))
+    doc["trigger_keys"] = [trigger_key] if trigger_event_id else []
+    doc["seen_count"] = len(doc["trigger_keys"]) or doc["seen_count"]
+    if _db is not None:
+        lookup = (
+            {"_id": item_id, "status": "pending"}
+            if kind == "correction"
+            else {"kind": kind, "pipeline_value": pipeline_norm, "status": "pending"}
+        )
+        existing = await _db.review_items.find_one(
+            lookup,
+            {"_id": 1},
+        )
+        if existing:
+            update = {"$set": {
+                "proposed_value": proposed_value,
+                "evidence": dict(evidence or {}),
+                "assignment_method": assignment_method,
+            }}
+            if trigger_event_id:
+                update["$addToSet"] = {"trigger_event_ids": trigger_event_id}
+                update["$addToSet"]["trigger_keys"] = trigger_key
+            else:
+                update["$set"]["seen_count"] = int(evidence.get("seen_count", 0) or 0)
+            await _db.review_items.update_one({"_id": existing["_id"]}, update)
+            if trigger_event_id:
+                refreshed = await _db.review_items.find_one(
+                    {"_id": existing["_id"]}, {"trigger_keys": 1},
+                )
+                await _db.review_items.update_one(
+                    {"_id": existing["_id"]},
+                    {"$set": {"seen_count": len((refreshed or {}).get("trigger_keys", []))}},
+                )
+            if trigger_event_id:
+                await link_correction_event(trigger_event_id, existing["_id"])
+            return existing["_id"]
+        # The deterministic key may belong to a completed historical review.
+        # Preserve it and give this new review cycle its own identity.
+        if kind in {"correction", "classifier_diagnosis"} and await _db.review_items.find_one(
+            {"_id": item_id}, {"_id": 1},
+        ):
+            item_id = f"{item_id}:{uuid4()}"
+            doc["_id"] = item_id
+        await _db.review_items.insert_one(doc)
+        if trigger_event_id:
+            await link_correction_event(trigger_event_id, item_id)
+        return item_id
+
+    store = _memory("review_items")
+    existing_id = next(
+        (
+            row_id for row_id, row in store.items()
+            if (row_id == item_id if kind == "correction" else (
+                row.get("kind") == kind and row.get("pipeline_value") == pipeline_norm
+            ))
+            and row.get("status") == "pending"
+        ),
+        None,
+    )
+    if existing_id:
+        existing = store[existing_id]
+        existing["proposed_value"] = proposed_value
+        existing["evidence"] = dict(evidence or {})
+        existing["assignment_method"] = assignment_method
+        if trigger_event_id and trigger_event_id not in existing.setdefault("trigger_event_ids", []):
+            existing["trigger_event_ids"].append(trigger_event_id)
+            if trigger_key not in existing.setdefault("trigger_keys", []):
+                existing["trigger_keys"].append(trigger_key)
+            existing["seen_count"] = len(existing["trigger_keys"])
+            await link_correction_event(trigger_event_id, existing_id)
+        elif evidence.get("seen_count") is not None:
+            existing["seen_count"] = int(evidence.get("seen_count") or 0)
+        return existing_id
+    if item_id in store and store[item_id].get("status") != "pending":
+        item_id = f"{item_id}:{uuid4()}"
+        doc["_id"] = item_id
+    store[item_id] = doc
+    if trigger_event_id:
+        await link_correction_event(trigger_event_id, item_id)
+    return item_id
+
+
+async def get_review_item(item_id: str) -> dict | None:
+    if _db is not None:
+        return await _db.review_items.find_one({"_id": item_id})
+    return _memory("review_items").get(item_id)
+
+
+async def get_review_queue(
+    kind: str | None = None,
+    status: str = "pending",
+    limit: int = 50,
+    skip: int = 0,
+) -> tuple[list[dict], int]:
+    query: dict = {}
+    if kind:
+        query["kind"] = kind
+    if status:
+        query["status"] = status
+    if _db is not None:
+        total = await _db.review_items.count_documents(query)
+        rows = await _db.review_items.find(query).sort(
+            "created_at", DESCENDING,
+        ).skip(skip).limit(limit).to_list(limit)
+        return rows, total
+    rows = [
+        row for row in _memory("review_items").values()
+        if (not kind or row.get("kind") == kind)
+        and (not status or row.get("status") == status)
+    ]
+    rows = sorted(rows, key=lambda row: row.get("created_at", ""), reverse=True)
+    return rows[skip : skip + limit], len(rows)
+
+
+async def set_review_item_status(
+    item_id: str,
+    status: str,
+    reviewed_by: str | None = None,
+    note: str | None = None,
+) -> bool:
+    if status not in {"approved", "rejected"}:
+        raise ValueError("status must be approved or rejected")
+    payload = {
+        "status": status,
+        "reviewed_at": _now().isoformat(),
+        "reviewed_by": reviewed_by,
+        "note": note,
+    }
+    if _db is not None:
+        update = await _db.review_items.update_one({"_id": item_id}, {"$set": payload})
+        return bool(update.modified_count or update.matched_count)
+    store = _memory("review_items")
+    if item_id not in store:
+        return False
+    store[item_id].update(payload)
+    return True
+
+
+async def upsert_learned_technology_mapping(
+    technology_name: str,
+    *,
+    technology_role: str | None = None,
+    architectural_layer: str | None = None,
+    approved_by: str | None = None,
+    source_event_ids: list[str] | None = None,
+) -> dict:
+    """Persist a maintainer-approved global mapping used by future analyses."""
+    technology_key = technology_name.strip().casefold()
+    if not technology_key:
+        raise ValueError("technology_name is required")
+    now = _now()
+    updates = {
+        "technology_name": technology_name.strip(),
+        "technology_key": technology_key,
+        "status": "approved",
+        "approved_by": approved_by,
+        "source_event_ids": list(source_event_ids or []),
+        "updated_at": now,
+    }
+    if technology_role:
+        updates["technology_role"] = technology_role
+    if architectural_layer:
+        updates["architectural_layer"] = architectural_layer
+    if _db is not None:
+        await _db.learned_technology_mappings.update_one(
+            {"technology_key": technology_key},
+            {"$set": updates, "$setOnInsert": {"created_at": now}},
+            upsert=True,
+        )
+        return await _db.learned_technology_mappings.find_one(
+            {"technology_key": technology_key}, {"_id": 0},
+        )
+    store = _memory("learned_technology_mappings")
+    row = store.setdefault(technology_key, {"created_at": now})
+    row.update(updates)
+    return deepcopy(row)
+
+
+async def get_learned_technology_mappings() -> dict[str, dict]:
+    """Return approved mappings keyed by case-folded technology name."""
+    if _db is not None:
+        rows = await _db.learned_technology_mappings.find(
+            {"status": "approved"}, {"_id": 0},
+        ).to_list(10000)
+    else:
+        rows = list(_memory("learned_technology_mappings").values())
+    return {
+        row["technology_key"]: deepcopy(row)
+        for row in rows
+        if row.get("technology_key") and row.get("status") == "approved"
+    }
+
+
 async def apply_corrections(repo_key: str, stack: dict) -> tuple[dict, bool]:
     out = deepcopy(stack)
     if _db is not None:
@@ -564,10 +1070,156 @@ async def apply_corrections(repo_key: str, stack: dict) -> tuple[dict, bool]:
         if field not in ALLOWED_CORRECTION_FIELDS:
             continue
         value = correction.get("value")
+        if field == "technology_role_overrides":
+            overrides = {
+                str(name).casefold(): role
+                for name, role in (value or {}).items()
+            }
+            moved: list[tuple[str, dict]] = []
+            for bucket, records in list(out.items()):
+                if not isinstance(records, list):
+                    continue
+                kept = []
+                for record in records:
+                    name = record.get("name", "") if isinstance(record, dict) else ""
+                    target = overrides.get(name.casefold())
+                    if target and target != bucket:
+                        corrected = deepcopy(record)
+                        corrected["technology_role_pipeline"] = corrected.get("technology_role") or bucket
+                        corrected["technology_role"] = target
+                        corrected["technology_role_overlay"] = target
+                        corrected["technology_role_assignment_method"] = "maintainer_approved"
+                        moved.append((target, corrected))
+                        touched = True
+                    else:
+                        kept.append(record)
+                out[bucket] = kept
+            for target, record in moved:
+                out.setdefault(target, []).append(record)
+            continue
+        if field == "architectural_layer_overrides":
+            overrides = {
+                str(name).casefold(): layer
+                for name, layer in (value or {}).items()
+            }
+            for records in out.values():
+                if not isinstance(records, list):
+                    continue
+                for index, record in enumerate(records):
+                    if not isinstance(record, dict):
+                        continue
+                    target = overrides.get(str(record.get("name", "")).casefold())
+                    if not target:
+                        continue
+                    current = dict(record.get("architectural_layer") or {})
+                    corrected = deepcopy(record)
+                    corrected["architectural_layer_pipeline"] = current.get("primary")
+                    corrected["architectural_layer_overlay"] = target
+                    corrected["architectural_layer"] = {
+                        **current,
+                        "primary": target,
+                        "secondary": [
+                            layer for layer in current.get("secondary", [])
+                            if layer != target
+                        ],
+                        "assignment_method": "maintainer_approved",
+                        "confidence": 1.0,
+                        "disambiguation_pending": False,
+                    }
+                    records[index] = corrected
+                    touched = True
+            continue
         if out.get(field) != value:
             out[field] = value
             touched = True
     return out, touched
+
+
+async def upsert_technology_role_correction(
+    repo_key: str, tech_name: str, technology_role: str,
+    source_event_ids: list[str] | None = None,
+) -> None:
+    """Merge one technology role override without replacing sibling overrides."""
+    correction_id = f"{repo_key}:technology_role_overrides"
+    now = _now()
+    if _db is not None:
+        existing = await _db.corrections.find_one(
+            {"_id": correction_id}, {"value": 1},
+        )
+        overrides = dict((existing or {}).get("value") or {})
+        overrides[tech_name] = technology_role
+        await _db.corrections.update_one(
+            {"_id": correction_id},
+            {
+                "$set": {
+                    "repo_key": repo_key,
+                    "field": "technology_role_overrides",
+                    "value": overrides,
+                    "source": "maintainer_approved",
+                    "source_event_ids": list(source_event_ids or []),
+                    "updated_at": now,
+                },
+                "$setOnInsert": {"created_at": now},
+            },
+            upsert=True,
+        )
+        return
+    store = _memory("corrections")
+    doc = store.get(correction_id, {
+        "_id": correction_id,
+        "repo_key": repo_key,
+        "field": "technology_role_overrides",
+        "value": {},
+        "source": "maintainer_approved",
+        "source_event_ids": list(source_event_ids or []),
+        "created_at": now,
+    })
+    doc.setdefault("value", {})[tech_name] = technology_role
+    doc["source_event_ids"] = list(source_event_ids or [])
+    doc["updated_at"] = now
+    store[correction_id] = doc
+
+
+async def upsert_architectural_layer_correction(
+    repo_key: str, tech_name: str, architectural_layer: str,
+    source_event_ids: list[str] | None = None,
+) -> None:
+    """Merge one approved layer override without replacing sibling overrides."""
+    correction_id = f"{repo_key}:architectural_layer_overrides"
+    now = _now()
+    if _db is not None:
+        existing = await _db.corrections.find_one(
+            {"_id": correction_id}, {"value": 1},
+        )
+        overrides = dict((existing or {}).get("value") or {})
+        overrides[tech_name] = architectural_layer
+        await _db.corrections.update_one(
+            {"_id": correction_id},
+            {
+                "$set": {
+                    "repo_key": repo_key,
+                    "field": "architectural_layer_overrides",
+                    "value": overrides,
+                    "source": "maintainer_approved",
+                    "source_event_ids": list(source_event_ids or []),
+                    "updated_at": now,
+                },
+                "$setOnInsert": {"created_at": now},
+            },
+            upsert=True,
+        )
+        return
+    store = _memory("corrections")
+    doc = store.get(correction_id, {
+        "_id": correction_id, "repo_key": repo_key,
+        "field": "architectural_layer_overrides", "value": {},
+        "source": "maintainer_approved", "created_at": now,
+        "source_event_ids": list(source_event_ids or []),
+    })
+    doc["source_event_ids"] = list(source_event_ids or [])
+    doc.setdefault("value", {})[tech_name] = architectural_layer
+    doc["updated_at"] = now
+    store[correction_id] = doc
 
 
 async def record_event(repo_key, commit_sha, pipeline_version, summary: dict) -> None:
@@ -769,6 +1421,47 @@ async def count_embedded_analyses() -> int:
     return sum(1 for v in _memory("analyses_result").values() if v.get("stack_embedding"))
 
 
+def _cosine_similarity(left: list[float], right: list[float]) -> float:
+    if not left or not right:
+        return 0.0
+    size = min(len(left), len(right))
+    dot = sum(float(left[i]) * float(right[i]) for i in range(size))
+    left_norm = math.sqrt(sum(float(v) * float(v) for v in left[:size]))
+    right_norm = math.sqrt(sum(float(v) * float(v) for v in right[:size]))
+    if left_norm == 0.0 or right_norm == 0.0:
+        return 0.0
+    return dot / (left_norm * right_norm)
+
+
+def _similar_public_doc(doc: dict, score: float) -> dict:
+    public = _public_doc({**doc, "score": score}) or {}
+    stack = public.get("stack") or {}
+    repo = public.get("repo") or {}
+    return {
+        "analysis_id": public.get("analysis_id") or public.get("_id") or public.get("repo_key"),
+        "repo_key": public.get("repo_key") or public.get("_id") or public.get("analysis_id"),
+        "provider": public.get("provider"),
+        "owner": public.get("owner"),
+        "name": public.get("name"),
+        "repo": {
+            "full_name": repo.get("full_name"),
+            "description": repo.get("description"),
+            "stars": repo.get("stars"),
+        },
+        "stack": {
+            "software_type": stack.get("software_type"),
+            "software_type_confidence": stack.get("software_type_confidence"),
+            "software_type_reasoning": stack.get("software_type_reasoning"),
+            "specific_identity": stack.get("specific_identity"),
+            "stack_pattern": stack.get("stack_pattern"),
+            "why_this_stack": stack.get("why_this_stack"),
+            "primary_language": stack.get("primary_language"),
+            "architecture_style": stack.get("architecture_style"),
+        },
+        "score": score,
+    }
+
+
 async def find_similar(
     embedding: list[float],
     limit: int = 5,
@@ -777,14 +1470,52 @@ async def find_similar(
     if _db is None:
         results = []
         for doc in _memory("analyses_result").values():
-            if exclude_repo_key and doc.get("_id") == exclude_repo_key:
+            repo_key = doc.get("_id") or doc.get("repo_key")
+            if exclude_repo_key and repo_key == exclude_repo_key:
                 continue
             if doc.get("pipeline_version") != PIPELINE_VERSION:
                 continue
-            if not doc.get("stack_embedding"):
+            candidate_embedding = doc.get("stack_embedding")
+            if not candidate_embedding:
                 continue
-            results.append(_public_doc({**doc, "score": 0.0}))
+            score = _cosine_similarity(embedding, candidate_embedding)
+            results.append(_similar_public_doc(doc, score))
+        results.sort(key=lambda row: row.get("score", 0.0), reverse=True)
         return results[:limit]
+
+    async def in_process_cosine_fallback() -> list[dict]:
+        query = {
+            "pipeline_version": PIPELINE_VERSION,
+            "stack_embedding": {"$exists": True, "$ne": None},
+        }
+        if exclude_repo_key:
+            query["_id"] = {"$ne": exclude_repo_key}
+        projection = {
+            "_id": 1,
+            "provider": 1,
+            "owner": 1,
+            "name": 1,
+            "repo.full_name": 1,
+            "repo.description": 1,
+            "repo.stars": 1,
+            "stack.software_type": 1,
+            "stack.software_type_confidence": 1,
+            "stack.software_type_reasoning": 1,
+            "stack.specific_identity": 1,
+            "stack.stack_pattern": 1,
+            "stack.why_this_stack": 1,
+            "stack.primary_language": 1,
+            "stack.architecture_style": 1,
+            "stack_embedding": 1,
+        }
+        cursor = _db.analyses_result.find(query, projection).limit(500)
+        docs = await cursor.to_list(500)
+        scored = [
+            _similar_public_doc(doc, _cosine_similarity(embedding, doc.get("stack_embedding") or []))
+            for doc in docs
+        ]
+        scored.sort(key=lambda row: row.get("score", 0.0), reverse=True)
+        return scored[:limit]
 
     try:
         match_filter = {"stack_embedding": {"$exists": True, "$ne": None}}
@@ -822,6 +1553,7 @@ async def find_similar(
                     "stack.software_type": 1,
                     "stack.software_type_confidence": 1,
                     "stack.software_type_reasoning": 1,
+                    "stack.specific_identity": 1,
                     "stack.stack_pattern": 1,
                     "stack.why_this_stack": 1,
                     "stack.primary_language": 1,
@@ -831,10 +1563,14 @@ async def find_similar(
             },
         ]
         cursor = _db.analyses_result.aggregate(pipeline)
-        return await cursor.to_list(limit)
+        results = await cursor.to_list(limit)
+        if results:
+            return results
+        logger.warning("Vector search returned no results; using in-process cosine fallback")
+        return await in_process_cosine_fallback()
     except Exception as e:
         logger.error("Vector search failed: %s", str(e)[:300])
-        return []
+        return await in_process_cosine_fallback()
 
 
 async def find_similar_by_software_type(software_type: str, limit: int = 3) -> list[dict]:
@@ -859,11 +1595,128 @@ async def find_similar_by_software_type(software_type: str, limit: int = 3) -> l
             "repo_key": "$_id",
             "stack.software_type": 1,
             "stack.software_type_reasoning": 1,
+            "stack.specific_identity": 1,
             "stack.stack_pattern": 1,
             "stack.why_this_stack": 1,
         },
     ).sort("analyzed_at", DESCENDING).limit(limit)
     return await cursor.to_list(limit)
+
+
+def _specific_identity_type_score(
+    stack: dict,
+    specific_identity: str | None,
+    software_type: str | None,
+) -> tuple[float, str] | None:
+    candidate_identity = stack.get("specific_identity")
+    candidate_type = stack.get("software_type")
+    identity_matches = bool(
+        specific_identity
+        and candidate_identity
+        and candidate_identity == specific_identity
+    )
+    type_matches = bool(
+        software_type
+        and candidate_type
+        and candidate_type == software_type
+    )
+    if identity_matches and type_matches:
+        return 1.0, "specific_identity+software_type"
+    if identity_matches:
+        return 0.85, "specific_identity"
+    if type_matches:
+        return 0.7, "software_type"
+    return None
+
+
+async def find_similar_by_specific_identity_and_software_type(
+    specific_identity: str | None,
+    software_type: str | None,
+    limit: int = 5,
+    exclude_repo_key: str | None = None,
+) -> list[dict]:
+    """Return repos ranked by product identity first, then broader software type."""
+    specific_identity = (specific_identity or "").strip() or None
+    software_type = (software_type or "").strip() or None
+    if not specific_identity and not software_type:
+        return []
+
+    def score_doc(doc: dict) -> dict | None:
+        repo_key = doc.get("_id") or doc.get("repo_key")
+        if exclude_repo_key and repo_key == exclude_repo_key:
+            return None
+        if doc.get("pipeline_version") != PIPELINE_VERSION:
+            return None
+        scored = _specific_identity_type_score(
+            doc.get("stack") or {},
+            specific_identity,
+            software_type,
+        )
+        if not scored:
+            return None
+        score, basis = scored
+        public = _similar_public_doc(doc, score)
+        public["match_basis"] = basis
+        return public
+
+    if _db is None:
+        results = [
+            scored
+            for scored in (score_doc(doc) for doc in _memory("analyses_result").values())
+            if scored is not None
+        ]
+        results.sort(
+            key=lambda row: (
+                row.get("score", 0.0),
+                str(row.get("analyzed_at") or ""),
+                row.get("repo_key") or "",
+            ),
+            reverse=True,
+        )
+        return results[:limit]
+
+    query = {"pipeline_version": PIPELINE_VERSION, "stack": {"$exists": True, "$ne": None}}
+    if exclude_repo_key:
+        query["_id"] = {"$ne": exclude_repo_key}
+    projection = {
+        "_id": 1,
+        "provider": 1,
+        "owner": 1,
+        "name": 1,
+        "repo.full_name": 1,
+        "repo.description": 1,
+        "repo.stars": 1,
+        "stack.software_type": 1,
+        "stack.software_type_confidence": 1,
+        "stack.software_type_reasoning": 1,
+        "stack.specific_identity": 1,
+        "stack.stack_pattern": 1,
+        "stack.why_this_stack": 1,
+        "stack.primary_language": 1,
+        "stack.architecture_style": 1,
+        "analyzed_at": 1,
+    }
+    cursor = _db.analyses_result.find(query, projection).sort("analyzed_at", DESCENDING).limit(500)
+    scored = [
+        row
+        for row in (score_doc(doc) for doc in await cursor.to_list(500))
+        if row is not None
+    ]
+    if not scored:
+        scored = [
+            row
+            for row in (score_doc(doc) for doc in await get_all_analyses())
+            if row is not None
+        ]
+    scored.sort(
+        key=lambda row: (
+            row.get("score", 0.0),
+            str(row.get("analyzed_at") or ""),
+            row.get("repo_key") or "",
+        ),
+        reverse=True,
+    )
+    return scored[:limit]
 
 
 async def get_all_feedback(min_count: int = 0) -> list[dict]:
@@ -1087,14 +1940,27 @@ async def get_pending_taxonomy() -> dict:
     return {"software_types": software_types, "technology_roles": technology_roles}
 
 
-async def apply_taxonomy_action(kind: str, name: str, action: str, merge_into: str | None = None) -> dict:
+async def apply_taxonomy_action(
+    kind: str,
+    name: str,
+    action: str,
+    merge_into: str | None = None,
+    source: str = "ui",
+) -> dict:
     if kind not in {"software_type", "technology_role"} or action not in {"promote", "merge", "discard"}:
         raise ValueError("invalid taxonomy lifecycle action")
     if action == "merge" and not merge_into:
         raise ValueError("merge_into is required")
     feedback_key = f"software_type:{name}" if kind == "software_type" else name
-    doc = {"kind": kind, "technology_role": feedback_key, "name": name, "action": action,
-           "merge_into": merge_into, "source": "ui", "created_at": _now()}
+    doc = {
+        "kind": kind,
+        "technology_role": feedback_key,
+        "name": name,
+        "action": action,
+        "merge_into": merge_into,
+        "source": source,
+        "created_at": _now(),
+    }
     if _db is not None:
         await _db.dep_technology_role_feedback.update_one(
             {"technology_role": feedback_key}, {"$set": doc}, upsert=True
@@ -1108,25 +1974,32 @@ async def apply_taxonomy_action(kind: str, name: str, action: str, merge_into: s
     active = action == "promote"
     status = "active" if active else ("merged" if action == "merge" else "discarded")
     if kind == "software_type":
-        update = {"active": active, "status": status, "merge_into": merge_into}
+        update = {
+            "active": active, "status": status, "merge_into": merge_into,
+            "source": source, "reviewed_at": _now(),
+        }
         if _db is not None:
             await _db.taxonomy_software_types.update_one({"_id": name}, {"$set": update}, upsert=True)
         else:
             _memory("taxonomy_software_types").setdefault(name, {"_id": name, "builtin": False}).update(update)
     else:
-        update = {"standard": active, "status": status, "merged_into": merge_into}
+        builtin = canonicalize_technology_role_safe(name) is not None
+        update = {
+            "standard": active, "status": status, "merged_into": merge_into,
+            "source": source, "reviewed_at": _now(),
+        }
         if _db is not None:
             await _db.dep_technology_roles.update_one({"technology_role": name}, {"$set": update}, upsert=True)
             await _db.taxonomy_technology_roles.update_one(
-                {"_id": name}, {"$set": {"active": active, "builtin": False,
+                {"_id": name}, {"$set": {"active": active, "builtin": builtin,
                                            "status": status, "merge_into": merge_into}}, upsert=True)
         else:
             rows = _memory("dep_technology_roles")
             row = next((r for r in rows if r.get("technology_role") == name), None)
             if row: row.update(update)
             else: rows.append({"technology_role": name, **update})
-            _memory("taxonomy_technology_roles").setdefault(name, {"_id": name, "builtin": False}).update(
-                {"active": active, "status": status, "merge_into": merge_into})
+            _memory("taxonomy_technology_roles").setdefault(name, {"_id": name, "builtin": builtin}).update(
+                {"active": active, "builtin": builtin, "status": status, "merge_into": merge_into})
     _invalidate_taxonomy_cache()
     if kind == "technology_role":
         from backend.services.technology_role_registry import invalidate_cache
@@ -1269,10 +2142,33 @@ async def find_by_software_type(software_type: str, limit: int = 20) -> list[dic
             "stack.why_this_stack": 1,
             "stack.stack_pattern": 1,
             "stack.primary_language": 1,
+            "stack.specific_identity": 1,
             "analyzed_at": 1,
         },
     ).sort("analyzed_at", DESCENDING).limit(limit)
     return await cursor.to_list(limit)
+
+
+async def get_specific_identity_counts() -> list[dict]:
+    """Frequency distribution of persisted sub-canonical identity observations."""
+    if _db is None:
+        counts: dict[str, int] = {}
+        for document in _memory("analyses_result").values():
+            identity = document.get("stack", {}).get("specific_identity")
+            if identity:
+                counts[identity] = counts.get(identity, 0) + 1
+        return [
+            {"specific_identity": identity, "count": count}
+            for identity, count in sorted(counts.items(), key=lambda item: (-item[1], item[0]))
+        ]
+
+    pipeline = [
+        {"$match": {"stack.specific_identity": {"$type": "string", "$ne": ""}}},
+        {"$group": {"_id": "$stack.specific_identity", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1, "_id": 1}},
+        {"$project": {"_id": 0, "specific_identity": "$_id", "count": 1}},
+    ]
+    return await _db.analyses_result.aggregate(pipeline).to_list(None)
 
 
 async def find_by_stack_pattern(pattern: str, limit: int = 10) -> list[dict]:
@@ -1378,11 +2274,114 @@ async def record_emergent_technology_role(name: str, example_tech: str, example_
     a human acts. Bumps a sighting counter so the review UI can rank by frequency
     ('bundler seen on 6 repos' is a stronger promote signal than one sighting).
     """
+    known_role = canonicalize_technology_role_safe(name)
+    if known_role is not None:
+        name = known_role.value
+    known_inactive = known_role is not None and not is_active_technology_role(known_role)
+    pending_status = "pending_activation" if known_inactive else "pending"
+    assignment_method = "inactive_canonical" if known_inactive else "ai_inferred"
+
     await store_emergent_technology_roles([{
         "technology_role": name,
         "example_tech": example_tech,
         "example_repo": example_repo,
     }])
+    repo_key = f"github:{example_repo}" if example_repo and ":" not in example_repo else example_repo
+    if _db is not None:
+        row = await _db.dep_technology_roles.find_one(
+            {"technology_role": name}, {"seen_count": 1},
+        ) or {}
+        seen_count = int(row.get("seen_count", 1) or 1)
+        await _db.taxonomy_technology_roles.update_one(
+            {"_id": name},
+            {
+                "$setOnInsert": {
+                    "builtin": known_inactive, "active": False, "status": pending_status,
+                    "created_at": _now(),
+                },
+                "$set": {
+                    "updated_at": _now(), "builtin": known_inactive,
+                    "status": pending_status,
+                },
+                "$addToSet": {
+                    "example_techs": example_tech,
+                    "example_repos": example_repo,
+                },
+                "$max": {"seen_count": seen_count},
+            },
+            upsert=True,
+        )
+    else:
+        row = next(
+            (item for item in _memory("dep_technology_roles")
+             if item.get("technology_role") == name),
+            {},
+        )
+        seen_count = int(row.get("seen_count", 1) or 1)
+        taxonomy = _memory("taxonomy_technology_roles").setdefault(name, {
+            "_id": name, "builtin": known_inactive, "active": False,
+            "status": pending_status, "example_techs": [], "example_repos": [],
+        })
+        taxonomy.update({"builtin": known_inactive, "status": pending_status})
+        taxonomy["seen_count"] = seen_count
+        if example_tech not in taxonomy["example_techs"]:
+            taxonomy["example_techs"].append(example_tech)
+        if example_repo not in taxonomy["example_repos"]:
+            taxonomy["example_repos"].append(example_repo)
+
+    await create_review_item(
+        kind="emergent_role",
+        pipeline_value=name,
+        proposed_value=name,
+        assignment_method=assignment_method,
+        source="ai_pipeline",
+        evidence={
+            "repo": example_repo,
+            "repo_key": repo_key,
+            "analysis_id": repo_key,
+            "source": "ai_pipeline",
+            "seen_count": seen_count,
+            "example": example_tech,
+            "known_inactive_role": known_inactive,
+        },
+        repo_key=repo_key,
+    )
+
+
+async def sync_pending_technology_roles_to_review_queue() -> int:
+    """Backfill review_items from pending roles written before queue wiring."""
+    rows = await get_pending_technology_roles()
+    synced = 0
+    for row in rows:
+        name = row.get("technology_role")
+        if not name:
+            continue
+        repos = row.get("example_repos") or []
+        techs = row.get("example_techs") or []
+        example_repo = repos[-1] if isinstance(repos, list) and repos else row.get("example_repo")
+        example_tech = techs[-1] if isinstance(techs, list) and techs else row.get("example_tech")
+        repo_key = f"github:{example_repo}" if example_repo and ":" not in example_repo else example_repo
+        known_role = canonicalize_technology_role_safe(name)
+        known_inactive = known_role is not None and not is_active_technology_role(known_role)
+        await create_review_item(
+            kind="emergent_role",
+            pipeline_value=name,
+            proposed_value=name,
+            assignment_method="inactive_canonical" if known_inactive else "ai_inferred",
+            source="ai_pipeline",
+            evidence={
+                "repo": example_repo,
+                "repo_key": repo_key,
+                "analysis_id": repo_key,
+                "source": "ai_pipeline",
+                "seen_count": int(row.get("seen_count", 0) or 0),
+                "example": example_tech,
+                "known_inactive_role": known_inactive,
+            },
+            repo_key=repo_key,
+        )
+        synced += 1
+    return synced
 
 
 async def get_promoted_technology_roles() -> list[str]:

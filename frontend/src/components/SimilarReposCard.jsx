@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Eye, Star } from "lucide-react";
 import { API_BASE } from "../config/api";
 
 function getNested(item, path, fallback = "") {
@@ -14,6 +15,11 @@ function repoName(item) {
     || "unknown/repo";
 }
 
+function analysisTarget(item, name) {
+  const id = item.repo_key || item.analysis_id || (name.includes("/") ? `github:${name}` : "");
+  return id ? `/results/${encodeURIComponent(id)}` : null;
+}
+
 function software_type(item) {
   return getNested(item, "stack.software_type") || item.software_type || "unknown";
 }
@@ -24,6 +30,24 @@ function stackPattern(item) {
 
 function whyThisStack(item) {
   return getNested(item, "stack.why_this_stack") || item.why_this_stack || item.software_type_reasoning || "";
+}
+
+function repoDescription(item) {
+  return getNested(item, "repo.description") || item.description || whyThisStack(item);
+}
+
+function repoStars(item) {
+  return Number(getNested(item, "repo.stars") || item.stars || item.stargazers_count || 0);
+}
+
+function primaryLanguage(item) {
+  return getNested(item, "repo.language") || item.language || getNested(item, "stack.primary_language.name") || "";
+}
+
+function formatStars(value) {
+  if (!value) return "0";
+  if (value >= 1000) return `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}k`;
+  return value.toLocaleString();
 }
 
 function truncate(text, length = 80) {
@@ -43,7 +67,7 @@ export default function SimilarReposCard({ analysisId }) {
     setLoading(true);
     setHidden(false);
 
-    fetch(`${API_BASE}/api/analyses/similar/${analysisId}`)
+    fetch(`${API_BASE}/api/analyses/similar/${encodeURIComponent(analysisId)}`)
       .then((res) => {
         if (!res.ok) throw new Error(`Similar repos failed (${res.status})`);
         return res.json();
@@ -69,37 +93,32 @@ export default function SimilarReposCard({ analysisId }) {
 
   const method = data?.method;
   const similar = data?.similar ?? [];
-  const isVector = method === "vector_search";
+  const isIdentityMatch = method === "specific_identity_software_type";
   const visibleRepos = expanded ? similar : similar.slice(0, 3);
 
   if (!loading && similar.length === 0) return null;
 
   return (
-    <div className="bg-surface border border-border rounded-lg overflow-hidden">
-      <div className="px-4 py-3 border-b border-border flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <span className={`h-2 w-2 rounded-full ${isVector ? "bg-teal-300" : "bg-amber"}`} />
-          <span className="text-sm font-medium text-text">
-            Similar repos {isVector ? "(vector search)" : "(software_type match)"}
-          </span>
-        </div>
+    <section className="similar-repos-section">
+      <div className="similar-repos-head">
+        <h3>Similar Repositories</h3>
         {!loading && similar.length > 0 && (
           <button
             type="button"
             onClick={() => setExpanded((value) => !value)}
-            className="text-xs font-mono text-accent hover:text-accent/80 transition-colors"
+            className="similar-repos-toggle"
           >
-            {expanded ? "Collapse" : `${similar.length} similar repos found`}
+            {expanded ? "Collapse" : `${similar.length} found`}
           </button>
         )}
       </div>
 
-      <div className="divide-y divide-border">
+      <div className="similar-repos-list">
         {loading &&
           Array.from({ length: 3 }).map((_, index) => (
-            <div key={index} className="px-4 py-3 animate-pulse">
-              <div className="h-3 w-44 rounded bg-border" />
-              <div className="mt-2 h-2 w-full max-w-md rounded bg-border/70" />
+            <div key={index} className="similar-repo-card is-loading">
+              <div />
+              <span />
             </div>
           ))}
 
@@ -107,42 +126,46 @@ export default function SimilarReposCard({ analysisId }) {
           visibleRepos.map((item, index) => {
             const name = repoName(item);
             const score = Math.round((item.score ?? item.similarity ?? 0) * 100);
-            const reason = truncate(whyThisStack(item));
+            const description = truncate(repoDescription(item), 86);
+            const basis = item.match_basis?.replace(/\+/g, " + ").replace(/_/g, " ");
+            const language = primaryLanguage(item);
+            const target = analysisTarget(item, name);
 
             return (
-              <div key={`${name}-${index}`} className="px-4 py-3">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <a
-                    href={`https://github.com/${name}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-mono text-sm text-accent hover:underline"
-                  >
-                    {name}
-                  </a>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-green/10 text-green border border-green/25">
-                    {software_type(item).replace(/_/g, " ")}
-                  </span>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-ai-purple/10 text-ai-purple border border-ai-purple/25">
-                    {stackPattern(item)}
-                  </span>
-                </div>
-
-                <div className="mt-2 flex items-center gap-3">
-                  {isVector && (
-                    <div className="w-20 h-1 bg-border rounded-full overflow-hidden shrink-0">
-                      <div
-                        className="h-full bg-teal-300 rounded-full"
-                        style={{ width: `${Math.max(4, score)}%` }}
-                      />
-                    </div>
+              <article key={`${name}-${index}`} className="similar-repo-card">
+                <div className="similar-repo-main">
+                  {target ? (
+                    <a href={target} target="_blank" rel="noopener noreferrer">{name}</a>
+                  ) : (
+                    <a href={`https://github.com/${name}`} target="_blank" rel="noopener noreferrer">
+                      {name}
+                    </a>
                   )}
-                  {reason && <p className="text-xs text-muted leading-relaxed">{reason}</p>}
+                  {description && <p>{description}</p>}
+                  <div className="similar-repo-meta">
+                    <span><Star size={13} aria-hidden="true" /> {formatStars(repoStars(item))}</span>
+                    {language && <span><i /> {language}</span>}
+                    <small>{software_type(item).replace(/_/g, " ")}</small>
+                  </div>
+                  <div className="similar-repo-tags">
+                    {basis && <small>{basis}</small>}
+                    <small>{stackPattern(item)}</small>
+                    {isIdentityMatch && <small>{Math.max(1, score)}% match</small>}
+                  </div>
                 </div>
-              </div>
+                {target ? (
+                  <a className="similar-repo-view" href={target} target="_blank" rel="noopener noreferrer">
+                    <Eye size={13} aria-hidden="true" /> View
+                  </a>
+                ) : (
+                  <a className="similar-repo-view" href={`https://github.com/${name}`} target="_blank" rel="noopener noreferrer">
+                    <Eye size={13} aria-hidden="true" /> View
+                  </a>
+                )}
+              </article>
             );
           })}
       </div>
-    </div>
+    </section>
   );
 }

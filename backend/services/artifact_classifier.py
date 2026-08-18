@@ -56,6 +56,33 @@ _WEB_DEPENDENCIES = {
 _NODE_SERVERS = {"express", "fastify", "koa", "@nestjs/core", "hapi"}
 _PYTHON_SERVERS = {"flask", "django", "fastapi", "starlette", "sanic", "gunicorn", "uvicorn"}
 
+_NON_PRODUCT_PATH_SEGMENTS = {
+    "test", "tests", "integtest", "integrationtest", "androidtest",
+    "__tests__", "testfixtures", "__testfixtures__", "fixture", "fixtures",
+    "resources", "testresources", "example", "examples", "sample", "samples",
+    "demo", "demos", "benchmark", "benchmarks", "bench", "node_modules",
+    "vendor", "third_party", "3rdparty", "build", "dist", "out", "target",
+    ".buildkite", ".github", "qa",
+}
+_FIXTURE_NAME_SIGNALS = ("fake_", "fake-", "mock", "dummy", "stub")
+
+
+def _has_service_deployment_evidence(content: str) -> bool:
+    """A container/deployment descriptor must say *service*, not merely run a binary."""
+    lowered = (content or "").lower()
+    exposes_port = bool(
+        re.search(r"(?m)^\s*expose\s+\d+", lowered)
+        or re.search(r"(?m)^\s*ports\s*:", lowered)
+    )
+    service_command = bool(
+        re.search(r"\b(cmd|entrypoint|command)\b", lowered)
+        and re.search(
+            r"\b(server|serve|daemon|fastapi|gunicorn|uvicorn|influxd)\b",
+            lowered,
+        )
+    )
+    return exposes_port or service_command
+
 
 def _norm_path(path: str) -> str:
     return (path or "").replace("\\", "/").lstrip("./")
@@ -68,6 +95,48 @@ def _directory(path: str) -> str:
 
 def _artifact_path(directory: str) -> str:
     return "/" if not directory else f"/{directory}"
+
+
+def _name_aliases(name: str) -> set[str]:
+    normalized = re.sub(r"[^a-z0-9]", "", (name or "").casefold())
+    aliases = {normalized}
+    # Common product-module suffixes still identify the repository's primary
+    # package (slf4j-api -> slf4j, foo-core -> foo).  Keep the unsuffixed and
+    # original aliases so projects whose actual name ends in one still match.
+    for suffix in ("js", "py", "api", "core"):
+        if normalized.endswith(suffix) and len(normalized) > len(suffix):
+            aliases.add(normalized[:-len(suffix)])
+    return {alias for alias in aliases if alias}
+
+
+def _directory_is_namesake(directory: str, repo_name: str) -> bool:
+    if not directory:
+        return False
+    leaf = PurePosixPath(directory).name
+    return bool(_name_aliases(leaf) & _name_aliases(repo_name))
+
+
+def _is_non_product_dir(directory: str) -> bool:
+    segments = [part.casefold() for part in PurePosixPath(directory).parts]
+    return (
+        any(segment in _NON_PRODUCT_PATH_SEGMENTS for segment in segments)
+        or any(
+            signal in segment
+            for segment in segments
+            for signal in _FIXTURE_NAME_SIGNALS
+        )
+    )
+
+
+def _filter_product_manifest_dirs(
+    manifests_by_dir: dict[str, list[str]],
+) -> dict[str, list[str]]:
+    """Remove test, fixture, example, and build-output artifact candidates."""
+    return {
+        directory: manifests
+        for directory, manifests in manifests_by_dir.items()
+        if not directory or not _is_non_product_dir(directory)
+    }
 
 
 def _content(repo: RepoData, path: str) -> str:
@@ -194,11 +263,9 @@ def _infer_type(
         for path in subtree
         if PurePosixPath(path).name.lower() == "dockerfile"
     )
-    daemon_entrypoint = bool(
-        re.search(r"\b(cmd|entrypoint)\b", docker_content)
-        and re.search(r"(server|serve|gunicorn|uvicorn|influxd|daemon)", docker_content)
-    )
-    if docker_here and (server_signal or has_main or daemon_entrypoint):
+    if docker_here and (
+        server_signal or _has_service_deployment_evidence(docker_content)
+    ):
         return ArtifactType.DEPLOYABLE_SERVICE
     if server_signal and has_main:
         return ArtifactType.DEPLOYABLE_SERVICE
@@ -282,12 +349,11 @@ def _independent_output_type(
     return None
 
 
-def _has_repo_deployment_entrypoint(repo: RepoData, all_paths: set[str]) -> bool:
+def _has_repo_service_deployment_evidence(repo: RepoData, all_paths: set[str]) -> bool:
     for path in all_paths:
         if PurePosixPath(path).name.lower() not in _DEPLOYMENT_DESCRIPTORS:
             continue
-        content = _content(repo, path).lower()
-        if re.search(r"\b(cmd|entrypoint|command)\b", content):
+        if _has_service_deployment_evidence(_content(repo, path)):
             return True
     return False
 
@@ -301,6 +367,7 @@ def classify_artifacts(repo: RepoData) -> RepositoryClassification:
     for path in sorted(all_paths):
         if PurePosixPath(path).name.lower() in _MANIFESTS:
             manifests_by_dir.setdefault(_directory(path), []).append(path)
+    manifests_by_dir = _filter_product_manifest_dirs(manifests_by_dir)
     has_manifests = bool(manifests_by_dir)
 
     root_manifests = manifests_by_dir.get("", [])
@@ -316,19 +383,23 @@ def classify_artifacts(repo: RepoData) -> RepositoryClassification:
         build_unit_dirs = [""]
         manifests_by_dir[""] = []
 
-    output_units = [
-        (
-            directory,
-            _independent_output_type(
+    output_units = []
+    conventional_server_dirs: set[str] = set()
+    for directory in build_unit_dirs:
+        artifact_type = _independent_output_type(
                 repo,
                 directory,
                 manifests_by_dir[directory],
                 all_paths,
                 set(build_unit_dirs),
-            ),
-        )
-        for directory in build_unit_dirs
-    ]
+            )
+        leaf = PurePosixPath(directory).name.casefold()
+        if artifact_type is None and _directory_is_namesake(directory, repo.name):
+            artifact_type = ArtifactType.LIBRARY
+        elif artifact_type is None and leaf == "server":
+            artifact_type = ArtifactType.DEPLOYABLE_SERVICE
+            conventional_server_dirs.add(directory)
+        output_units.append((directory, artifact_type))
     output_units = [
         (directory, artifact_type)
         for directory, artifact_type in output_units
@@ -344,19 +415,26 @@ def classify_artifacts(repo: RepoData) -> RepositoryClassification:
         ]
         naming_directories = [""]
     elif len(output_units) == 1:
-        directory, artifact_type = output_units[0]
+        output_directory, artifact_type = output_units[0]
         if (
             artifact_type == ArtifactType.CLI_TOOL
-            and _has_repo_deployment_entrypoint(repo, all_paths)
+            and _has_repo_service_deployment_evidence(repo, all_paths)
         ):
             artifact_type = ArtifactType.DEPLOYABLE_SERVICE
-        artifact_dirs_and_types = [("", artifact_type)]
-        naming_directories = [directory]
+        if output_directory in conventional_server_dirs:
+            artifact_dirs_and_types = [(output_directory, artifact_type)]
+            naming_directories = [output_directory]
+        else:
+            artifact_dirs_and_types = [("", artifact_type)]
+            # The surviving output represents the whole repository after collapse.
+            # Name it from root package metadata (when present) or repo.name, never
+            # from whichever internal sub-manifest happened to declare the output.
+            naming_directories = [""]
     else:
         artifact_dirs_and_types = output_units
         naming_directories = [directory for directory, _ in output_units]
 
-    artifacts: list[Artifact] = []
+    artifact_specs: list[tuple[str, ArtifactType, str]] = []
     used_names: set[str] = set()
     for index, (directory, artifact_type) in enumerate(artifact_dirs_and_types):
         naming_directory = naming_directories[index]
@@ -367,14 +445,31 @@ def classify_artifacts(repo: RepoData) -> RepositoryClassification:
             used_names,
         )
         used_names.add(name)
-        artifacts.append(
-            Artifact(
-                name=name,
-                type=artifact_type,
-                path=_artifact_path(directory),
-                primary=index == 0,
-            )
+        artifact_specs.append((directory, artifact_type, name))
+
+    repo_aliases = _name_aliases(repo.name)
+
+    def primary_rank(spec: tuple[str, ArtifactType, str]) -> tuple:
+        directory, artifact_type, name = spec
+        leaf = PurePosixPath(directory).name.casefold()
+        return (
+            bool(_name_aliases(name) & repo_aliases),
+            _directory_is_namesake(directory, repo.name),
+            leaf == "server",
+            directory == "",
+            artifact_type != ArtifactType.DOCUMENTATION,
         )
+
+    primary_spec = max(artifact_specs, key=primary_rank)
+    artifacts = [
+        Artifact(
+            name=name,
+            type=artifact_type,
+            path=_artifact_path(directory),
+            primary=(directory, artifact_type, name) == primary_spec,
+        )
+        for directory, artifact_type, name in artifact_specs
+    ]
 
     # A bundled UI under a real root product is structurally subordinate. Do
     # not infer peer/service relationships among workspace members.
@@ -452,9 +547,20 @@ def assign_artifact_ownership(
     classification: RepositoryClassification,
 ) -> None:
     """Populate artifact ownership in place after detection has been merged."""
+    primary = next(
+        (artifact.name for artifact in classification.artifacts if artifact.primary),
+        None,
+    )
     for tech in technologies:
         matched_file = tech.matched_file or ""
-        tech.belongs_to_artifact = (
+        resolved = (
             artifact_for_manifest(matched_file, classification)
             or _artifact_for_deployment_descriptor(matched_file, classification)
         )
+        source = tech.detection_source or ""
+        dependency_like = (
+            source.startswith("manifest")
+            or source == "ai_inferred"
+            or (source == "both" and tech.technology_role != "languages")
+        )
+        tech.belongs_to_artifact = resolved or (primary if dependency_like else None)

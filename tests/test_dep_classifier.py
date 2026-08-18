@@ -78,6 +78,15 @@ def test_dependency_tail_technology_role_and_layer_share_one_gemini_call(monkeyp
                     "scope": "required",
                     "packages": ["missing-layer"],
                 },
+                {
+                    "name": "HPPC",
+                    "technology_role": "library",
+                    "architectural_layer": "backend",
+                    "layer_confidence": 0.8,
+                    "confidence": 0.8,
+                    "scope": "required",
+                    "packages": ["com.carrotsearch:hppc"],
+                },
             ]
         )
 
@@ -110,6 +119,7 @@ def test_dependency_tail_technology_role_and_layer_share_one_gemini_call(monkeyp
                 {"name": "opaque-util", "scope": "required"},
                 {"name": "network-thing", "scope": "required"},
                 {"name": "missing-layer", "scope": "required"},
+                {"name": "com.carrotsearch:hppc", "scope": "required"},
             ],
             file_tree=["requirements.txt"],
             repo_full_name="test/example",
@@ -122,6 +132,7 @@ def test_dependency_tail_technology_role_and_layer_share_one_gemini_call(monkeyp
         "timeout": dep_classifier.GEMINI_REQUEST_TIMEOUT_SECONDS
     }
     assert "architectural_layer" in model.calls[0][0]
+    assert "Never infer backend merely because a utility" in model.calls[0][0]
     assert result[0]["technology_role"] == "messaging"
     assert result[0]["architectural_layer"] == "data"
     assert result[0]["layer_confidence"] == 0.80
@@ -132,3 +143,5 @@ def test_dependency_tail_technology_role_and_layer_share_one_gemini_call(monkeyp
     assert result[2]["layer_resolution"] == "off_enum"
     assert result[3]["architectural_layer"] is None
     assert result[3]["layer_resolution"] == "missing"
+    assert result[4]["architectural_layer"] is None
+    assert result[4]["layer_resolution"] == "cross_cutting_null"

@@ -5,10 +5,10 @@ Learning pipeline status and trigger endpoints.
 Java equivalent: part of HealthController + PatternUpdateServiceImpl triggers.
 
 Exposes the self-learning pipeline state:
-  - Corpus size, feedback collected, pattern confidence changes
-  - Manual trigger for batch pattern update
-  - Manual trigger for classifier training
-  - Per-keyword empirical accuracy from feedback
+  - Corpus size, feedback collected, and correction ledger events
+  - Advisory Layer 0 classifier shadow-mode agreement metrics
+  - Manual trigger for classifier retraining
+  - Pattern update and per-keyword accuracy diagnostics
 
 Java equivalent events:
   PatternConfigUpdatedEvent → published by DynamicPatternConfigService
@@ -30,15 +30,42 @@ async def learning_stats():
     Current state of the self-learning pipeline.
 
     Key fields:
-      corpus_size              — total analyses in MongoDB
-      feedback_collected       — RLHF signals submitted
-      patterns_changed_by_learning — patterns whose confidence diverged from default
-      training_pipeline.status — "active" (50+ feedback) or "collecting_data"
+      corpus_size              — total stored analyses
+      total_analyses           — storage-reported analysis count
+      feedback_collected       — software_type feedback snapshots submitted
+      layer0_agreement_rate    — advisory classifier agreement with primary path
+      training_pipeline.status — "ready" or "collecting_data"
 
-    Java equivalent: MonitoringStats DTO populated by UsageTrackingServiceImpl
-    + PatternPerformanceMetrics from stacksniffer-learning.
+    Java equivalent: MonitoringStats DTO populated by UsageTrackingServiceImpl.
     """
     return await learning_service.get_learning_stats()
+
+
+@router.get("/events")
+async def learning_events(limit: int = 500):
+    """Approved human corrections and observed system coercions only."""
+    events = await storage_service.get_correction_events(limit=limit)
+    feedback_counts = {
+        "software_type": 0,
+        "technology_role": 0,
+        "architectural_layer": 0,
+    }
+    for event in events:
+        field = event.get("correction_field")
+        if event.get("actor_kind") == "user" and field in feedback_counts:
+            feedback_counts[field] += 1
+    ledger = [
+        event for event in events
+        if event.get("resolution") == "approved"
+        or event.get("event_kind") == "system_coercion"
+    ]
+    return {
+        "events": ledger,
+        "count": len(ledger),
+        "feedback_counts": feedback_counts,
+        "feedback_count_total": sum(feedback_counts.values()),
+        "scope": "approved_human_corrections_and_system_coercions",
+    }
 
 
 @router.post("/update-patterns")
@@ -57,7 +84,7 @@ async def update_patterns(background_tasks: BackgroundTasks):
     background_tasks.add_task(learning_service.update_patterns_from_corpus)
     return {
         "status": "started",
-        "message": "Pattern confidence update running in background. Check /api/learning/stats."
+        "message": "Pattern confidence update running in background. Check /api/learning/pattern-accuracy."
     }
 
 
@@ -67,8 +94,9 @@ async def train_classifier():
     Train sklearn LogisticRegression software_type classifier from labeled corpus.
     Requires 50+ feedback samples for meaningful accuracy.
 
-    Once trained, activates Layer 0 in analyze.py — high-confidence analyses
-    skip the Gemini software_type classification call entirely.
+    Once trained, activates advisory Layer 0 in analyze.py. The classifier
+    prediction is recorded for diagnostics/disagreement tracking; Gemini still
+    runs and remains the final software_type classifier path.
 
     Expected accuracy by corpus size:
       50 samples:  ~60-70% CV accuracy (underfitting)

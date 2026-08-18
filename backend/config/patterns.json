@@ -129,6 +129,16 @@
       "_discovered_in": "github:apache/airflow",
       "_discovered_at": "2026-07-23T03:09:17.838269",
       "_note": "Add keywords after inspecting the repo's dependency files"
+    },
+    {
+      "name": "FastAPI",
+      "confidence": 0.5,
+      "detection_files": [],
+      "keywords": [],
+      "_status": "discovered_via_feedback",
+      "_discovered_in": "github:bhaktivora9/stacksniffer",
+      "_discovered_at": "2026-08-10T04:01:48.230599",
+      "_note": "Add keywords after inspecting the repo's dependency files"
     }
   ],
   "infra": [
@@ -313,6 +323,16 @@
       "_discovered_in": "github:pallets/click",
       "_discovered_at": "2026-07-23T03:08:01.293796",
       "_note": "Add keywords after inspecting the repo's dependency files"
+    },
+    {
+      "name": "go-plugin",
+      "confidence": 0.5,
+      "detection_files": [],
+      "keywords": [],
+      "_status": "discovered_via_feedback",
+      "_discovered_in": "github:hashicorp/terraform",
+      "_discovered_at": "2026-08-01T07:12:49.275302",
+      "_note": "Add keywords after inspecting the repo's dependency files"
     }
   ],
   "bundler": [
@@ -324,6 +344,16 @@
       "_status": "discovered_via_feedback",
       "_discovered_in": "github:bhaktivora9/stacksniffer",
       "_discovered_at": "2026-07-22T08:15:42.203955",
+      "_note": "Add keywords after inspecting the repo's dependency files"
+    },
+    {
+      "name": "turbo",
+      "confidence": 0.5,
+      "detection_files": [],
+      "keywords": [],
+      "_status": "discovered_via_feedback",
+      "_discovered_in": "github:vercel/next.js",
+      "_discovered_at": "2026-08-10T06:04:34.318592",
       "_note": "Add keywords after inspecting the repo's dependency files"
     }
   ],
