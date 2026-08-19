@@ -2,7 +2,8 @@
 
 A GitHub repository classification tool that analyzes a repo and labels it by software type, technology role, and architectural layer — while keeping deterministic, manifest-verified facts visually and structurally distinct from AI inferences at all times.
 
-**Live demo:** _add your Vercel URL here_
+**Live demo:** __https://stacksniffer.vercel.app/__
+
 **Version:** v0.1.0 (MVP)
 
 ---
