@@ -7,28 +7,31 @@ Python equivalent of StackSnifferApplication.java in stacksniffer-api.
 Router registration mirrors Spring Boot @RestController component scanning,
 but explicit rather than automatic — a FastAPI requirement.
 """
+import json
+import logging
+import logging.config
 from contextlib import asynccontextmanager
 from os import getenv
 from pathlib import Path
 from tempfile import gettempdir
-import json
-import logging.config
-import logging
+
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import analyze        # POST /api/analyze
-from routers import chat           # POST /api/chat/
-from routers import feedback       # POST /api/feedback/{id}       (software_type RLHF)
-from routers import stack_feedback # POST /api/stack-feedback/{id} (tech RLHF)
-from routers import learning       # GET  /api/learning/stats
-from routers import taxonomy       # POST /api/taxonomy/discover
-from routers import insights_feedback #GET /api/insights-feedback/stats          → 404
+
 #GET /api/insights-feedback/quality-criteria → 404
 # Remove the try/except guard — replace with explicit import:
-from routers import discovery
-from routers import review
-
+from routers import (
+    analyze,  # POST /api/analyze
+    chat,  # POST /api/chat/
+    discovery,
+    feedback,  # POST /api/feedback/{id}       (software_type RLHF)
+    insights_feedback,  #GET /api/insights-feedback/stats          → 404
+    learning,  # GET  /api/learning/stats
+    review,
+    stack_feedback,  # POST /api/stack-feedback/{id} (tech RLHF)
+    taxonomy,  # POST /api/taxonomy/discover
+)
 from services import storage_service
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
