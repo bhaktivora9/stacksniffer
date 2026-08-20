@@ -1,0 +1,73 @@
+[github_app]
+pr_commands = [
+    "/agentic_describe",
+    "/agentic_review"
+]
+handle_push_trigger = true
+push_commands = [
+    "/agentic_review"
+]
+
+[qodo_describe_agent]
+publish_mode = "dynamic"
+
+[review_agent]
+comments_location_policy = "both"
+inline_comments_severity_threshold = 2
+persistent_comment_notification = false
+enable_commitable_suggestions = true
+
+issues_user_guidelines = """
+Review StackSniffer as a provenance-sensitive analysis product.
+
+Prioritize findings that can cause manifest-verified facts to be confused with AI inferences, overwrite or lose correction-ledger history, silently coerce novel software types into canonical labels, weaken confidence/quality flags, or return partially grounded analysis without surfacing the limitation.
+
+Backend changes should be checked for FastAPI route contract regressions, Pydantic schema drift, MongoDB persistence mistakes, async error handling, timeout/fallback behavior, and secret exposure. Frontend changes should be checked for React/Vite state bugs, broken provenance badges, inaccessible or misleading review/feedback controls, and API shape mismatches.
+
+Do not over-emphasize low-value style preferences. Prefer concrete behavioral, security, data-integrity, and testability issues.
+"""
+
+compliance_user_guidelines = """
+Enforce these repository invariants:
+
+1. Secrets must stay server-side. GEMINI_API_KEY, MONGODB_URI, and other credentials must not be committed, logged, returned by APIs, or exposed through VITE-prefixed frontend variables.
+2. MAP or manifest-verified values must remain visibly and structurally distinct from AI-inferred values.
+3. Corrections must be append-only overlays with provenance. Existing AI judgments should not be destructively overwritten.
+4. Canonical software-type values must stay aligned across backend schemas, classifier prompts, persisted results, tests, and frontend controls.
+5. Novel or emergent identities should route to maintainer review instead of being silently forced into an inaccurate canonical type.
+6. Generated, dependency, cache, and model artifact churn should not be reviewed as hand-authored product logic unless the PR intentionally changes those artifacts.
+"""
+
+smart_router_extra_instructions = """
+Use deeper review for changes touching backend/services/ai_pipeline.py, taxonomy or software-type classification, storage/correction ledgers, schema files, API routers, deployment configuration, authentication/secrets handling, or frontend result/review-queue rendering. Use normal review depth for docs-only and narrowly scoped UI copy changes.
+"""
+
+[review_agent_ux]
+finding_overflow_count = 5
+resolved_overflow_count = 3
+use_images_and_animations = false
+show_context_used = true
+expand_description = true
+expand_code = true
+expand_recommendation = true
+expand_evidence = false
+expand_prompt = false
+
+[checks]
+enable_auto_checks_feedback = true
+persistent_comment = true
+enable_help_text = true
+final_update_message = false
+
+[pr_code_suggestions]
+enable_chat_in_code_suggestions = true
+
+[chat_agent]
+enable_fixer_agent = true
+
+[fixer_agent]
+enable = true
+enable_auto_fix = false
+action_level_threshold = 3
+open_new_pr = true
+close_fix_pr = true
