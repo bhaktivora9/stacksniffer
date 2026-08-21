@@ -10,7 +10,12 @@ DOCS = [
         "repo_key": "github:owner/zulu",
         "repo_metadata": {"full_name": "owner/Zulu"},
         "updated_at": "2026-01-01T00:00:00Z",
-        "stack": {"software_type": "service"},
+        "stack": {
+            "software_type": "service",
+            "software_type_ai": "web_api",
+            "specific_identity": "api_server",
+            "layer0_prediction": {"software_type": "library"},
+        },
     },
     {
         "repo_key": "github:owner/alpha",
@@ -46,3 +51,7 @@ def test_list_analyses_sorting(monkeypatch, sort_by, sort_order, expected):
     assert [row["repo"]["full_name"] for row in result["analyses"]] == expected
     counts = {row["repo"]["full_name"]: row["feedback_count"] for row in result["analyses"]}
     assert counts == {"owner/Alpha": 2, "owner/Zulu": 0}
+    zulu = next(row for row in result["analyses"] if row["repo"]["full_name"] == "owner/Zulu")
+    assert zulu["layer0_software_type"] == "library"
+    assert zulu["ai_software_type"] == "web_api"
+    assert zulu["specific_identity"] == "api_server"

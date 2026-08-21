@@ -117,6 +117,7 @@ Required environment variables are documented in `.env.example` (placeholder val
 - `GEMINI_API_KEY` — server-side only. Never exposed to the frontend or included in any build.
 - `MONGODB_URI` — the Atlas connection string.
 - `ALLOWED_ORIGINS` — comma-separated list of permitted frontend origins (CORS).
+- `ADMIN_USERNAME` / `ADMIN_PASSWORD` — server-side maintainer credentials for admin mutations. The backend verifies them at `/api/review/login`, then issues a role-bearing session token for guarded approve/reject/promote/submit routes. Set these only on Render or in the root local `.env`; never add them to `frontend/.env`, never prefix them with `VITE_`, and never expose them to browser code.
 
 **Frontend (Vercel):**
 - `VITE_API_BASE_URL` — the public backend URL. Safe to expose (it's public anyway); this is why the Gemini key must never be a `VITE_`-prefixed variable — anything prefixed `VITE_` ships to the browser.
@@ -131,9 +132,9 @@ If a key is ever committed or leaked, rotate it in the provider's console and up
 
 ```
 # Backend
+cp .env.example .env    # from repo root; fill in server-side secrets, including ADMIN_USERNAME and ADMIN_PASSWORD
 cd backend
 pip install -r requirements.txt
-cp .env.example .env    # then fill in real values
 uvicorn backend.main:app --reload --port 8000
 
 # Frontend
@@ -144,3 +145,22 @@ npm run dev
 ```
 
 Backend runs at `localhost:8000`, frontend at `localhost:5173`.
+
+Admin mutation check:
+
+```
+# No session: should return 403
+curl -i -X POST http://localhost:8000/api/review/<review_item_id>/approve \
+  -H "Content-Type: application/json" \
+  -d "{\"target_value\":\"library\"}"
+
+# Valid admin session: login returns a bearer token and sets an HttpOnly cookie
+TOKEN=$(curl -s -X POST http://localhost:8000/api/review/login \
+  -H "Content-Type: application/json" \
+  -d "{\"username\":\"$ADMIN_USERNAME\",\"password\":\"$ADMIN_PASSWORD\"}" | jq -r .access_token)
+
+curl -i -X POST http://localhost:8000/api/review/<review_item_id>/approve \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d "{\"target_value\":\"library\"}"
+```

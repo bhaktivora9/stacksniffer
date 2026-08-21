@@ -1,93 +1,35 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
-from os import getenv
-from secrets import compare_digest
-import base64
-import hashlib
-import hmac
-import time
-
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from models.schemas import ReviewActionRequest, ReviewItemKind
+from routers.admin_auth import (
+    AdminLoginRequest,
+    clear_admin_session,
+    create_admin_session,
+    require_admin,
+)
 from services import storage_service
 
 router = APIRouter(prefix="/api/review", tags=["review"])
-security = HTTPBasic(auto_error=False)
-_SESSION_COOKIE = "stacksniffer_review_session"
-_SESSION_TTL_SECONDS = 8 * 60 * 60
 
 
-def _session_signature(expires: str) -> str:
-    secret = getenv("REVIEW_SESSION_SECRET") or getenv(
-        "REVIEW_PASS", getenv("REVIEW_ADMIN_PASSWORD", "LLMRAGAIML")
-    )
-    return hmac.new(secret.encode(), expires.encode(), hashlib.sha256).hexdigest()
-
-
-def _new_session_token() -> str:
-    expires = str(int(time.time()) + _SESSION_TTL_SECONDS)
-    raw = f"{expires}.{_session_signature(expires)}".encode()
-    return base64.urlsafe_b64encode(raw).decode()
-
-
-def _valid_session_token(token: str | None) -> bool:
-    try:
-        raw = base64.urlsafe_b64decode((token or "").encode()).decode()
-        expires, signature = raw.split(".", 1)
-        return int(expires) > int(time.time()) and compare_digest(
-            signature, _session_signature(expires)
-        )
-    except (ValueError, TypeError):
-        return False
-
-
-def _require_admin_credentials(
-    request: Request,
-    credentials: HTTPBasicCredentials | None = Depends(security),
-) -> str:
-    admin_user = getenv("REVIEW_USER", getenv("REVIEW_ADMIN_USER", "admin"))
-    if _valid_session_token(request.cookies.get(_SESSION_COOKIE)):
-        return admin_user
-    admin_password = getenv("REVIEW_PASS", getenv("REVIEW_ADMIN_PASSWORD", "LLMRAGAIML"))
-    if credentials is None or not (
-        compare_digest(credentials.username, admin_user)
-        and compare_digest(credentials.password, admin_password)
-    ):
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid admin credentials",
-            headers={"WWW-Authenticate": "Basic"},
-        )
-    return credentials.username
-
-
+@router.post("/login")
 @router.post("/session")
 async def create_review_session(
     response: Response,
-    _auth: None = Depends(_require_admin_credentials),
+    login: AdminLoginRequest,
 ):
-    response.set_cookie(
-        key=_SESSION_COOKIE,
-        value=_new_session_token(),
-        max_age=_SESSION_TTL_SECONDS,
-        httponly=True,
-        secure=getenv("REVIEW_COOKIE_SECURE", "false").lower() == "true",
-        samesite="lax",
-        path="/api/review",
-    )
-    return {"authenticated": True, "expires_in": _SESSION_TTL_SECONDS}
+    return create_admin_session(response, login.username, login.password)
 
 
 @router.get("/session")
 async def get_review_session(
-    _auth: None = Depends(_require_admin_credentials),
+    _auth: str = Depends(require_admin),
 ):
-    return {"authenticated": True}
+    return {"authenticated": True, "role": "admin"}
 
 
 @router.delete("/session")
 async def delete_review_session(response: Response):
-    response.delete_cookie(_SESSION_COOKIE, path="/api/review")
-    return {"authenticated": False}
+    return clear_admin_session(response)
 
 
 _COLLECTION_PURPOSES = [
@@ -164,21 +106,20 @@ _COLLECTION_PURPOSES = [
 
 @router.get("/collections")
 async def list_collections(
-    _auth: None = Depends(_require_admin_credentials),
+    _auth: str = Depends(require_admin),
 ):
     return {"collections": _COLLECTION_PURPOSES, "count": len(_COLLECTION_PURPOSES)}
 
 
 @router.get("/stats")
 async def get_review_stats(
-    _auth: None = Depends(_require_admin_credentials),
+    _auth: str = Depends(require_admin),
 ):
     return await storage_service.get_review_stats()
 
 
 @router.get("/queue")
 async def list_queue(
-    _auth: None = Depends(_require_admin_credentials),
     kind: str | None = Query(default=None),
     type: str | None = Query(default=None),
     status: str = Query(default="pending"),
@@ -216,7 +157,7 @@ async def list_queue(
 
 @router.get("/correction-events")
 async def list_correction_events(
-    _actor: str = Depends(_require_admin_credentials),
+    _actor: str = Depends(require_admin),
     resolution: str | None = Query(default=None),
     limit: int = Query(default=500, ge=1, le=2000),
 ):
@@ -237,7 +178,7 @@ def _requested_merge_target(request: ReviewActionRequest) -> str | None:
 async def approve_item(
     item_id: str,
     request: ReviewActionRequest,
-    actor: str = Depends(_require_admin_credentials),
+    actor: str = Depends(require_admin),
 ):
     item = await storage_service.get_review_item(item_id)
     if not item:
@@ -363,7 +304,7 @@ async def approve_item(
 async def reject_item(
     item_id: str,
     request: ReviewActionRequest,
-    actor: str = Depends(_require_admin_credentials),
+    actor: str = Depends(require_admin),
 ):
     item = await storage_service.get_review_item(item_id)
     if not item:
@@ -391,7 +332,7 @@ async def reject_item(
 async def merge_item(
     item_id: str,
     request: ReviewActionRequest,
-    actor: str = Depends(_require_admin_credentials),
+    actor: str = Depends(require_admin),
 ):
     merge_target = _requested_merge_target(request)
     if not merge_target:
@@ -446,7 +387,7 @@ async def merge_item(
 async def discard_item(
     item_id: str,
     request: ReviewActionRequest,
-    actor: str = Depends(_require_admin_credentials),
+    actor: str = Depends(require_admin),
 ):
     item = await storage_service.get_review_item(item_id)
     if not item:

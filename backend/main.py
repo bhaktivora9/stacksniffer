@@ -68,9 +68,14 @@ def _configure_logging() -> None:
                 log_path.parent.mkdir(parents=True, exist_ok=True)
                 file_handler["filename"] = str(log_path)
             logging.config.dictConfig(config)
-    except Exception:
+    except (OSError, ValueError, TypeError, AttributeError, ImportError, KeyError) as exc:
         # Safe fallback; app startup should never be blocked by logging config.
-        pass
+        logging.getLogger(__name__).warning(
+            "Unable to configure logging from %s: %s",
+            LOG_CONFIG_PATH,
+            exc,
+            exc_info=True,
+        )
 
 
 _configure_logging()
@@ -170,15 +175,24 @@ async def health():
     stack_fb = {}
     try:
         stack_fb = await storage_service.get_stack_feedback_stats()
-    except Exception:
-        pass
-
+    except Exception as exc:
+            logging.getLogger(__name__).warning(
+            "Unable to configure logging from %s: %s",
+            LOG_CONFIG_PATH,
+            exc,
+            exc_info=True,
+        )
     classifier_active = False
     try:
         from services.learning_service import load_layer0
         classifier_active = load_layer0() is not None
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning(
+                    "Unable to configure logging from %s: %s",
+                    LOG_CONFIG_PATH,
+                    exc,
+                    exc_info=True,
+                )
 
     return {
         "status":             "ok",

@@ -13,7 +13,7 @@ Verdict types:
   false_positive → penalize patterns (tech shown but not actually used)
   false_negative → register for pattern discovery (tech used but not detected)
 """
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
@@ -22,6 +22,7 @@ import re
 from services import storage_service as storage_service
 from models.taxonomy import canonicalize_technology_role
 from services import stack_feedback_service
+from routers.admin_auth import require_admin
 from routers.deps import resolve_repo_key
 
 router = APIRouter(prefix="/api/stack-feedback", tags=["stack-feedback"])
@@ -276,6 +277,7 @@ async def mark_tech_missing(
 async def correct_primary_language(
     id: str,
     correction: PrimaryLanguageCorrection,
+    _auth: str = Depends(require_admin),
     repo_key: str = Depends(resolve_repo_key),
 ):
     """Save a corrected primary language as a durable analysis override."""
@@ -317,6 +319,7 @@ async def submit_technology_role_feedback(
     id: str,
     tech_name: str,
     feedback: TechnologyRoleFeedback,
+    request: Request,
     repo_key: str = Depends(resolve_repo_key),
 ):
     """Confirm or correct the role assigned to one detected technology."""
@@ -341,6 +344,7 @@ async def submit_technology_role_feedback(
     if feedback.correct:
         corrected_role = feedback.current_role
     else:
+        require_admin(request)
         if not corrected_role:
             raise HTTPException(422, "corrected_role is required when correct=false")
         from services.technology_role_registry import valid_technology_roles
@@ -436,6 +440,7 @@ async def submit_architectural_layer_feedback(
     id: str,
     tech_name: str,
     feedback: ArchitecturalLayerFeedback,
+    _auth: str = Depends(require_admin),
     repo_key: str = Depends(resolve_repo_key),
 ):
     """Queue a technology layer correction for maintainer approval."""

@@ -47,6 +47,7 @@ export default function ResultsPage() {
   const [toasts, setToasts] = useState([]);
   const [feedbackState, setFeedbackState] = useState({});
   const [hardRefreshing, setHardRefreshing] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     if (isDemo || result) return;
@@ -63,6 +64,22 @@ export default function ResultsPage() {
       }
     })();
   }, [analysisId, isDemo]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${API_BASE}/api/review/session`, { credentials: "include" })
+      .then((res) => {
+        if (!res.ok) throw new Error("guest");
+        return res.json();
+      })
+      .then((session) => {
+        if (!cancelled) setIsAdmin(session.role === "admin");
+      })
+      .catch(() => {
+        if (!cancelled) setIsAdmin(false);
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     if (!result?.stack) return;
@@ -129,6 +146,7 @@ export default function ResultsPage() {
   async function postStackFeedback(url, options = {}) {
     const res = await fetch(url, {
       method: "POST",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
       ...options,
     });
@@ -408,7 +426,7 @@ export default function ResultsPage() {
           </div>
         )}
 
-        <ProvenanceResult result={result} feedbackState={feedbackState} onSoftwareTypeFeedback={handleSoftwareTypeFeedback} onTechCorrect={handleTechCorrect} onTechWrong={handleTechWrong} onRoleCorrection={handleTechRoleCorrection} onLayerCorrection={handleLayerCorrection} />
+        <ProvenanceResult result={result} feedbackState={feedbackState} isAdmin={isAdmin} onSoftwareTypeFeedback={handleSoftwareTypeFeedback} onTechCorrect={handleTechCorrect} onTechWrong={handleTechWrong} onRoleCorrection={handleTechRoleCorrection} onLayerCorrection={handleLayerCorrection} />
 
         <div className="hidden"><StackPanel
           stack={stack}
@@ -422,6 +440,7 @@ export default function ResultsPage() {
           onLayerCorrection={handleLayerCorrection}
           onMissingTech={handleMissingTech}
           onPrimaryLanguageChange={handlePrimaryLanguageChange}
+          isAdmin={isAdmin}
           afterInsights={
             <>
               <SoftwareTypeFeedbackBar
@@ -437,6 +456,7 @@ export default function ResultsPage() {
                 similarReposUsed={stack.similar_repos_used ?? stack.rag_repos_retrieved ?? 0}
                 classifierUsed={classifierUsed}
                 detectedTechs={feedbackTechs}
+                isAdmin={isAdmin}
                 onToast={showToast}
               />
             </>

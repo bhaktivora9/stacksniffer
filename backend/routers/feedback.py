@@ -8,13 +8,14 @@ Collects human preference signal on software_type classification correctness.
 Signal flows to learning_service.py for pattern confidence updates.
 Mirrors UsageTrackingEvent → IngestionEventListener in stacksniffer-learning.
 """
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
 
 from services import storage_service as storage_service
 from services.learning_service import penalize_patterns, reward_patterns
+from routers.admin_auth import require_admin
 from routers.deps import resolve_repo_key
 
 router = APIRouter(prefix="/api/feedback", tags=["feedback"])
@@ -42,6 +43,7 @@ class FeedbackResponse(BaseModel):
 async def submit_feedback(
     id: str,
     feedback: FeedbackRequest,
+    request: Request,
     repo_key: str = Depends(resolve_repo_key),
 ):
     """
@@ -61,6 +63,10 @@ async def submit_feedback(
         raise HTTPException(404, "no analysis for this repo")
     stack = doc["stack"]
     approved_overlay = None
+    correction_requested = bool(feedback.correct_software_type) or feedback.approved_overlay_confirmed
+    if correction_requested:
+        require_admin(request)
+
     if feedback.approved_overlay_confirmed:
         approved_overlay = await storage_service.get_approved_software_type_correction(
             repo_key, stack.get("software_type"),
@@ -70,9 +76,7 @@ async def submit_feedback(
             or approved_overlay.get("corrected_value") != feedback.correct_software_type
         ):
             raise HTTPException(409, "approved software_type overlay no longer matches")
-    if not feedback.software_type_correct:
-        if not feedback.correct_software_type:
-            raise HTTPException(422, "correct_software_type is required when software_type_correct is false")
+    if not feedback.software_type_correct and feedback.correct_software_type:
         if not await storage_service.is_valid_software_type(feedback.correct_software_type):
             raise HTTPException(422, f"invalid software_type: {feedback.correct_software_type}")
 
@@ -96,7 +100,11 @@ async def submit_feedback(
         rated_embedding=doc.get("stack_embedding"),
         feedback=feedback_doc,
     )
-    if not feedback.software_type_correct and not feedback.approved_overlay_confirmed:
+    if (
+        not feedback.software_type_correct
+        and feedback.correct_software_type
+        and not feedback.approved_overlay_confirmed
+    ):
         assignment_method = "deterministic" if stack.get("layer0_prediction") else "ai_inferred"
         await storage_service.upsert_software_type_correction(
             pipeline_value=stack.get("software_type", "unknown"),

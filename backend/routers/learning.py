@@ -17,7 +17,8 @@ Java equivalent events:
 """
 import asyncio
 
-from fastapi import APIRouter, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks, Depends
+from routers.admin_auth import require_admin
 from services import learning_service
 from services import storage_service
 
@@ -69,7 +70,10 @@ async def learning_events(limit: int = 500):
 
 
 @router.post("/update-patterns")
-async def update_patterns(background_tasks: BackgroundTasks):
+async def update_patterns(
+    background_tasks: BackgroundTasks,
+    _auth: str = Depends(require_admin),
+):
     """
     Batch recompute all pattern confidence scores from feedback corpus.
     Runs in background. Returns immediately.
@@ -89,7 +93,7 @@ async def update_patterns(background_tasks: BackgroundTasks):
 
 
 @router.post("/train-classifier")
-async def train_classifier():
+async def train_classifier(_auth: str = Depends(require_admin)):
     """
     Train sklearn LogisticRegression software_type classifier from labeled corpus.
     Requires 50+ feedback samples for meaningful accuracy.
@@ -109,7 +113,7 @@ async def train_classifier():
     return await learning_service.train_software_type_classifier()
 
 @router.post("/reembed-corpus")
-async def reembed_corpus():
+async def reembed_corpus(_auth: str = Depends(require_admin)):
     """
     Re-embed all stored analyses with enriched post-AI fingerprints.
     Run once after deploying the enriched embedding change.

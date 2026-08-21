@@ -29,6 +29,16 @@ function Sparkline({ confidence }) {
   return <svg width="60" height="20" aria-hidden="true"><path d={`M0 17 L10 13 L20 15 L30 8 L40 11 L50 5 L60 ${20-end}`} fill="none" stroke="#4edea3" strokeWidth="2" /></svg>;
 }
 
+function compactValue(value) {
+  return value ? String(value).replace(/_/g, " ") : "--";
+}
+
+function TypeChip({ value, muted = false }) {
+  return <span className={`inline-flex max-w-[180px] items-center rounded border px-2 py-1 text-[10px] uppercase ${muted ? "border-border bg-bg text-muted" : "border-green/30 bg-green/10 text-green"}`} title={value || "No value recorded"}>
+    <span className="truncate">{compactValue(value)}</span>
+  </span>;
+}
+
 export default function RepositoryHistoryPage() {
   const [rows, setRows] = useState([]);
   const [softwareTypes, setSoftwareTypes] = useState([]);
@@ -41,6 +51,7 @@ export default function RepositoryHistoryPage() {
   const [feedbackState, setFeedbackState] = useState({});
   const [correctionOpen, setCorrectionOpen] = useState(null);
   const [corrections, setCorrections] = useState({});
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -66,14 +77,31 @@ export default function RepositoryHistoryPage() {
     return () => { cancelled = true; };
   }, [sort]);
 
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${API_BASE}/api/review/session`, { credentials: "include" })
+      .then((res) => {
+        if (!res.ok) throw new Error("guest");
+        return res.json();
+      })
+      .then((session) => {
+        if (!cancelled) setIsAdmin(session.role === "admin");
+      })
+      .catch(() => {
+        if (!cancelled) setIsAdmin(false);
+      });
+    return () => { cancelled = true; };
+  }, []);
+
   async function submitFeedback(row, positive) {
     const key = rowId(row);
-    const correction = corrections[key];
-    if (!positive && !correction) return;
+    const correction = isAdmin ? corrections[key] : null;
+    if (!positive && isAdmin && correctionOpen === key && !correction) return;
     setFeedbackState((state) => ({ ...state, [key]: "submitting" }));
     try {
       const response = await fetch(`${API_BASE}/api/feedback/${key}`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           software_type_correct: positive,
@@ -113,8 +141,8 @@ export default function RepositoryHistoryPage() {
           <div className="flex items-center justify-between border-b border-border/40 px-4 py-3"><h2 className="font-mono text-[11px] uppercase tracking-wider text-muted">Analysis Registry</h2><span className="rounded-full border border-accent/20 bg-accent/10 px-3 py-1 font-mono text-[10px] uppercase text-accent">{total} total</span></div>
           {error && <div className="p-6 text-sm text-red-400">{error}</div>}
           {loading && <div className="p-8 text-center font-mono text-xs text-muted animate-pulse">Loading analysis registry...</div>}
-          {!loading && !error && <div className="overflow-x-auto"><table className="w-full min-w-[1180px] border-collapse text-left">
-            <thead className="border-b border-border/30 bg-[#060e20]/50 font-mono text-[10px] uppercase tracking-wider text-muted"><tr><th className="w-[27%] px-4 py-3">Repository</th><th className="px-4 py-3">Last analyzed</th><th className="px-4 py-3">Type</th><th className="px-4 py-3">Confidence</th><th className="px-4 py-3 text-center">Feedback received</th><th className="px-4 py-3">Give feedback</th><th className="px-4 py-3 text-right">Action</th></tr></thead>
+          {!loading && !error && <div className="overflow-x-auto"><table className="w-full min-w-[1680px] border-collapse text-left">
+            <thead className="border-b border-border/30 bg-[#060e20]/50 font-mono text-[10px] uppercase tracking-wider text-muted"><tr><th className="w-[23%] px-4 py-3">Repository</th><th className="px-4 py-3">Last analyzed</th><th className="px-4 py-3">Type</th><th className="px-4 py-3">Classifier L0</th><th className="px-4 py-3">AI predicted</th><th className="px-4 py-3">Specific type</th><th className="px-4 py-3">Confidence</th><th className="px-4 py-3 text-center">Feedback received</th><th className="px-4 py-3">Give feedback</th><th className="px-4 py-3 text-right">Action</th></tr></thead>
             <tbody className="divide-y divide-border/20 font-mono text-xs">{filtered.map((row) => {
               const confidence = Number(row.confidence);
               const key = rowId(row);
@@ -123,9 +151,12 @@ export default function RepositoryHistoryPage() {
                 <td className="px-4 py-4"><div className="flex items-center gap-3"><span className="grid h-8 w-8 place-items-center rounded border border-border/40 bg-surface text-muted"><BookOpen size={15}/></span><div><div className="font-medium text-text group-hover:text-accent">{repoName(row)}</div><div className="mt-1 text-[10px] text-muted">{row.repo?.default_branch || "main"} · {(row.commit_sha || "latest").slice(0, 7)}</div></div></div></td>
                 <td className="px-4 py-4 text-muted">{relativeTime(row.analyzed_at)}</td>
                 <td className="px-4 py-4"><span className="inline-flex items-center gap-1 rounded border border-green/30 bg-green/10 px-2 py-1 text-[10px] uppercase text-green">{row.software_type}{row.software_type === "unknown" && <Sparkles size={10}/>}</span></td>
+                <td className="px-4 py-4"><TypeChip value={row.layer0_software_type} muted /></td>
+                <td className="px-4 py-4"><TypeChip value={row.ai_software_type} muted /></td>
+                <td className="px-4 py-4"><TypeChip value={row.specific_identity} muted /></td>
                 <td className="px-4 py-4"><div className="flex items-center gap-2"><span className="w-9 text-text">{Number.isFinite(confidence) ? `${Math.round(confidence * (confidence <= 1 ? 100 : 1))}%` : "--"}</span><Sparkline confidence={confidence <= 1 ? confidence : confidence / 100}/></div></td>
                 <td className="px-4 py-4 text-center"><span className="inline-flex min-w-8 justify-center rounded-full border border-border bg-bg px-2 py-1 text-text">{row.feedback_count || 0}</span></td>
-                <td className="px-4 py-3"><FeedbackCell row={row} state={state} open={correctionOpen === key} softwareTypes={softwareTypes} correction={corrections[key] || ""} onPositive={() => submitFeedback(row, true)} onNegative={() => { setCorrectionOpen(key); setFeedbackState((current) => ({ ...current, [key]: "" })); }} onCorrection={(value) => setCorrections((current) => ({ ...current, [key]: value }))} onSubmitCorrection={() => submitFeedback(row, false)} onCancel={() => setCorrectionOpen(null)}/></td>
+                <td className="px-4 py-3"><FeedbackCell row={row} state={state} open={isAdmin && correctionOpen === key} softwareTypes={softwareTypes} correction={corrections[key] || ""} onPositive={() => submitFeedback(row, true)} onNegative={() => { if (isAdmin) { setCorrectionOpen(key); setFeedbackState((current) => ({ ...current, [key]: "" })); } else { submitFeedback(row, false); } }} onCorrection={(value) => setCorrections((current) => ({ ...current, [key]: value }))} onSubmitCorrection={() => submitFeedback(row, false)} onCancel={() => setCorrectionOpen(null)}/></td>
                 <td className="px-4 py-4 text-right"><Link to={`/results/${encodeURIComponent(row.analysis_id || row.repo_key)}`} className="rounded border border-border/60 px-3 py-1.5 text-[10px] uppercase text-muted opacity-40 transition group-hover:opacity-100 hover:border-accent hover:text-accent">View</Link></td>
               </tr>;
             })}</tbody>
