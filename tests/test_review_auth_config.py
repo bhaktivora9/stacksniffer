@@ -61,6 +61,15 @@ def test_cors_origins_default_only_when_env_absent(monkeypatch):
     assert allowed_origins() == ["http://localhost:5173", "http://localhost:3000"]
 
 
+def test_cors_origin_defaults_are_returned_as_defensive_copy(monkeypatch):
+    monkeypatch.delenv("ALLOWED_ORIGINS", raising=False)
+
+    origins = allowed_origins()
+    origins.append("https://unexpected.example")
+
+    assert allowed_origins() == ["http://localhost:5173", "http://localhost:3000"]
+
+
 def test_review_approve_requires_valid_admin_session(monkeypatch):
     monkeypatch.setenv("ADMIN_USERNAME", "maintainer")
     monkeypatch.setenv("ADMIN_PASSWORD", "correct-password")
