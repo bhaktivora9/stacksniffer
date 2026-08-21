@@ -37,6 +37,10 @@ def _signing_secret() -> str:
     return getenv("REVIEW_SESSION_SECRET") or admin_password()
 
 
+def _session_cookie_enabled() -> bool:
+    return getenv("ADMIN_SESSION_COOKIE_ENABLED", "false").lower() == "true"
+
+
 def _b64url_encode(data: bytes) -> str:
     return base64.urlsafe_b64encode(data).decode().rstrip("=")
 
@@ -110,15 +114,16 @@ def create_admin_session(response: Response, username: str, password: str) -> di
     ):
         raise HTTPException(status_code=403, detail="Invalid admin credentials")
     token = create_admin_token(username)
-    response.set_cookie(
-        key=SESSION_COOKIE,
-        value=token,
-        max_age=SESSION_TTL_SECONDS,
-        httponly=True,
-        secure=getenv("REVIEW_COOKIE_SECURE", "false").lower() == "true",
-        samesite="lax",
-        path=SESSION_COOKIE_PATH,
-    )
+    if _session_cookie_enabled():
+        response.set_cookie(
+            key=SESSION_COOKIE,
+            value=token,
+            max_age=SESSION_TTL_SECONDS,
+            httponly=True,
+            secure=getenv("REVIEW_COOKIE_SECURE", "false").lower() == "true",
+            samesite=getenv("ADMIN_SESSION_COOKIE_SAMESITE", "lax"),
+            path=SESSION_COOKIE_PATH,
+        )
     return {
         "authenticated": True,
         "access_token": token,

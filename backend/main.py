@@ -116,11 +116,18 @@ def _ensure_file_logging() -> None:
 
 
 def _allowed_origins() -> list[str]:
-    configured = getenv(
-        "ALLOWED_ORIGINS",
-        "http://localhost:5173,http://localhost:3000",
-    )
-    return [origin.strip() for origin in configured.split(",") if origin.strip()]
+    default_origins = ["http://localhost:5173", "http://localhost:3000"]
+    configured = getenv("ALLOWED_ORIGINS")
+    if not configured:
+        return default_origins
+
+    origins = [origin.strip().rstrip("/") for origin in configured.split(",") if origin.strip()]
+    explicit_origins = [origin for origin in origins if origin != "*"]
+    if len(explicit_origins) != len(origins):
+        logging.getLogger(__name__).warning(
+            "Ignoring wildcard CORS origin because credentialed requests require explicit origins"
+        )
+    return explicit_origins or default_origins
 
 
 @asynccontextmanager
@@ -211,4 +218,3 @@ async def health():
         "classifier_active":  classifier_active,
         "rag_active":         stats.get("with_embeddings", 0) >= 5,
     }
-

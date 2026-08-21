@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Check, X } from "lucide-react";
-import { API_BASE } from "../config/api";
+import { API_BASE, adminAuthHeaders } from "../config/api";
 
 const SOFTWARE_TYPE_STYLES = {
   web_api: "bg-accent/10 text-accent border-accent/25",
@@ -109,7 +109,7 @@ export default function SoftwareTypeFeedbackBar({
     try {
       const res = await fetch(`${API_BASE}/api/feedback/${analysisId}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: adminAuthHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error(`Feedback failed (${res.status})`);

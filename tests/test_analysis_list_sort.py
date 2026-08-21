@@ -1,6 +1,10 @@
 import asyncio
+import sys
+from pathlib import Path
 
 import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 
 from routers import analyze
 
@@ -13,6 +17,8 @@ DOCS = [
         "stack": {
             "software_type": "service",
             "software_type_ai": "web_api",
+            "software_type_ai_reasoning": "AI matched API service evidence",
+            "ai_classification_used": True,
             "specific_identity": "api_server",
             "layer0_prediction": {"software_type": "library"},
         },
@@ -54,4 +60,9 @@ def test_list_analyses_sorting(monkeypatch, sort_by, sort_order, expected):
     zulu = next(row for row in result["analyses"] if row["repo"]["full_name"] == "owner/Zulu")
     assert zulu["layer0_software_type"] == "library"
     assert zulu["ai_software_type"] == "web_api"
+    assert zulu["ai_classification_used"] is True
+    assert zulu["software_type_ai_reasoning"] == "AI matched API service evidence"
     assert zulu["specific_identity"] == "api_server"
+    alpha = next(row for row in result["analyses"] if row["repo"]["full_name"] == "owner/Alpha")
+    assert alpha["ai_software_type"] is None
+    assert alpha["ai_classification_used"] is False

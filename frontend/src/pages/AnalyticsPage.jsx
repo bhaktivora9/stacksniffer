@@ -15,7 +15,7 @@ import {
   UserRound,
 } from "lucide-react";
 import AppShell from "../components/AppShell";
-import { API_BASE } from "../config/api";
+import { API_BASE, adminAuthHeaders } from "../config/api";
 
 const pct = (value) => (
   value === null || value === undefined
@@ -71,7 +71,10 @@ export default function AnalyticsPage() {
     setTrainLoading(true);
     setTrainResult(null);
     try {
-      const res = await fetch(`${API_BASE}/api/learning/train-classifier`, { method: "POST" });
+      const res = await fetch(`${API_BASE}/api/learning/train-classifier`, {
+        method: "POST",
+        headers: adminAuthHeaders(),
+      });
       const result = await res.json();
       if (!res.ok) throw new Error(result.detail || `Training failed (${res.status})`);
       setTrainResult(result);

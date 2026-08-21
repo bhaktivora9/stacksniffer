@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { API_BASE } from "../config/api";
+import {
+  API_BASE,
+  adminFetch,
+  clearAdminAccessToken,
+  getAdminAccessToken,
+  setAdminAccessToken,
+} from "../config/api";
 import FeedbackToast from "../components/FeedbackToast";
 import AppShell from "../components/AppShell";
 
@@ -208,14 +214,14 @@ export default function ReviewQueuePage() {
       headers["Content-Type"] = "application/json";
     }
 
-    const response = await fetch(`${API_BASE}${url}`, {
+    const response = await adminFetch(url, {
       method,
       headers,
-      credentials: "include",
       body: body ? JSON.stringify(body) : undefined,
     });
     if (!response.ok) {
       if (response.status === 401 || response.status === 403) {
+        clearAdminAccessToken();
         setAuthenticated(false);
         setAuthError("Admin session required");
         throw new Error("Maintainer authentication required");
@@ -271,11 +277,19 @@ export default function ReviewQueuePage() {
   }, [activeTab, status, page, authenticated]);
 
   useEffect(() => {
-    fetch(`${API_BASE}/api/review/session`, { credentials: "include" })
+    if (!getAdminAccessToken()) {
+      setAuthenticated(false);
+      return;
+    }
+    adminFetch("/api/review/session")
       .then((response) => {
-        if (response.ok) setAuthenticated(true);
+        if (!response.ok) throw new Error("guest");
+        setAuthenticated(true);
       })
-      .catch(() => {});
+      .catch(() => {
+        clearAdminAccessToken();
+        setAuthenticated(false);
+      });
   }, []);
 
   useEffect(() => {
@@ -360,13 +374,15 @@ export default function ReviewQueuePage() {
     try {
       const response = await fetch(`${API_BASE}/api/review/login`, {
         method: "POST",
-        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ username: adminUser, password: adminPass }),
       });
       if (!response.ok) throw new Error("Invalid admin username or password");
+      const session = await response.json();
+      if (!session.access_token) throw new Error("Admin login did not return a bearer token");
+      setAdminAccessToken(session.access_token);
       setAdminPass("");
       setPage(1);
       setAuthenticated(true);
@@ -432,7 +448,7 @@ export default function ReviewQueuePage() {
               </form>
               {authError && <p className="mt-2 text-sm text-red-400">{authError}</p>}
               <p className="mt-2 text-xs text-muted">
-                Sign-in is remembered for 8 hours in a secure HttpOnly session cookie.
+                Sign-in is kept in memory for this browser tab and expires after 8 hours.
               </p>
             </section>
         )}

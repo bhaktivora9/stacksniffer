@@ -116,8 +116,8 @@ Required environment variables are documented in `.env.example` (placeholder val
 **Backend (Render):**
 - `GEMINI_API_KEY` — server-side only. Never exposed to the frontend or included in any build.
 - `MONGODB_URI` — the Atlas connection string.
-- `ALLOWED_ORIGINS` — comma-separated list of permitted frontend origins (CORS).
-- `ADMIN_USERNAME` / `ADMIN_PASSWORD` — server-side maintainer credentials for admin mutations. The backend verifies them at `/api/review/login`, then issues a role-bearing session token for guarded approve/reject/promote/submit routes. Set these only on Render or in the root local `.env`; never add them to `frontend/.env`, never prefix them with `VITE_`, and never expose them to browser code.
+- `ALLOWED_ORIGINS` — comma-separated list of permitted frontend origins (CORS), such as the Vercel app URL. Do not use `*`; credentialed CORS is restricted to explicit origins.
+- `ADMIN_USERNAME` / `ADMIN_PASSWORD` — server-side maintainer credentials for admin mutations. The backend verifies them at `/api/review/login`, then issues a role-bearing bearer token for guarded approve/reject/promote/submit routes. Set these only on Render or in the root local `.env`; never add them to `frontend/.env`, never prefix them with `VITE_`, and never expose them to browser code.
 
 **Frontend (Vercel):**
 - `VITE_API_BASE_URL` — the public backend URL. Safe to expose (it's public anyway); this is why the Gemini key must never be a `VITE_`-prefixed variable — anything prefixed `VITE_` ships to the browser.
@@ -154,10 +154,14 @@ curl -i -X POST http://localhost:8000/api/review/<review_item_id>/approve \
   -H "Content-Type: application/json" \
   -d "{\"target_value\":\"library\"}"
 
-# Valid admin session: login returns a bearer token and sets an HttpOnly cookie
+# Valid admin session: login returns a bearer token.
+# POST /api/review/session is not a login route; use GET /api/review/session to verify a token.
 TOKEN=$(curl -s -X POST http://localhost:8000/api/review/login \
   -H "Content-Type: application/json" \
   -d "{\"username\":\"$ADMIN_USERNAME\",\"password\":\"$ADMIN_PASSWORD\"}" | jq -r .access_token)
+
+curl -i http://localhost:8000/api/review/session \
+  -H "Authorization: Bearer $TOKEN"
 
 curl -i -X POST http://localhost:8000/api/review/<review_item_id>/approve \
   -H "Content-Type: application/json" \

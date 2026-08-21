@@ -2,7 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowDownAZ, BookOpen, Check, ChevronLeft, ChevronRight, Search, Sparkles, ThumbsDown, ThumbsUp, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppShell from "../components/AppShell";
-import { API_BASE } from "../config/api";
+import {
+  API_BASE,
+  adminAuthHeaders,
+  adminFetch,
+  clearAdminAccessToken,
+  getAdminAccessToken,
+  subscribeAdminAuth,
+} from "../config/api";
 
 function repoName(row) {
   return row.repo?.full_name || row.repo?.name || row.repo_key || "unknown/repository";
@@ -79,18 +86,32 @@ export default function RepositoryHistoryPage() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`${API_BASE}/api/review/session`, { credentials: "include" })
-      .then((res) => {
-        if (!res.ok) throw new Error("guest");
-        return res.json();
-      })
-      .then((session) => {
-        if (!cancelled) setIsAdmin(session.role === "admin");
-      })
-      .catch(() => {
-        if (!cancelled) setIsAdmin(false);
-      });
-    return () => { cancelled = true; };
+
+    function checkAdminSession() {
+      if (!getAdminAccessToken()) {
+        setIsAdmin(false);
+        return;
+      }
+      adminFetch("/api/review/session")
+        .then((res) => {
+          if (!res.ok) throw new Error("guest");
+          return res.json();
+        })
+        .then((session) => {
+          if (!cancelled) setIsAdmin(session.role === "admin");
+        })
+        .catch(() => {
+          clearAdminAccessToken();
+          if (!cancelled) setIsAdmin(false);
+        });
+    }
+
+    checkAdminSession();
+    const unsubscribe = subscribeAdminAuth(checkAdminSession);
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
   }, []);
 
   async function submitFeedback(row, positive) {
@@ -101,8 +122,7 @@ export default function RepositoryHistoryPage() {
     try {
       const response = await fetch(`${API_BASE}/api/feedback/${key}`, {
         method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers: adminAuthHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({
           software_type_correct: positive,
           correct_software_type: positive ? null : correction,

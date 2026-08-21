@@ -12,8 +12,7 @@ router = APIRouter(prefix="/api/review", tags=["review"])
 
 
 @router.post("/login")
-@router.post("/session")
-async def create_review_session(
+async def login_review_admin(
     response: Response,
     login: AdminLoginRequest,
 ):

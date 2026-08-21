@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 
 from routers import review
 from routers import admin_auth
+import main
 
 
 def make_client() -> TestClient:
@@ -39,9 +40,19 @@ def test_admin_token_contains_role_and_prefers_session_secret(monkeypatch):
     assert admin_auth.verify_admin_token(token) is None
 
 
+def test_cors_origins_ignore_wildcard_with_credentials(monkeypatch):
+    monkeypatch.setenv(
+        "ALLOWED_ORIGINS",
+        "*, https://stacksniffer.vercel.app/",
+    )
+
+    assert main._allowed_origins() == ["https://stacksniffer.vercel.app"]
+
+
 def test_review_approve_requires_valid_admin_session(monkeypatch):
     monkeypatch.setenv("ADMIN_USERNAME", "maintainer")
     monkeypatch.setenv("ADMIN_PASSWORD", "correct-password")
+    monkeypatch.delenv("ADMIN_SESSION_COOKIE_ENABLED", raising=False)
 
     async def get_review_item(item_id):
         return {
@@ -102,6 +113,12 @@ def test_review_approve_requires_valid_admin_session(monkeypatch):
     )
     assert wrong_user_login.status_code == 403
 
+    session_post = client.post(
+        "/api/review/session",
+        json={"username": "maintainer", "password": "correct-password"},
+    )
+    assert session_post.status_code == 405
+
     login = client.post(
         "/api/review/login",
         json={"username": "maintainer", "password": "correct-password"},
@@ -109,6 +126,7 @@ def test_review_approve_requires_valid_admin_session(monkeypatch):
     assert login.status_code == 200
     token = login.json()["access_token"]
     assert login.json()["role"] == "admin"
+    assert "set-cookie" not in login.headers
 
     approved = client.post(
         approve_path,

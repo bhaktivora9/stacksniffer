@@ -8,7 +8,14 @@ import FeedbackToast from "../components/FeedbackToast";
 import AppShell from "../components/AppShell";
 import ProvenanceResult from "../components/ProvenanceResult";
 import TopNavigation from "../components/TopNavigation";
-import { API_BASE } from "../config/api";
+import {
+  API_BASE,
+  adminAuthHeaders,
+  adminFetch,
+  clearAdminAccessToken,
+  getAdminAccessToken,
+  subscribeAdminAuth,
+} from "../config/api";
 import { DEMO_RESULT } from "../data/demoResult";
 
 const DEMO_ID = "demo-stacksniffer-v1";
@@ -67,18 +74,32 @@ export default function ResultsPage() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`${API_BASE}/api/review/session`, { credentials: "include" })
-      .then((res) => {
-        if (!res.ok) throw new Error("guest");
-        return res.json();
-      })
-      .then((session) => {
-        if (!cancelled) setIsAdmin(session.role === "admin");
-      })
-      .catch(() => {
-        if (!cancelled) setIsAdmin(false);
-      });
-    return () => { cancelled = true; };
+
+    function checkAdminSession() {
+      if (!getAdminAccessToken()) {
+        setIsAdmin(false);
+        return;
+      }
+      adminFetch("/api/review/session")
+        .then((res) => {
+          if (!res.ok) throw new Error("guest");
+          return res.json();
+        })
+        .then((session) => {
+          if (!cancelled) setIsAdmin(session.role === "admin");
+        })
+        .catch(() => {
+          clearAdminAccessToken();
+          if (!cancelled) setIsAdmin(false);
+        });
+    }
+
+    checkAdminSession();
+    const unsubscribe = subscribeAdminAuth(checkAdminSession);
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -146,9 +167,11 @@ export default function ResultsPage() {
   async function postStackFeedback(url, options = {}) {
     const res = await fetch(url, {
       method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
       ...options,
+      headers: adminAuthHeaders({
+        "Content-Type": "application/json",
+        ...(options.headers || {}),
+      }),
     });
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
