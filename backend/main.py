@@ -19,6 +19,8 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from cors_config import allowed_origins
+
 #GET /api/insights-feedback/quality-criteria → 404
 # Remove the try/except guard — replace with explicit import:
 from routers import (
@@ -68,9 +70,14 @@ def _configure_logging() -> None:
                 log_path.parent.mkdir(parents=True, exist_ok=True)
                 file_handler["filename"] = str(log_path)
             logging.config.dictConfig(config)
-    except Exception:
+    except (OSError, ValueError, TypeError, AttributeError, ImportError, KeyError) as exc:
         # Safe fallback; app startup should never be blocked by logging config.
-        pass
+        logging.getLogger(__name__).warning(
+            "Unable to configure logging from %s: %s",
+            LOG_CONFIG_PATH,
+            exc,
+            exc_info=True,
+        )
 
 
 _configure_logging()
@@ -110,14 +117,6 @@ def _ensure_file_logging() -> None:
         target_logger.setLevel(logging.INFO)
 
 
-def _allowed_origins() -> list[str]:
-    configured = getenv(
-        "ALLOWED_ORIGINS",
-        "http://localhost:5173,http://localhost:3000",
-    )
-    return [origin.strip() for origin in configured.split(",") if origin.strip()]
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
@@ -142,7 +141,7 @@ app = FastAPI(
 # Update allow_origins with your Vercel URL before deploying
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_allowed_origins(),
+    allow_origins=allowed_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -170,15 +169,23 @@ async def health():
     stack_fb = {}
     try:
         stack_fb = await storage_service.get_stack_feedback_stats()
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning(
+            "Unable to load stack feedback stats: %s",
+            exc,
+            exc_info=True,
+        )
 
     classifier_active = False
     try:
         from services.learning_service import load_layer0
         classifier_active = load_layer0() is not None
-    except Exception:
-        pass
+    except Exception as exc:
+        logging.getLogger(__name__).warning(
+            "Unable to load layer0 classifier: %s",
+            exc,
+            exc_info=True,
+        )
 
     return {
         "status":             "ok",
@@ -197,4 +204,3 @@ async def health():
         "classifier_active":  classifier_active,
         "rag_active":         stats.get("with_embeddings", 0) >= 5,
     }
-

@@ -25,7 +25,7 @@ function humanizeTechnologyRole(technology_role) {
 
 function ArtifactLayerView({
   stack, classification, groups, feedbackState, onTechCorrect,
-  onTechWrong, onTechRoleCorrection, onLayerCorrection, technologyRoles,
+  onTechWrong, onTechRoleCorrection, onLayerCorrection, technologyRoles, isAdmin = false,
 }) {
   const artifactGroups = groups ?? buildArtifactLayerGroups(stack, classification);
   if (!artifactGroups.length) return null;
@@ -133,6 +133,7 @@ function ArtifactLayerView({
                             onRoleCorrection={onTechRoleCorrection}
                             onLayerCorrection={onLayerCorrection}
                             technologyRoles={technologyRoles}
+                            isAdmin={isAdmin}
                             showConfidence={false}
                             badge={method === "deterministic" ? "map" : method === "provisional" ? "pending" : "ai"}
                           />
@@ -176,7 +177,7 @@ function SourceDot({ source }) {
 
 function TechPill({
   tech, status, onCorrect, onWrong, onRoleCorrection, onLayerCorrection, technologyRoles = [],
-  isPrimary = false, showConfidence = true, badge = null,
+  isPrimary = false, showConfidence = true, badge = null, isAdmin = false,
 }) {
   const [wrongOpen, setWrongOpen] = useState(false);
   const [wrongType, setWrongType] = useState("false_positive");
@@ -294,7 +295,13 @@ function TechPill({
           {!confirmed && !falsePositive && (
             <button
               type="button"
-              onClick={() => setWrongOpen((value) => !value)}
+              onClick={() => {
+                if (isAdmin) {
+                  setWrongOpen((value) => !value);
+                } else {
+                  onWrong?.(tech.name, "User marked technology incorrect");
+                }
+              }}
               disabled={pending}
               className="inline-flex h-[14px] w-[14px] items-center justify-center border-0 p-0 text-muted transition-colors duration-150 hover:text-[#ff4757] disabled:cursor-not-allowed"
               aria-label={`Flag ${tech.name}`}
@@ -305,6 +312,7 @@ function TechPill({
         </div>
       </div>
 
+      {isAdmin && (
       <div
         className="overflow-hidden transition-all duration-150"
         style={{ maxHeight: wrongOpen ? "260px" : "0px", opacity: wrongOpen ? 1 : 0 }}
@@ -394,6 +402,7 @@ function TechPill({
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }
@@ -551,6 +560,7 @@ export default function StackPanel({
   onLayerCorrection,
   onMissingTech,
   onPrimaryLanguageChange,
+  isAdmin = false,
 }) {
   const [correctingPrimary, setCorrectingPrimary] = useState(false);
   const [selectedPrimary, setSelectedPrimary] = useState(stack?.primary_language ?? "");
@@ -705,6 +715,7 @@ export default function StackPanel({
         onTechRoleCorrection={onTechRoleCorrection}
         onLayerCorrection={onLayerCorrection}
         technologyRoles={technologyRoleOptions}
+        isAdmin={isAdmin}
       />
 
       {!hasArtifactLayerView && (
@@ -776,14 +787,15 @@ export default function StackPanel({
                   onRoleCorrection={onTechRoleCorrection}
                   onLayerCorrection={onLayerCorrection}
                   technologyRoles={technologyRoleOptions}
+                  isAdmin={isAdmin}
                   isPrimary
                   showConfidence={false}
                 />
-                <button type="button" onClick={() => setCorrectingPrimary((value) => !value)} className="text-xs text-muted hover:text-accent transition-colors">
+                {isAdmin && <button type="button" onClick={() => setCorrectingPrimary((value) => !value)} className="text-xs text-muted hover:text-accent transition-colors">
                   Correct
-                </button>
+                </button>}
               </div>
-              {correctingPrimary && (
+              {isAdmin && correctingPrimary && (
                 <div className="mt-3 flex flex-wrap gap-2">
                   <select value={selectedPrimary} onChange={(event) => setSelectedPrimary(event.target.value)} className="rounded border border-border bg-bg px-3 py-1.5 text-sm text-text outline-none focus:border-accent">
                     {stack.languages?.map((tech) => <option key={tech.name} value={tech.name}>{tech.name}</option>)}
@@ -864,6 +876,7 @@ export default function StackPanel({
                             onRoleCorrection={onTechRoleCorrection}
                             onLayerCorrection={onLayerCorrection}
                             technologyRoles={technologyRoleOptions}
+                            isAdmin={isAdmin}
                           />
                         ))}
                       </div>
@@ -873,12 +886,12 @@ export default function StackPanel({
               </div>
             );
           })}
-          <MissingTechPanel onMissingTech={onMissingTech} technologyRoles={technologyRoleOptions} />
+          {isAdmin && <MissingTechPanel onMissingTech={onMissingTech} technologyRoles={technologyRoleOptions} />}
         </div>
       </div>
       )}
 
-      {hasArtifactLayerView && (
+      {isAdmin && hasArtifactLayerView && (
         <div className="overflow-hidden rounded-lg border border-border bg-surface">
           <MissingTechPanel onMissingTech={onMissingTech} technologyRoles={technologyRoleOptions} />
         </div>

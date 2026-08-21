@@ -1384,12 +1384,25 @@ async def list_analyses(
     rows = []
     for doc in docs:
         stack = doc.get("stack") or {}
+        layer0_prediction = stack.get("layer0_prediction")
+        layer0_software_type = (
+            layer0_prediction.get("software_type")
+            if isinstance(layer0_prediction, dict)
+            else layer0_prediction
+            if isinstance(layer0_prediction, str)
+            else None
+        )
         repo = doc.get("repo_metadata") or doc.get("repo") or {}
         rows.append({
             "analysis_id": doc.get("analysis_id") or doc.get("_id") or doc.get("repo_key"),
             "repo_key": doc.get("repo_key") or doc.get("_id"),
             "repo": repo,
             "software_type": stack.get("software_type") or "unknown",
+            "layer0_software_type": layer0_software_type,
+            "ai_software_type": stack.get("software_type_ai") or None,
+            "ai_classification_used": bool(stack.get("ai_classification_used")),
+            "software_type_ai_reasoning": stack.get("software_type_ai_reasoning") or "",
+            "specific_identity": stack.get("specific_identity"),
             "confidence": stack.get("software_type_confidence"),
             "commit_sha": doc.get("commit_sha"),
             "pipeline_version": doc.get("pipeline_version"),

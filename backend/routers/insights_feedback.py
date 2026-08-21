@@ -26,6 +26,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 import services.storage_service as storage_service
+from routers.admin_auth import require_admin
 from routers.deps import resolve_repo_key
 from services.embedding_service import embed_stack
 
@@ -66,6 +67,7 @@ class QualityCriteria(BaseModel):
 async def submit_insights_feedback(
     id: str,
     feedback: InsightsFeedbackRequest,
+    _auth: str = Depends(require_admin),
     repo_key: str = Depends(resolve_repo_key),
 ):
     """Submit quality rating for AI insights on an analysis."""
@@ -244,7 +246,11 @@ async def get_quality_criteria():
 
 
 @router.put("/quality-criteria/{field}")
-async def update_quality_criterion(field: str, criterion: QualityCriteria):
+async def update_quality_criterion(
+    field: str,
+    criterion: QualityCriteria,
+    _auth: str = Depends(require_admin),
+):
     """
     Update quality criterion for a specific insights field.
     Takes effect on the next analysis — no restart needed.
@@ -256,7 +262,10 @@ async def update_quality_criterion(field: str, criterion: QualityCriteria):
 # ── Training data export ──────────────────────────────────────────────────────
 
 @router.post("/export-training-data")
-async def export_training_data(min_quality: int = 4):
+async def export_training_data(
+    min_quality: int = 4,
+    _auth: str = Depends(require_admin),
+):
     """
     Export training datasets for fine-tuning generate_stack_insights().
 

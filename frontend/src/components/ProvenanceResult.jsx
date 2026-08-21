@@ -47,6 +47,7 @@ function InlineTechFeedback({
   onWrong,
   onRoleCorrection,
   onLayerCorrection,
+  isAdmin = false,
 }) {
   const currentRole = tech.technology_role || "library";
   const currentLayer = tech.architectural_layer?.primary || "";
@@ -98,6 +99,12 @@ function InlineTechFeedback({
     setView(accepted ? "submitted" : "correcting");
   }
 
+  async function submitGuestNegativeFeedback() {
+    setView("submitting");
+    const accepted = await onWrong(tech.name, "User marked mapped technology incorrect");
+    setView(accepted ? "submitted" : "idle");
+  }
+
   const correctionReady =
     correctionKind === "technology" ||
     (correctionKind === "role" && role && (role !== "__other__" || otherRole.trim())) ||
@@ -135,13 +142,13 @@ function InlineTechFeedback({
           <button className="vote yes" onClick={confirmTechnology} aria-label={`${tech.name} is correct`}>
             <span aria-hidden="true">✓</span>
           </button>
-          <button className="vote no" onClick={() => setView("correcting")} aria-label={`Correct ${tech.name}`}>
+          <button className="vote no" onClick={isAdmin ? () => setView("correcting") : submitGuestNegativeFeedback} aria-label={isAdmin ? `Correct ${tech.name}` : `${tech.name} is incorrect`}>
             <span aria-hidden="true">×</span>
           </button>
         </div>
       )}
 
-      {view === "correcting" && (
+      {isAdmin && view === "correcting" && (
         <div className="inline-tech-correction">
           <div className="correction-choice">
             <label>
@@ -248,6 +255,7 @@ export default function ProvenanceResult({
   onTechWrong,
   onRoleCorrection,
   onLayerCorrection,
+  isAdmin = false,
 }) {
   const { repo = {}, stack = {}, repository_classification: classification = {} } = result;
   const { primary, otherLanguages } = buildLanguageSummary(stack);
@@ -301,6 +309,12 @@ export default function ProvenanceResult({
     setTypeFeedbackState(accepted ? "submitted" : "correcting");
   }
 
+  async function submitSoftwareTypeNegativeFeedback() {
+    setTypeFeedbackState("submitting");
+    const accepted = await onSoftwareTypeFeedback(false);
+    setTypeFeedbackState(accepted ? "submitted" : "idle");
+  }
+
   const softwareTypeOverlay = result.software_type_overlay || stack.software_type_overlay;
   const displayedSoftwareType = softwareTypeOverlay?.corrected_value || stack.software_type || "unknown";
   const pipelineSoftwareType = softwareTypeOverlay?.pipeline_value || result.software_type?.pipeline;
@@ -348,10 +362,10 @@ export default function ProvenanceResult({
             {typeFeedbackState === "idle" && (
               <>
                 <button className="vote yes" aria-label="Software type is correct" onClick={confirmSoftwareType}>✓</button>
-                <button className="vote no" aria-label="Correct software type" onClick={() => setTypeFeedbackState("correcting")}>×</button>
+                <button className="vote no" aria-label={isAdmin ? "Correct software type" : "Software type is incorrect"} onClick={isAdmin ? () => setTypeFeedbackState("correcting") : submitSoftwareTypeNegativeFeedback}>×</button>
               </>
             )}
-            {typeFeedbackState === "correcting" && (
+            {isAdmin && typeFeedbackState === "correcting" && (
               <>
                 <button className="vote no active" aria-label="Cancel correction" onClick={() => setTypeFeedbackState("idle")}>×</button>
                 <select value={correctedType} onChange={(event) => setCorrectedType(event.target.value)}>
@@ -439,6 +453,7 @@ export default function ProvenanceResult({
                             onWrong={onTechWrong}
                             onRoleCorrection={onRoleCorrection}
                             onLayerCorrection={onLayerCorrection}
+                            isAdmin={isAdmin}
                           />
                         ))}
                       </div>

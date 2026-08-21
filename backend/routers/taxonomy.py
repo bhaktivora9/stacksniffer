@@ -17,7 +17,7 @@ Java equivalent flow:
   PatternClusterer.clusterPatterns() → DynamicPatternConfigService.updateSoftwareTypeConfig()
   → PatternConfigUpdatedEvent → PatternsReloadedEvent → software_type-definitions.yml updated
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
@@ -25,6 +25,7 @@ from datetime import datetime
 from services import storage_service as storage_service
 from services import taxonomy_discovery
 from services.ai_pipeline import get_stack_pattern_taxonomy
+from routers.admin_auth import require_admin
 
 router = APIRouter(prefix="/api/taxonomy", tags=["taxonomy"])
 
@@ -95,7 +96,10 @@ async def discover_taxonomy(
 
 
 @router.post("/approve")
-async def approve_taxonomy(request: ApproveRequest):
+async def approve_taxonomy(
+    request: ApproveRequest,
+    _auth: str = Depends(require_admin),
+):
     """
     Store human-approved cluster names as active software_type taxonomy.
 
@@ -186,7 +190,10 @@ async def list_pending_taxonomy():
 
 
 @router.post("/pending")
-async def suggest_pending_taxonomy(request: EmergentSuggestionRequest):
+async def suggest_pending_taxonomy(
+    request: EmergentSuggestionRequest,
+    _auth: str = Depends(require_admin),
+):
     if request.kind not in {"software_type", "technology_role"}:
         raise HTTPException(400, "kind must be software_type or technology_role")
     name = request.name.strip().lower().replace(" ", "_")
@@ -208,7 +215,12 @@ async def suggest_pending_taxonomy(request: EmergentSuggestionRequest):
 
 
 @router.post("/{kind}/{name}/action")
-async def apply_taxonomy_action(kind: str, name: str, request: TaxonomyActionRequest):
+async def apply_taxonomy_action(
+    kind: str,
+    name: str,
+    request: TaxonomyActionRequest,
+    _auth: str = Depends(require_admin),
+):
     if kind not in {"software_type", "technology_role"}:
         raise HTTPException(400, "kind must be software_type or technology_role")
     if request.action not in {"promote", "merge", "discard"}:
@@ -228,7 +240,10 @@ async def apply_taxonomy_action(kind: str, name: str, request: TaxonomyActionReq
 
 
 @router.post("/software_types")
-async def add_software_type(request: AddSoftwareTypeRequest):
+async def add_software_type(
+    request: AddSoftwareTypeRequest,
+    _auth: str = Depends(require_admin),
+):
     """
     Manually add a software_type not discovered by clustering.
     Use for edge cases: "blockchain", "embedded", "game-engine", "desktop-app".
@@ -251,7 +266,10 @@ async def add_software_type(request: AddSoftwareTypeRequest):
 
 
 @router.delete("/software_types/{software_type_id}")
-async def remove_software_type(software_type_id: str):
+async def remove_software_type(
+    software_type_id: str,
+    _auth: str = Depends(require_admin),
+):
     """Soft delete — marks inactive, preserves history."""
     await storage_service.delete_software_type(software_type_id)
     return {"deleted": True, "software_type_id": software_type_id}

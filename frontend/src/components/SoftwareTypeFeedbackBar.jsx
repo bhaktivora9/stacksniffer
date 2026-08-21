@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Check, X } from "lucide-react";
-import { API_BASE } from "../config/api";
+import { API_BASE, adminFetch } from "../config/api";
 
 const SOFTWARE_TYPE_STYLES = {
   web_api: "bg-accent/10 text-accent border-accent/25",
@@ -47,6 +47,7 @@ export default function SoftwareTypeFeedbackBar({
   similarReposUsed = 0,
   classifierUsed,
   detectedTechs = [],
+  isAdmin = false,
   onToast,
 }) {
   const [selected, setSelected] = useState(null);
@@ -106,7 +107,7 @@ export default function SoftwareTypeFeedbackBar({
   async function submitFeedback(payload, successMessage, type) {
     setSubmitting(true);
     try {
-      const res = await fetch(`${API_BASE}/api/feedback/${analysisId}`, {
+      const res = await adminFetch(`/api/feedback/${analysisId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -127,14 +128,14 @@ export default function SoftwareTypeFeedbackBar({
     if (submitted || submitting) return;
     setSelected("up");
     const ok = await submitFeedback(
-      overlayShown
+      overlayShown && isAdmin
         ? {
             software_type_correct: false,
             correct_software_type: overlayValue,
             approved_overlay_confirmed: true,
           }
         : { software_type_correct: true },
-      overlayShown
+      overlayShown && isAdmin
         ? `Confirmed corrected software type: ${prettySoftwareType(overlayValue)}`
         : "Confirmed pipeline software type",
       "success"
@@ -145,6 +146,16 @@ export default function SoftwareTypeFeedbackBar({
   function handleDown() {
     if (submitted || submitting) return;
     setSelected("down");
+    if (!isAdmin) {
+      submitFeedback(
+        { software_type_correct: false },
+        "Feedback recorded",
+        "warn"
+      ).then((ok) => {
+        if (!ok) setSelected(null);
+      });
+      return;
+    }
     setFormOpen(true);
   }
 
@@ -255,7 +266,7 @@ export default function SoftwareTypeFeedbackBar({
           </div>
         </div>
 
-        <div
+        {isAdmin && <div
           className="overflow-y-auto transition-all duration-300"
           style={{ maxHeight: formOpen ? "280px" : "0px", opacity: formOpen ? 1 : 0 }}
         >
@@ -314,7 +325,7 @@ export default function SoftwareTypeFeedbackBar({
               </div>
             </div>
           </div>
-        </div>
+        </div>}
       </div>
     </div>
   );

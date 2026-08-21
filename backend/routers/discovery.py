@@ -12,13 +12,14 @@ Exposes:
   GET  /api/discovery/associations — tech co-occurrence rules (used by UI dropdown)
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 import json
 from pathlib import Path
 
 import services.storage_service as storage_service
+from routers.admin_auth import require_admin
 
 router = APIRouter(prefix="/api/discovery", tags=["discovery"])
 
@@ -233,7 +234,10 @@ async def run_discovery():
 
 
 @router.post("/apply")
-async def apply_pattern(request: ApplyPatternRequest):
+async def apply_pattern(
+    request: ApplyPatternRequest,
+    _auth: str = Depends(require_admin),
+):
     """
     Add an approved discovered pattern to patterns.json.
     Java equivalent: PatternUpdateService.addNewPattern()

@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { API_BASE } from "../config/api";
+import {
+  API_BASE,
+  adminFetch,
+  clearAdminAccessToken,
+  getAdminAccessToken,
+  setAdminAccessToken,
+} from "../config/api";
 import FeedbackToast from "../components/FeedbackToast";
 import AppShell from "../components/AppShell";
 
@@ -54,6 +60,7 @@ function ItemCard({
   onReject,
   onMerge,
   onDiscard,
+  canMutate,
 }) {
   const assignmentMethod = (item.assignment_method || "").toLowerCase();
   const deterministic = assignmentMethod === "deterministic";
@@ -110,6 +117,7 @@ function ItemCard({
           <select
             className="h-8 rounded border border-border bg-bg px-2 text-xs text-text"
             value={selectedTarget}
+            disabled={!canMutate}
             onChange={(event) => onSelectTarget(item._id, event.target.value)}
           >
             <option value="">select target...</option>
@@ -122,7 +130,8 @@ function ItemCard({
         )}
         {!diagnosis && <button
             onClick={() => onApprove(item._id, selectedTarget)}
-            disabled={false}
+            disabled={!canMutate}
+            title={canMutate ? undefined : "Admin login required"}
             className="px-3 py-1.5 rounded border border-green/35 bg-green/10 text-green text-xs disabled:opacity-40"
           >
             {isInactiveCanonical ? "Activate" : isEmergent ? "Promote" : "Approve"}
@@ -130,7 +139,9 @@ function ItemCard({
         {!isEmergent && (
           <button
             onClick={() => onReject(item._id)}
-            className="px-3 py-1.5 rounded border border-red-400/35 bg-red-400/10 text-red-400 text-xs"
+            disabled={!canMutate}
+            title={canMutate ? undefined : "Admin login required"}
+            className="px-3 py-1.5 rounded border border-red-400/35 bg-red-400/10 text-red-400 text-xs disabled:opacity-40"
           >
             Reject
           </button>
@@ -138,7 +149,8 @@ function ItemCard({
         {canMerge && (
           <button
             onClick={() => onMerge(item._id, selectedTarget)}
-            disabled={!selectedTarget}
+            disabled={!canMutate || !selectedTarget}
+            title={canMutate ? undefined : "Admin login required"}
             className="px-3 py-1.5 rounded border border-accent/35 bg-accent/10 text-accent text-xs disabled:opacity-40"
           >
             Merge
@@ -147,7 +159,9 @@ function ItemCard({
         {isEmergent && (
           <button
             onClick={() => onDiscard(item._id)}
-            className="px-3 py-1.5 rounded border border-red-400/35 bg-red-400/10 text-red-400 text-xs"
+            disabled={!canMutate}
+            title={canMutate ? undefined : "Admin login required"}
+            className="px-3 py-1.5 rounded border border-red-400/35 bg-red-400/10 text-red-400 text-xs disabled:opacity-40"
           >
             Discard
           </button>
@@ -169,7 +183,7 @@ export default function ReviewQueuePage() {
   const [error, setError] = useState("");
   const [selectedTargets, setSelectedTargets] = useState({});
   const [toasts, setToasts] = useState([]);
-  const [adminUser, setAdminUser] = useState("");
+  const [adminUser, setAdminUser] = useState("admin");
   const [adminPass, setAdminPass] = useState("");
   const [authenticated, setAuthenticated] = useState(false);
   const [authError, setAuthError] = useState("");
@@ -200,16 +214,16 @@ export default function ReviewQueuePage() {
       headers["Content-Type"] = "application/json";
     }
 
-    const response = await fetch(`${API_BASE}${url}`, {
+    const response = await adminFetch(url, {
       method,
       headers,
-      credentials: "include",
       body: body ? JSON.stringify(body) : undefined,
     });
     if (!response.ok) {
-      if (response.status === 401) {
+      if (response.status === 401 || response.status === 403) {
+        clearAdminAccessToken();
         setAuthenticated(false);
-        setAuthError("Invalid maintainer username or password");
+        setAuthError("Admin session required");
         throw new Error("Maintainer authentication required");
       }
       const detail = (await response.json().catch(() => ({}))).detail;
@@ -219,10 +233,6 @@ export default function ReviewQueuePage() {
   }
 
   async function refreshQueue() {
-    if (!authenticated) {
-      setLoading(false);
-      return;
-    }
     setLoading(true);
     setError("");
     try {
@@ -267,11 +277,19 @@ export default function ReviewQueuePage() {
   }, [activeTab, status, page, authenticated]);
 
   useEffect(() => {
-    fetch(`${API_BASE}/api/review/session`, { credentials: "include" })
+    if (!getAdminAccessToken()) {
+      setAuthenticated(false);
+      return;
+    }
+    adminFetch("/api/review/session")
       .then((response) => {
-        if (response.ok) setAuthenticated(true);
+        if (!response.ok) throw new Error("guest");
+        setAuthenticated(true);
       })
-      .catch(() => {});
+      .catch(() => {
+        clearAdminAccessToken();
+        setAuthenticated(false);
+      });
   }, []);
 
   useEffect(() => {
@@ -354,14 +372,17 @@ export default function ReviewQueuePage() {
     setAuthError("");
     setError("");
     try {
-      const response = await fetch(`${API_BASE}/api/review/session`, {
+      const response = await fetch(`${API_BASE}/api/review/login`, {
         method: "POST",
-        credentials: "include",
         headers: {
-          Authorization: `Basic ${btoa(`${adminUser}:${adminPass}`)}`,
+          "Content-Type": "application/json",
         },
+        body: JSON.stringify({ username: adminUser, password: adminPass }),
       });
-      if (!response.ok) throw new Error("Invalid maintainer username or password");
+      if (!response.ok) throw new Error("Invalid admin username or password");
+      const session = await response.json();
+      if (!session.access_token) throw new Error("Admin login did not return a bearer token");
+      setAdminAccessToken(session.access_token);
       setAdminPass("");
       setPage(1);
       setAuthenticated(true);
@@ -389,129 +410,143 @@ export default function ReviewQueuePage() {
 
         {!authenticated && (
           <section className="app-glass rounded-xl p-5">
-            <form onSubmit={handleLogin} className="flex flex-wrap items-end gap-3">
+            <div className="mb-4">
+              <h2 className="text-lg font-semibold text-text">Admin login</h2>
+              <p className="text-sm text-muted">
+                Queue is visible to guests. Actions require admin username and password.
+              </p>
+            </div>
+            <form onSubmit={handleLogin} className="grid gap-3 md:grid-cols-[minmax(180px,260px)_minmax(180px,260px)_auto] md:items-end">
               <label className="text-xs text-muted">
                 <span className="mb-1 block">Username</span>
                 <input
+                  type="text"
                   value={adminUser}
                   onChange={(event) => setAdminUser(event.target.value)}
                   autoComplete="username"
                   required
-                  className="h-9 rounded border border-border bg-bg px-3 font-mono text-sm text-text"
+                  className="h-9 w-full rounded border border-border bg-bg px-3 font-mono text-sm text-text"
                 />
               </label>
-              <label className="text-xs text-muted">
-                <span className="mb-1 block">Password</span>
-                <input
-                  type="password"
-                  value={adminPass}
-                  onChange={(event) => setAdminPass(event.target.value)}
-                  autoComplete="current-password"
-                  required
-                  className="h-9 rounded border border-border bg-bg px-3 font-mono text-sm text-text"
-                />
-              </label>
-              <button
-                type="submit"
-                className="h-9 rounded border border-accent/35 bg-accent/10 px-4 text-sm text-accent"
-              >
-                Sign in
-              </button>
-            </form>
-            {authError && <p className="mt-2 text-sm text-red-400">{authError}</p>}
-            <p className="mt-2 text-xs text-muted">
-              Sign-in is remembered for 8 hours in a secure HttpOnly session cookie.
-            </p>
+                <label className="text-xs text-muted">
+                  <span className="mb-1 block">Password</span>
+                  <input
+                    type="password"
+                    value={adminPass}
+                    onChange={(event) => setAdminPass(event.target.value)}
+                    autoComplete="current-password"
+                    required
+                    className="h-9 w-full rounded border border-border bg-bg px-3 font-mono text-sm text-text"
+                  />
+                </label>
+                <button
+                  type="submit"
+                  className="h-9 rounded border border-accent/35 bg-accent/10 px-4 text-sm text-accent"
+                >
+                  Log in as admin
+                </button>
+              </form>
+              {authError && <p className="mt-2 text-sm text-red-400">{authError}</p>}
+              <p className="mt-2 text-xs text-muted">
+                Sign-in is kept in memory for this browser tab and expires after 8 hours.
+              </p>
+            </section>
+        )}
+
+        {!authenticated && (
+          <section className="app-glass rounded-xl p-3 text-xs uppercase tracking-wide text-muted">
+            Guest view: review queue is read-only. Action controls are disabled.
           </section>
         )}
 
-        <div className="inline-flex rounded-lg border border-border/70 bg-[#131b2e] p-1">
-          {TABS.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => {
-                setActiveTab(tab.id);
-                setPage(1);
-                setSelectedTargets({});
-              }}
-              className={`px-4 py-2 text-sm ${
-                activeTab === tab.id
-                  ? "bg-accent/15 text-accent"
-                  : "text-muted hover:text-text"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+            <div className="inline-flex rounded-lg border border-border/70 bg-[#131b2e] p-1">
+              {TABS.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => {
+                    setActiveTab(tab.id);
+                    setPage(1);
+                    setSelectedTargets({});
+                  }}
+                  className={`px-4 py-2 text-sm ${
+                    activeTab === tab.id
+                      ? "bg-accent/15 text-accent"
+                      : "text-muted hover:text-text"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
 
-        <section className="app-glass overflow-hidden rounded-xl">
-          <div className="p-3 border-b border-border text-sm text-muted">
-            {loading ? "Loading queue..." : `${filteredItems.length} pending item(s)`}
-          </div>
+            <section className="app-glass overflow-hidden rounded-xl">
+              <div className="p-3 border-b border-border text-sm text-muted">
+                {loading ? "Loading queue..." : `${filteredItems.length} pending item(s)`}
+              </div>
 
-          {error && (
-            <p className="p-3 text-sm text-red-400">{error}</p>
-          )}
+              {error && (
+                <p className="p-3 text-sm text-red-400">{error}</p>
+              )}
 
-          {!loading && !error && filteredItems.length === 0 && (
-            <p className="p-3 text-sm text-muted">nothing awaiting review</p>
-          )}
+              {!loading && !error && filteredItems.length === 0 && (
+                <p className="p-3 text-sm text-muted">nothing awaiting review</p>
+              )}
 
-          <div className="p-3 space-y-3">
-            {filteredItems.map((item) => (
-              <ItemCard
-                key={item._id}
-                item={item}
-                selectedTarget={selectedTargets[item._id] || ""}
-                onSelectTarget={onSelectTarget}
-                options={getTargets(item.kind)}
-                onApprove={handleApprove}
-                onReject={handleReject}
-                onMerge={handleMerge}
-                onDiscard={handleDiscard}
-              />
-            ))}
-          </div>
-        </section>
+              <div className="p-3 space-y-3">
+                {filteredItems.map((item) => (
+                  <ItemCard
+                    key={item._id}
+                    item={item}
+                    selectedTarget={selectedTargets[item._id] || ""}
+                    onSelectTarget={onSelectTarget}
+                    options={getTargets(item.kind)}
+                    onApprove={handleApprove}
+                    onReject={handleReject}
+                  onMerge={handleMerge}
+                  onDiscard={handleDiscard}
+                  canMutate={authenticated}
+                />
+                ))}
+              </div>
+            </section>
 
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setPage((current) => Math.max(1, current - 1))}
-            disabled={page <= 1 || loading}
-            className="px-3 py-1.5 rounded border border-border text-xs disabled:opacity-50"
-          >
-            Prev
-          </button>
-          <span className="text-sm text-muted">
-            Page {page}
-          </span>
-          <button
-            onClick={() => setPage((current) => (current * limit >= total ? current : current + 1))}
-            disabled={loading || page * limit >= total}
-            className="px-3 py-1.5 rounded border border-border text-xs disabled:opacity-50"
-          >
-            Next
-          </button>
-        </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setPage((current) => Math.max(1, current - 1))}
+                disabled={page <= 1 || loading}
+                className="px-3 py-1.5 rounded border border-border text-xs disabled:opacity-50"
+              >
+                Prev
+              </button>
+              <span className="text-sm text-muted">
+                Page {page}
+              </span>
+              <button
+                onClick={() => setPage((current) => (current * limit >= total ? current : current + 1))}
+                disabled={loading || page * limit >= total}
+                className="px-3 py-1.5 rounded border border-border text-xs disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
 
-        <div className="space-x-3">
-          <label className="text-sm text-muted">
-            status:
-            <select
-              className="ml-2 h-8 rounded border border-border bg-surface px-2 text-xs text-text"
-              value={status}
-              onChange={(event) => {
-                setStatus(event.target.value);
-                setPage(1);
-              }}
-            >
-              <option value="pending">pending</option>
-              <option value="approved">approved</option>
-              <option value="rejected">rejected</option>
-            </select>
-          </label>
-        </div>
+            <div className="space-x-3">
+              <label className="text-sm text-muted">
+                status:
+                <select
+                  className="ml-2 h-8 rounded border border-border bg-surface px-2 text-xs text-text"
+                  value={status}
+                  onChange={(event) => {
+                    setStatus(event.target.value);
+                    setPage(1);
+                  }}
+                >
+                  <option value="pending">pending</option>
+                  <option value="approved">approved</option>
+                  <option value="rejected">rejected</option>
+                </select>
+              </label>
+            </div>
       </div>
 
       <div className="fixed right-4 bottom-4 flex flex-col gap-2">
