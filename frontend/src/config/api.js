@@ -26,7 +26,7 @@ export function subscribeAdminAuth(listener) {
   return () => authListeners.delete(listener);
 }
 
-export function adminAuthHeaders(headers = {}) {
+function adminAuthHeaders(headers = {}) {
   if (!adminAccessToken) return headers;
   return {
     ...headers,
@@ -34,8 +34,20 @@ export function adminAuthHeaders(headers = {}) {
   };
 }
 
+function apiBaseUrl() {
+  const appOrigin = typeof window === "undefined" ? "http://localhost" : window.location.origin;
+  return new URL(API_BASE || "/", appOrigin);
+}
+
 export function apiUrl(path) {
-  return path.startsWith("http") ? path : `${API_BASE}${path}`;
+  const baseUrl = apiBaseUrl();
+  const targetUrl = new URL(String(path), baseUrl);
+
+  if (targetUrl.origin !== baseUrl.origin) {
+    throw new Error("Refusing to call an untrusted API origin");
+  }
+
+  return targetUrl.toString();
 }
 
 export function adminFetch(path, options = {}) {

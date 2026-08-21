@@ -19,6 +19,8 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from cors_config import allowed_origins
+
 #GET /api/insights-feedback/quality-criteria → 404
 # Remove the try/except guard — replace with explicit import:
 from routers import (
@@ -115,21 +117,6 @@ def _ensure_file_logging() -> None:
         target_logger.setLevel(logging.INFO)
 
 
-def _allowed_origins() -> list[str]:
-    default_origins = ["http://localhost:5173", "http://localhost:3000"]
-    configured = getenv("ALLOWED_ORIGINS")
-    if not configured:
-        return default_origins
-
-    origins = [origin.strip().rstrip("/") for origin in configured.split(",") if origin.strip()]
-    explicit_origins = [origin for origin in origins if origin != "*"]
-    if len(explicit_origins) != len(origins):
-        logging.getLogger(__name__).warning(
-            "Ignoring wildcard CORS origin because credentialed requests require explicit origins"
-        )
-    return explicit_origins or default_origins
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
@@ -154,7 +141,7 @@ app = FastAPI(
 # Update allow_origins with your Vercel URL before deploying
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_allowed_origins(),
+    allow_origins=allowed_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -183,23 +170,22 @@ async def health():
     try:
         stack_fb = await storage_service.get_stack_feedback_stats()
     except Exception as exc:
-            logging.getLogger(__name__).warning(
-            "Unable to configure logging from %s: %s",
-            LOG_CONFIG_PATH,
+        logging.getLogger(__name__).warning(
+            "Unable to load stack feedback stats: %s",
             exc,
             exc_info=True,
         )
+
     classifier_active = False
     try:
         from services.learning_service import load_layer0
         classifier_active = load_layer0() is not None
     except Exception as exc:
         logging.getLogger(__name__).warning(
-                    "Unable to configure logging from %s: %s",
-                    LOG_CONFIG_PATH,
-                    exc,
-                    exc_info=True,
-                )
+            "Unable to load layer0 classifier: %s",
+            exc,
+            exc_info=True,
+        )
 
     return {
         "status":             "ok",

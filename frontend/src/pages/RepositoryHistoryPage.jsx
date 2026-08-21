@@ -4,7 +4,6 @@ import { Link } from "react-router-dom";
 import AppShell from "../components/AppShell";
 import {
   API_BASE,
-  adminAuthHeaders,
   adminFetch,
   clearAdminAccessToken,
   getAdminAccessToken,
@@ -120,9 +119,9 @@ export default function RepositoryHistoryPage() {
     if (!positive && isAdmin && correctionOpen === key && !correction) return;
     setFeedbackState((state) => ({ ...state, [key]: "submitting" }));
     try {
-      const response = await fetch(`${API_BASE}/api/feedback/${key}`, {
+      const response = await adminFetch(`/api/feedback/${key}`, {
         method: "POST",
-        headers: adminAuthHeaders({ "Content-Type": "application/json" }),
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           software_type_correct: positive,
           correct_software_type: positive ? null : correction,

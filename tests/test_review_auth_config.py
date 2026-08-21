@@ -9,7 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 
 from routers import review
 from routers import admin_auth
-import main
+from cors_config import allowed_origins
 
 
 def make_client() -> TestClient:
@@ -46,7 +46,19 @@ def test_cors_origins_ignore_wildcard_with_credentials(monkeypatch):
         "*, https://stacksniffer.vercel.app/",
     )
 
-    assert main._allowed_origins() == ["https://stacksniffer.vercel.app"]
+    assert allowed_origins() == ["https://stacksniffer.vercel.app"]
+
+
+@pytest.mark.parametrize("configured", ["*", " , "])
+def test_cors_origins_reject_config_without_explicit_origin(configured):
+    with pytest.raises(ValueError, match="ALLOWED_ORIGINS must include"):
+        allowed_origins(configured)
+
+
+def test_cors_origins_default_only_when_env_absent(monkeypatch):
+    monkeypatch.delenv("ALLOWED_ORIGINS", raising=False)
+
+    assert allowed_origins() == ["http://localhost:5173", "http://localhost:3000"]
 
 
 def test_review_approve_requires_valid_admin_session(monkeypatch):

@@ -116,7 +116,7 @@ Required environment variables are documented in `.env.example` (placeholder val
 **Backend (Render):**
 - `GEMINI_API_KEY` — server-side only. Never exposed to the frontend or included in any build.
 - `MONGODB_URI` — the Atlas connection string.
-- `ALLOWED_ORIGINS` — comma-separated list of permitted frontend origins (CORS), such as the Vercel app URL. Do not use `*`; credentialed CORS is restricted to explicit origins.
+- `ALLOWED_ORIGINS` — comma-separated list of permitted frontend origins (CORS), such as the Vercel app URL. Do not use `*`; credentialed CORS is restricted to explicit origins, and configured values with no explicit origin are rejected.
 - `ADMIN_USERNAME` / `ADMIN_PASSWORD` — server-side maintainer credentials for admin mutations. The backend verifies them at `/api/review/login`, then issues a role-bearing bearer token for guarded approve/reject/promote/submit routes. Set these only on Render or in the root local `.env`; never add them to `frontend/.env`, never prefix them with `VITE_`, and never expose them to browser code.
 
 **Frontend (Vercel):**

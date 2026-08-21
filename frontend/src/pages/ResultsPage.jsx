@@ -10,7 +10,6 @@ import ProvenanceResult from "../components/ProvenanceResult";
 import TopNavigation from "../components/TopNavigation";
 import {
   API_BASE,
-  adminAuthHeaders,
   adminFetch,
   clearAdminAccessToken,
   getAdminAccessToken,
@@ -165,13 +164,13 @@ export default function ResultsPage() {
   }
 
   async function postStackFeedback(url, options = {}) {
-    const res = await fetch(url, {
+    const res = await adminFetch(url, {
       method: "POST",
       ...options,
-      headers: adminAuthHeaders({
+      headers: {
         "Content-Type": "application/json",
         ...(options.headers || {}),
-      }),
+      },
     });
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
