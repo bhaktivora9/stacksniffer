@@ -1,10 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from models.schemas import ReviewActionRequest, ReviewItemKind
 from routers.admin_auth import (
     AdminLoginRequest,
+    basic_admin_credentials,
     clear_admin_session,
     create_admin_session,
     require_admin,
+    verify_admin_token,
 )
 from services import storage_service
 
@@ -17,6 +19,27 @@ async def login_review_admin(
     login: AdminLoginRequest,
 ):
     return create_admin_session(response, login.username, login.password)
+
+
+@router.post("/session", deprecated=True)
+async def create_review_session_compat(
+    request: Request,
+    response: Response,
+    login: AdminLoginRequest | None = None,
+):
+    response.headers["Deprecation"] = "true"
+    response.headers["Warning"] = '299 - "POST /api/review/session is deprecated; use POST /api/review/login"'
+
+    if login is not None:
+        return create_admin_session(response, login.username, login.password)
+
+    authorization = request.headers.get("authorization", "")
+    scheme, _, token = authorization.partition(" ")
+    if scheme.lower() == "bearer" and verify_admin_token(token.strip()):
+        return {"authenticated": True, "role": "admin", "deprecated": True}
+
+    username, password = basic_admin_credentials(request)
+    return create_admin_session(response, username, password)
 
 
 @router.get("/session")

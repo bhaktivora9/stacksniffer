@@ -107,6 +107,28 @@ def require_admin(request: Request) -> str:
     return str(payload.get("sub") or ADMIN_ROLE)
 
 
+def basic_admin_credentials(request: Request) -> tuple[str, str]:
+    authorization = request.headers.get("authorization", "")
+    scheme, _, encoded = authorization.partition(" ")
+    if scheme.lower() != "basic" or not encoded:
+        raise HTTPException(
+            status_code=401,
+            detail="Admin credentials required",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+
+    try:
+        decoded = base64.b64decode(encoded).decode()
+        username, password = decoded.split(":", 1)
+    except (ValueError, UnicodeDecodeError, binascii.Error):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid admin credentials",
+            headers={"WWW-Authenticate": "Basic"},
+        ) from None
+    return username, password
+
+
 def create_admin_session(response: Response, username: str, password: str) -> dict[str, Any]:
     if not (
         compare_digest(username, admin_username())
