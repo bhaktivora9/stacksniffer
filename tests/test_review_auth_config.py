@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import sys
 from pathlib import Path
 
@@ -167,12 +168,6 @@ def test_review_approve_requires_valid_admin_session(monkeypatch):
     )
     assert wrong_user_login.status_code == 403
 
-    session_post = client.post(
-        "/api/review/session",
-        json={"username": "maintainer", "password": "correct-password"},
-    )
-    assert session_post.status_code == 405
-
     login = client.post(
         "/api/review/login",
         json={"username": "maintainer", "password": "correct-password"},
@@ -189,6 +184,23 @@ def test_review_approve_requires_valid_admin_session(monkeypatch):
     )
     assert approved.status_code == 200
     assert approved.json()["status"] == "approved"
+
+
+def test_review_session_post_supports_deprecated_basic_login(monkeypatch):
+    monkeypatch.setenv("ADMIN_USERNAME", "maintainer")
+    monkeypatch.setenv("ADMIN_PASSWORD", "correct-password")
+    credentials = base64.b64encode(b"maintainer:correct-password").decode()
+
+    client = make_client()
+    response = client.post(
+        "/api/review/session",
+        headers={"Authorization": f"Basic {credentials}"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["access_token"]
+    assert response.json()["role"] == "admin"
+    assert response.headers["Deprecation"] == "true"
 
 
 def test_review_queue_is_readable_without_admin_session(monkeypatch):
