@@ -17,9 +17,8 @@ Two distinct subsystems live here, and it's important not to confuse them:
 """
 import json
 import logging
-from os import getenv
-from pathlib import Path
 from collections import Counter, defaultdict
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +45,7 @@ UNRELIABLE_FILES = (
 )
 
 EMBEDDING_DIM = 3072
+SOFTWARE_TYPE_CLASSIFIER_PATH = Path("backend/models/software_type_classifier.pkl")
 
 
 # ── patterns.json helpers (LEGACY) ───────────────────────────────────────
@@ -532,7 +532,7 @@ async def train_software_type_classifier() -> dict:
 
         clf.fit(X, y_encoded)
 
-        model_path = Path("backend/models/software_type_classifier.pkl")
+        model_path = SOFTWARE_TYPE_CLASSIFIER_PATH
         model_path.parent.mkdir(parents=True, exist_ok=True)
         with open(model_path, "wb") as f:
             pickle.dump(
@@ -570,7 +570,7 @@ async def predict_software_type(stack: dict) -> dict | None:
     feature_dim; if the live embedding doesn't match it, fall back to the
     hand-crafted vector rather than handing sklearn a wrong-width array.
     """
-    model_path = Path("backend/models/software_type_classifier.pkl")
+    model_path = SOFTWARE_TYPE_CLASSIFIER_PATH
     if not model_path.exists():
         return None
 
@@ -618,6 +618,11 @@ async def predict_software_type(stack: dict) -> dict | None:
     except Exception as e:
         logger.warning("Classifier prediction failed: %s", e)
         return None
+
+
+def software_type_classifier_available() -> bool:
+    """Return whether the trained software_type classifier artifact is present."""
+    return SOFTWARE_TYPE_CLASSIFIER_PATH.exists()
 
 
 # ── Regression tracking (LIVE) ───────────────────────────────────────────

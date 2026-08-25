@@ -166,20 +166,10 @@ app.include_router(review.router)
 async def health():
     stats = await storage_service.get_stats()
 
-    stack_fb = {}
-    try:
-        stack_fb = await storage_service.get_stack_feedback_stats()
-    except Exception as exc:
-        logging.getLogger(__name__).warning(
-            "Unable to load stack feedback stats: %s",
-            exc,
-            exc_info=True,
-        )
-
     classifier_active = False
     try:
-        from services.learning_service import load_layer0
-        classifier_active = load_layer0() is not None
+        from services.learning_service import software_type_classifier_available
+        classifier_active = software_type_classifier_available()
     except Exception as exc:
         logging.getLogger(__name__).warning(
             "Unable to load layer0 classifier: %s",
@@ -200,7 +190,7 @@ async def health():
         "with_feedback":      stats.get("with_feedback", 0),
         "embedding_coverage": stats.get("embedding_coverage", "0%"),
         "by_software_type":          stats.get("by_software_type", {}),
-        "stack_feedback":     stack_fb,
+        "stack_feedback":     {"total": stats.get("with_stack_feedback", 0)},
         "classifier_active":  classifier_active,
         "rag_active":         stats.get("with_embeddings", 0) >= 5,
     }
