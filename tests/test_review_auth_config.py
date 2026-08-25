@@ -1,3 +1,4 @@
+import asyncio
 import sys
 from pathlib import Path
 
@@ -10,6 +11,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 from routers import review
 from routers import admin_auth
 from cors_config import allowed_origins
+from services import learning_service
+from services import storage_service
 
 
 def make_client() -> TestClient:
@@ -68,6 +71,36 @@ def test_cors_origin_defaults_are_returned_as_defensive_copy(monkeypatch):
     origins.append("https://unexpected.example")
 
     assert allowed_origins() == ["http://localhost:5173", "http://localhost:3000"]
+
+
+def test_learning_service_exposes_classifier_availability_probe(monkeypatch):
+    class FakeClassifierPath:
+        present = False
+
+        def exists(self):
+            return self.present
+
+    model_path = FakeClassifierPath()
+    monkeypatch.setattr(learning_service, "SOFTWARE_TYPE_CLASSIFIER_PATH", model_path)
+
+    assert learning_service.software_type_classifier_available() is False
+    model_path.present = True
+    assert learning_service.software_type_classifier_available() is True
+
+
+def test_memory_stats_include_stack_feedback_count(monkeypatch):
+    monkeypatch.setattr(storage_service, "_db", None)
+    monkeypatch.setitem(storage_service._memory_store, "analyses_result", {})
+    monkeypatch.setitem(storage_service._memory_store, "feedback", {})
+    monkeypatch.setitem(
+        storage_service._memory_store,
+        "stack_feedback",
+        {"analysis-1": [{"type": "correct"}, {"type": "wrong"}]},
+    )
+
+    stats = asyncio.run(storage_service.get_stats())
+
+    assert stats["with_stack_feedback"] == 2
 
 
 def test_review_approve_requires_valid_admin_session(monkeypatch):

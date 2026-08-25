@@ -7,21 +7,16 @@ feedback, corrections, and event history live outside that mutable result doc.
 
 from __future__ import annotations
 
+import logging
+import math
+import time
 from copy import deepcopy
 from datetime import datetime, timedelta
 from os import getenv
 from pathlib import Path
 from uuid import uuid4
-import logging
-import math
-import time
 
 from dotenv import load_dotenv
-from motor.motor_asyncio import AsyncIOMotorClient
-from pymongo import ASCENDING, DESCENDING
-from pymongo.errors import DuplicateKeyError
-
-from services.repo_key import parse_repo_key
 from models.taxonomy import (
     ACTIVE_TECHNOLOGY_ROLES,
     SOFTWARE_TYPE_DEFINITIONS,
@@ -29,6 +24,10 @@ from models.taxonomy import (
     canonicalize_technology_role_safe,
     is_active_technology_role,
 )
+from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo import ASCENDING, DESCENDING
+from pymongo.errors import DuplicateKeyError
+from services.repo_key import parse_repo_key
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 load_dotenv(ROOT_DIR / ".env")
@@ -2193,11 +2192,13 @@ async def find_by_stack_pattern(pattern: str, limit: int = 10) -> list[dict]:
 async def get_stats() -> dict:
     if _db is None:
         analyses = list(_memory("analyses_result").values())
+        stack_feedback = await get_all_stack_feedback()
         return {
             "total_analyses": len(analyses),
             "storage": "memory",
             "with_embeddings": sum(1 for a in analyses if a.get("stack_embedding")),
             "with_feedback": len(_memory("feedback")),
+            "with_stack_feedback": len(stack_feedback),
         }
 
     total = await _db.analyses_result.count_documents({})
