@@ -1,0 +1,2 @@
+[console_scripts]
+agent-service = agent_service.main:run
