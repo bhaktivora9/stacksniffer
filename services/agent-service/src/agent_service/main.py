@@ -8,6 +8,10 @@ def create_app() -> FastAPI:
     def health() -> dict[str, str]:
         return {"status": "ok"}
 
+    @app.get("/ready")
+    def ready() -> dict[str, str]:
+        return {"status": "ok"}
+
     return app
 
 
