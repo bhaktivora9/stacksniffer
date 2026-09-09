@@ -1,2 +1,0 @@
-[console_scripts]
-graph-intelligence-service = graph_intelligence_service.main:run
