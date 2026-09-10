@@ -1,1 +1,99 @@
-services: {}
+services:
+
+  gateway-service:
+    build:
+      context: ./services/gateway-service
+      dockerfile: Dockerfile
+
+    image: stacksniffer/gateway-service:local
+
+    container_name: stacksniffer-gateway
+
+    ports:
+      - "8081:8081"
+
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8081/actuator/health"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+    restart: unless-stopped
+
+  repository-service:
+    build:
+      context: ./services/repository-service
+      dockerfile: Dockerfile
+    image: stacksniffer/repository-service:local
+    container_name: stacksniffer-repository
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+  governance-service:
+    build:
+      context: ./services/governance-service
+      dockerfile: Dockerfile
+    image: stacksniffer/governance-service:local
+    container_name: stacksniffer-governance
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+  agent-service:
+    build:
+      context: ./services/agent-service
+      dockerfile: Dockerfile
+    image: stacksniffer/agent-service:local
+    container_name: stacksniffer-agent
+    ports:
+      - "8084:8084"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8084/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  graph-intelligence-service:
+    build:
+      context: ./services/graph-intelligence-service
+      dockerfile: Dockerfile
+    image: stacksniffer/graph-intelligence-service:local
+    container_name: stacksniffer-graph-intelligence
+    ports:
+      - "8085:8085"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8085/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped

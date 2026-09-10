@@ -1,0 +1,10 @@
+**/.git
+**/.pytest_cache
+**/__pycache__
+**/*.pyc
+**/target
+**/*.egg-info
+.git
+.gitignore
+README.md
+docker-compose.yml
