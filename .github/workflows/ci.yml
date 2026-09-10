@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: Build and test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Build and test Java services
+        shell: bash
+        run: |
+          set -euo pipefail
+          mvn -f services/gateway-service/pom.xml --batch-mode --no-transfer-progress clean verify
+          mvn -f services/repository-service/pom.xml --batch-mode --no-transfer-progress clean verify
+          mvn -f services/governance-service/pom.xml --batch-mode --no-transfer-progress clean verify
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+
+      - name: Install and test Python services
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install -e 'services/agent-service[test]'
+          python -m pytest services/agent-service/tests
+          python -m pip install -e 'services/graph-intelligence-service[test]'
+          python -m pytest services/graph-intelligence-service/tests
+
+      - name: Run basic lint checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m compileall -q services/agent-service/src services/agent-service/tests
+          python -m compileall -q services/graph-intelligence-service/src services/graph-intelligence-service/tests
