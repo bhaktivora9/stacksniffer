@@ -10,6 +10,7 @@ StackSniffer provides independent Java Spring Boot and Python FastAPI service sh
 
 ```text
 stacksniffer/
+├── frontend/
 ├── services/
 │   ├── gateway-service/                 # Java / Spring Boot
 │   ├── repository-service/             # Java / Spring Boot
