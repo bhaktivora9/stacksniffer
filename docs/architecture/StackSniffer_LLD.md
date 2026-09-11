@@ -102,7 +102,9 @@ ClassificationContract  [owned by agent-service]
   classification_contract_id     # opaque outside agent-service
   classification_pipeline_version
   classification_model_profile
+  prompt_version
   taxonomy_version
+  created_at
   effective_from
 }
 
