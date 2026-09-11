@@ -1,0 +1,38 @@
+{
+  "valid": [
+    {
+      "repository_key": "github/acme/widgets",
+      "repository_version_id": "018f0c7e-7b2a-4c8d-9e11-223344556677",
+      "analysis_id": "018f0c7e-7b2a-4c8d-9e11-223344556678",
+      "analysis_job_id": "018f0c7e-7b2a-4c8d-9e11-223344556679",
+      "classification_run_id": "018f0c7e-7b2a-4c8d-9e11-223344556680",
+      "classification_result_id": "018f0c7e-7b2a-4c8d-9e11-223344556681",
+      "agent_run_id": "018f0c7e-7b2a-4c8d-9e11-223344556682",
+      "event_id": "018f0c7e-7b2a-4c8d-9e11-223344556683",
+      "request_id": "018f0c7e-7b2a-4c8d-9e11-223344556684",
+      "correlation_id": "018f0c7e-7b2a-4c8d-9e11-223344556685",
+      "taxonomy_version": "v1.0.0"
+    },
+    {
+      "repository_key": "gitlab/data-team/data_pipeline.v2",
+      "repository_version_id": "ffffffff-ffff-4fff-8fff-ffffffffffff",
+      "analysis_id": "00000000-0000-4000-8000-000000000000",
+      "analysis_job_id": "123e4567-e89b-42d3-a456-426614174000",
+      "classification_run_id": "123e4567-e89b-42d3-a456-426614174001",
+      "classification_result_id": "123e4567-e89b-42d3-a456-426614174002",
+      "agent_run_id": "123e4567-e89b-42d3-a456-426614174003",
+      "event_id": "123e4567-e89b-42d3-a456-426614174004",
+      "request_id": "123e4567-e89b-42d3-a456-426614174005",
+      "correlation_id": "123e4567-e89b-42d3-a456-426614174006",
+      "taxonomy_version": "v0.12.3"
+    }
+  ],
+  "invalid": [
+    { "field": "repository_key", "value": "GitHub/acme/widgets" },
+    { "field": "repository_key", "value": "github/acme" },
+    { "field": "analysis_id", "value": "018f0c7e-7b2a-4c8d-9e11-22334455667" },
+    { "field": "event_id", "value": "123E4567-E89B-42D3-A456-426614174000" },
+    { "field": "taxonomy_version", "value": "1.0.0" },
+    { "field": "taxonomy_version", "value": "v01.2.3" }
+  ]
+}

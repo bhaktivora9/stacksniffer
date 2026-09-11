@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 
+from agent_service.api.classification_contract import router as classification_contract_router
+
 
 def create_app() -> FastAPI:
     app = FastAPI(title="StackSniffer Agent Service")
@@ -11,6 +13,8 @@ def create_app() -> FastAPI:
     @app.get("/ready")
     def ready() -> dict[str, str]:
         return {"status": "ok"}
+
+    app.include_router(classification_contract_router)
 
     return app
 

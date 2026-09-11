@@ -1,0 +1,32 @@
+{
+  "vectors": [
+    {
+      "inputs": {
+        "repository_key": "github/acme/widgets",
+        "commit_sha": "0123456789abcdef0123456789abcdef01234567",
+        "deterministic_pipeline_version": "det-v1",
+        "classification_pipeline_version": "class-v3",
+        "classification_model_profile": "gemini-fast",
+        "prompt_version": "prompt-v5",
+        "taxonomy_version": "v1.2.0",
+        "analysis_id": "018f0c7e-7b2a-4c8d-9e11-223344556677",
+        "classification_result_id": "018f0c7e-7b2a-4c8d-9e11-223344556681",
+        "review_goal": "architecture review",
+        "agent_version": "agent-v2",
+        "prompt_version": "prompt-v5",
+        "model_profile": "gemini-fast",
+        "retrieval_index_version": "index-17",
+        "graph_snapshot_version": "graph-42"
+      },
+      "outputs": {
+        "deterministic_analysis_key": "sha256:31f8a82ed145cdd0f3625733dfce4652f97aac4ad318e35b4a9a370aa4f59041",
+        "classification_contract_id": "sha256:1085646c1dda9eee32e4238e0247e002a0c78657bc6ecaa7882a712b22023c8d",
+        "classification_key": "sha256:bf573249fd836d8ca54006b87f5bdeabe07200efe21a0e5ed4ff513753edaabd",
+        "assembled_analysis_key": "sha256:60276581b80667cc82fc30e6a112a60fcca39cc5539033fe80635c22a9acabb8",
+        "agent_review_spec_key": "sha256:e9ec7c8f717316e7e1cf3ca14788cf66bb2dfd8256f94938503ef55703c8e291",
+        "agent_context_fingerprint": "sha256:704997c7753a2afe083405bd8f91a5cc0706151f78d4b1238dcec3880861abaf",
+        "agent_result_cache_key": "sha256:905a42a346a3f926d8ffd8d726b013ac829a31f705750b7d8da10ed98cb5cea5"
+      }
+    }
+  ]
+}
