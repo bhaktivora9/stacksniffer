@@ -507,7 +507,12 @@ async def _to_response(
         repo_key, stack.get("software_type"),
     )
     if correction:
-        corrected_stack = {**corrected_stack, "software_type_overlay": correction}
+        corrected_stack = {
+            **corrected_stack,
+            "software_type": correction["corrected_value"],
+            "software_type_pipeline": correction.get("pipeline_value"),
+            "software_type_overlay": correction,
+        }
     return {
         "request_id": request_id,
         "analysis_id": request_id,          # deprecated alias
