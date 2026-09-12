@@ -2,7 +2,9 @@
   "git": {
     "deploymentEnabled": {
       "mvp": true
-      
     }
-  }
+  },
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 }
