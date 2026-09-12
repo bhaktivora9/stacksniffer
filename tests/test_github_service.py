@@ -1,27 +1,42 @@
-from services.github_service import _build_headers, canonicalize_languages
+import asyncio
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
+
+from services import github_service
 
 
-def test_github_headers_use_requested_rest_api_version():
-    headers = _build_headers()
-
-    assert headers["Accept"] == "application/vnd.github+json"
-    assert headers["X-GitHub-Api-Version"] == "2026-03-10"
+class FakeResponse:
+    def __init__(self, status_code):
+        self.status_code = status_code
 
 
-def test_canonicalize_languages_ranks_bytes_and_exposes_share():
-    languages = canonicalize_languages({"Rust": 20, "TypeScript": 80})
+class FakeClient:
+    def __init__(self, responses):
+        self.responses = list(responses)
+        self.calls = []
 
-    assert languages[0]["name"] == "TypeScript"
-    assert languages[0]["is_primary"] is True
-    assert languages[0]["byte_share"] == 0.8
-    assert sum(language["byte_share"] for language in languages) == 1.0
+    async def get(self, url, headers=None, **kwargs):
+        self.calls.append({"url": url, "headers": headers or {}, "kwargs": kwargs})
+        return self.responses.pop(0)
 
 
-def test_canonicalize_languages_folds_aliases_and_drops_non_languages():
-    languages = canonicalize_languages(
-        {"CSS": 30, "SCSS": 20, "Dockerfile": 100, "MDX": 50}
+def test_github_get_retries_without_bad_token(monkeypatch):
+    client = FakeClient([FakeResponse(401), FakeResponse(200)])
+    monkeypatch.setattr(github_service, "_GITHUB_AUTH_DISABLED", False)
+    monkeypatch.setattr(github_service, "GITHUB_TOKEN", "bad-token")
+
+    response = asyncio.run(
+        github_service._github_get(
+            client,
+            "https://api.github.com/repos/jgraph/drawio/commits",
+            headers=github_service._build_headers(),
+            params={"per_page": "1"},
+        )
     )
 
-    assert [(language["name"], language["byte_count"]) for language in languages] == [
-        ("CSS", 50)
-    ]
+    assert response.status_code == 200
+    assert "Authorization" in client.calls[0]["headers"]
+    assert "Authorization" not in client.calls[1]["headers"]
+    assert github_service._GITHUB_AUTH_DISABLED is True

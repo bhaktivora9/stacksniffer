@@ -1,10 +1,12 @@
 import asyncio
 
 import backend.services.storage_service as storage_service
+import services.storage_service as taxonomy_storage_service
 from routers.taxonomy import (
     list_specific_identity_counts,
     list_technology_roles,
     list_software_types,
+    promote_specific_identity,
 )
 
 
@@ -74,13 +76,34 @@ def test_taxonomy_endpoints_separate_ids_and_labels():
 
 
 def test_specific_identity_endpoint_exposes_frequency_distribution():
-    storage_service._db = None
-    storage_service._memory_store["analyses_result"] = {
-        "github:a/one": {"stack": {"specific_identity": "model_serving"}},
-        "github:a/two": {"stack": {"specific_identity": "model_serving"}},
+    taxonomy_storage_service._db = None
+    taxonomy_storage_service._memory_store["taxonomy_software_types"] = {}
+    taxonomy_storage_service._invalidate_taxonomy_cache()
+    taxonomy_storage_service._memory_store["analyses_result"] = {
+        "github:a/one": {"stack": {"specific_identity": "recurring_identity"}},
+        "github:a/two": {"stack": {"specific_identity": "recurring_identity"}},
+        "github:b/one": {"stack": {"specific_identity": "single_observation"}},
     }
 
     assert run(list_specific_identity_counts()) == {
-        "specific_identities": [{"specific_identity": "model_serving", "count": 2}],
+        "specific_identities": [{"specific_identity": "recurring_identity", "count": 2}],
         "count": 1,
+        "promotion_threshold": taxonomy_storage_service.SPECIFIC_IDENTITY_PROMOTION_THRESHOLD,
     }
+
+
+def test_specific_identity_promotion_requires_threshold_and_activates_dynamic_type(monkeypatch):
+    taxonomy_storage_service._db = None
+    taxonomy_storage_service._memory_store["taxonomy_software_types"] = {}
+    taxonomy_storage_service._invalidate_taxonomy_cache()
+    taxonomy_storage_service._memory_store["analyses_result"] = {
+        "github:a/one": {"stack": {"specific_identity": "recurring_identity"}},
+        "github:a/two": {"stack": {"specific_identity": "recurring_identity"}},
+    }
+    monkeypatch.setattr(taxonomy_storage_service, "SPECIFIC_IDENTITY_PROMOTION_THRESHOLD", 2)
+
+    result = run(promote_specific_identity("recurring_identity", _auth="admin"))
+
+    assert result["action"] == "promote"
+    assert result["observed_count"] == 2
+    assert "recurring_identity" in run(taxonomy_storage_service.get_valid_software_types())

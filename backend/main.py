@@ -162,6 +162,16 @@ app.include_router(review.router)
 
 # ── Health endpoint ───────────────────────────────────────────────────────────
 # Java equivalent: HealthController.java
+@app.get("/")
+async def root():
+    return {
+        "name": "StackSniffer API",
+        "status": "ok",
+        "docs": "/docs",
+        "health": "/api/health",
+    }
+
+
 @app.get("/api/health")
 async def health():
     stats = await storage_service.get_stats()

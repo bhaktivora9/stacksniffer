@@ -1,4 +1,5 @@
 import sys
+import sys
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -72,19 +73,21 @@ def test_plain_feedback_is_public(monkeypatch):
     assert negative.status_code == 200
 
 
-def test_correction_requires_admin_session(monkeypatch):
+def test_software_type_suggestion_is_public_but_admin_creates_overlay(monkeypatch):
     monkeypatch.setenv("ADMIN_PASSWORD", "correct-password")
     calls = install_feedback_fakes(monkeypatch)
     client = make_client()
 
-    denied = client.post(
+    suggested = client.post(
         "/api/feedback/github:owner/repo",
         json={
             "software_type_correct": False,
             "correct_software_type": "library",
         },
     )
-    assert denied.status_code == 403
+    assert suggested.status_code == 200
+    assert calls["feedback"][0]["feedback"]["correct_software_type"] == "library"
+    assert calls["corrections"] == []
 
     token = admin_auth.create_admin_token("admin")
     approved = client.post(

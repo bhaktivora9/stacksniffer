@@ -63,9 +63,15 @@ async def submit_feedback(
         raise HTTPException(404, "no analysis for this repo")
     stack = doc["stack"]
     approved_overlay = None
-    correction_requested = bool(feedback.correct_software_type) or feedback.approved_overlay_confirmed
-    if correction_requested:
-        require_admin(request)
+    admin_actor = None
+    if feedback.approved_overlay_confirmed:
+        admin_actor = require_admin(request)
+    elif feedback.correct_software_type:
+        try:
+            admin_actor = require_admin(request)
+        except HTTPException as exc:
+            if exc.status_code != 403:
+                raise
 
     if feedback.approved_overlay_confirmed:
         approved_overlay = await storage_service.get_approved_software_type_correction(
@@ -104,6 +110,7 @@ async def submit_feedback(
         not feedback.software_type_correct
         and feedback.correct_software_type
         and not feedback.approved_overlay_confirmed
+        and admin_actor
     ):
         assignment_method = "deterministic" if stack.get("layer0_prediction") else "ai_inferred"
         await storage_service.upsert_software_type_correction(

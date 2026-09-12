@@ -406,6 +406,60 @@ def _norm(s: str) -> str:
     return "".join(ch for ch in (s or "").lower() if ch.isalnum())
 
 
+def _infer_specific_identity_fallback(
+    software_type: str | None,
+    repo_name: str,
+    file_tree: list[str],
+) -> str | None:
+    """Recover high-signal specific identities when the model leaves them blank."""
+    if not software_type or software_type == "unknown":
+        return None
+
+    text = " ".join([repo_name or "", *file_tree[:200]]).casefold()
+    compact = _norm(text)
+
+    def has_any(*needles: str) -> bool:
+        return any(needle.casefold() in text or _norm(needle) in compact for needle in needles)
+
+    candidates = [
+        (
+            {"web_application", "desktop_application", "application_platform"},
+            ("draw.io", "drawio", "diagrams.net", "mxgraph"),
+            "diagram_editor",
+        ),
+        (
+            {"deployable_service", "application_platform"},
+            ("model serving", "llm serving", "inference server", "vllm", "ollama", "text-generation-inference"),
+            "model_serving",
+        ),
+        (
+            {"deployable_service", "data_pipeline", "application_platform"},
+            ("workflow orchestration", "workflow engine", "temporal", "airflow", "prefect", "dagster"),
+            "workflow_orchestration",
+        ),
+        (
+            {"build_tool", "infrastructure_tool", "application_platform"},
+            ("ci/cd", "continuous integration", "continuous delivery", "jenkins", "tekton", "argo-cd", "argocd"),
+            "ci_cd_engine",
+        ),
+        (
+            {"framework", "desktop_application", "application_platform"},
+            ("game engine", "godot", "bevy", "unity"),
+            "game_engine",
+        ),
+        (
+            {"desktop_application", "application_platform"},
+            ("browser engine", "chromium", "servo", "webkit"),
+            "browser_engine",
+        ),
+    ]
+
+    for allowed_types, needles, identity in candidates:
+        if software_type in allowed_types and has_any(*needles):
+            return normalize_specific_identity(identity)
+    return None
+
+
 def _filter_insights_techs(detections: dict, software_type: str) -> dict:
     """
     Filter techs fed to generate_stack_insights().
@@ -788,6 +842,17 @@ Return ONLY valid JSON:
         else:
             result["software_type_is_new"] = False
             result["emergent_software_type"] = None
+
+        if (
+            not result.get("rejected")
+            and not result.get("software_type_is_new")
+            and not result.get("specific_identity")
+        ):
+            result["specific_identity"] = _infer_specific_identity_fallback(
+                result.get("software_type"),
+                repo_name,
+                file_tree,
+            )
 
         result["rag_influenced"]     = bool(similar_repos)
         result["similar_repos_used"] = len(similar_repos) if similar_repos else 0

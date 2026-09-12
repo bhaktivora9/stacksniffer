@@ -14,11 +14,13 @@ Key changes from previous version:
 """
 import base64
 import asyncio
+import logging
 import os
 import re
 import time
 import warnings
 from fnmatch import fnmatch
+from pathlib import Path
 
 import httpx
 from dotenv import load_dotenv
@@ -27,9 +29,13 @@ from models.schemas import RepoData
 from services.manifest_parser import is_recognized_manifest, selected_product_manifest_paths
 from services.repo_key import parse_repo_key
 
-load_dotenv()
+ROOT_DIR = Path(__file__).resolve().parents[1]
+load_dotenv(ROOT_DIR / ".env")
 
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
+logger = logging.getLogger(__name__)
+
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "").strip()
+_GITHUB_AUTH_DISABLED = False
 _HEAD_SHA_CACHE: dict[tuple[str, str | None], dict[str, str]] = {}
 _LANGUAGES_CACHE: dict[str, dict] = {}
 
@@ -146,6 +152,10 @@ class GitHubRateLimitError(Exception):
         super().__init__(f"GitHub rate limit hit. Retry after {retry_after}s")
 
 
+class GitHubAuthError(Exception):
+    pass
+
+
 def _parse_repo_url(repo_url: str) -> tuple[str, str]:
     repo_url = repo_url.strip().rstrip("/")
 
@@ -167,9 +177,41 @@ def _build_headers(accept: str = "application/vnd.github+json") -> dict:
         "Accept": accept,
         "X-GitHub-Api-Version": "2026-03-10",
     }
-    if GITHUB_TOKEN:
+    if GITHUB_TOKEN and not _GITHUB_AUTH_DISABLED:
         headers["Authorization"] = f"Bearer {GITHUB_TOKEN}"
     return headers
+
+
+async def _github_get(
+    client: httpx.AsyncClient,
+    url: str,
+    *,
+    headers: dict | None = None,
+    **kwargs,
+) -> httpx.Response:
+    """Retry public GitHub requests without auth when the configured token is bad."""
+    global _GITHUB_AUTH_DISABLED
+
+    request_headers = headers or _build_headers()
+    resp = await client.get(url, headers=request_headers, **kwargs)
+    if resp.status_code == 401 and request_headers.get("Authorization"):
+        _GITHUB_AUTH_DISABLED = True
+        retry_headers = {
+            key: value
+            for key, value in request_headers.items()
+            if key.lower() != "authorization"
+        }
+        logger.warning(
+            "GitHub rejected configured GITHUB_TOKEN; retrying request without auth"
+        )
+        resp = await client.get(url, headers=retry_headers, **kwargs)
+
+    if resp.status_code == 401:
+        raise GitHubAuthError(
+            "GitHub rejected the configured credentials. Replace or remove "
+            "GITHUB_TOKEN in backend/.env, then restart the backend."
+        )
+    return resp
 
 
 async def get_languages(repo_key: str) -> dict[str, int]:
@@ -185,7 +227,8 @@ async def get_languages(repo_key: str) -> dict[str, int]:
             headers["If-None-Match"] = cached["etag"]
 
         async with httpx.AsyncClient(timeout=15.0) as client:
-            resp = await client.get(
+            resp = await _github_get(
+                client,
                 f"https://api.github.com/repos/{owner}/{repo}/languages",
                 headers=headers,
             )
@@ -294,7 +337,7 @@ async def get_head_sha(repo_key: str, branch: str | None = None) -> str:
         params = {"per_page": "1"}
 
     async with httpx.AsyncClient(timeout=15.0) as client:
-        resp = await client.get(url, headers=headers, params=params)
+        resp = await _github_get(client, url, headers=headers, params=params)
 
     if resp.status_code == 304 and cached and cached.get("sha"):
         return cached["sha"]
@@ -327,7 +370,8 @@ async def _fetch_file(
     max_bytes: int,
 ) -> tuple[str, str | None]:
     try:
-        resp = await client.get(
+        resp = await _github_get(
+            client,
             f"https://api.github.com/repos/{owner}/{repo}/contents/{path}",
             headers=headers,
         )
@@ -363,7 +407,8 @@ async def fetch_repo(repo_url: str) -> RepoData:
     async with httpx.AsyncClient(timeout=30.0) as client:
 
         # ── Metadata ──────────────────────────────────────────────────────────
-        meta_resp = await client.get(
+        meta_resp = await _github_get(
+            client,
             f"https://api.github.com/repos/{owner}/{repo}",
             headers=_build_headers(),
         )
@@ -380,7 +425,8 @@ async def fetch_repo(repo_url: str) -> RepoData:
             license_id = meta["license"].get("spdx_id")
 
         # ── Topics ────────────────────────────────────────────────────────────
-        topics_resp = await client.get(
+        topics_resp = await _github_get(
+            client,
             f"https://api.github.com/repos/{owner}/{repo}/topics",
             headers=_build_headers(
                 accept="application/vnd.github.mercy-preview+json"
@@ -391,7 +437,8 @@ async def fetch_repo(repo_url: str) -> RepoData:
             topics = topics_resp.json().get("names", [])
 
         # ── File tree (priority-sorted before truncation) ─────────────────────
-        tree_resp = await client.get(
+        tree_resp = await _github_get(
+            client,
             f"https://api.github.com/repos/{owner}/{repo}/git/trees/{default_branch}",
             headers=_build_headers(),
             params={"recursive": "1"},

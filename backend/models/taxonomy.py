@@ -168,6 +168,7 @@ CANDIDATE_SPECIFIC_IDENTITIES: dict[str, SoftwareType] = {
     "game_engine": SoftwareType.FRAMEWORK,
     "mobile_app": SoftwareType.APPLICATION_PLATFORM,
     "browser_engine": SoftwareType.DESKTOP_APPLICATION,
+    "diagram_editor": SoftwareType.APPLICATION_PLATFORM,
 }
 
 # is_new (novelty) vs specific_identity are MUTUALLY EXCLUSIVE resolution paths:

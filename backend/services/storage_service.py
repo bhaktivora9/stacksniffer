@@ -26,7 +26,7 @@ from models.taxonomy import (
 )
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import ASCENDING, DESCENDING
-from pymongo.errors import DuplicateKeyError
+from pymongo.errors import DuplicateKeyError, PyMongoError
 from services.repo_key import parse_repo_key
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
@@ -34,6 +34,9 @@ load_dotenv(ROOT_DIR / ".env")
 logger = logging.getLogger(__name__)
 
 PIPELINE_VERSION = getenv("PIPELINE_VERSION", "local")
+SPECIFIC_IDENTITY_PROMOTION_THRESHOLD = int(
+    getenv("SPECIFIC_IDENTITY_PROMOTION_THRESHOLD", "2")
+)
 BUILTIN_SOFTWARE_TYPES: tuple[dict, ...] = tuple(
     {
         "_id": definition.software_type.value,
@@ -209,6 +212,22 @@ async def _taxonomy_rows(kind: str, include_inactive: bool = False) -> list[dict
     return sorted(active_rows, key=lambda row: (row.get("order", 50), row["_id"]))
 
 
+async def _use_memory_fallback(reason: str) -> None:
+    global _client, _db
+    if _client is not None:
+        try:
+            _client.close()
+        except Exception:
+            logger.debug("Failed to close MongoDB client during fallback", exc_info=True)
+    _client = None
+    _db = None
+    logger.warning("MongoDB unavailable - using in-memory fallback: %s", reason)
+    print(f"MongoDB unavailable - using in-memory fallback: {reason}")
+    await seed_builtin_software_types()
+    await seed_builtin_taxonomy_technology_roles()
+    await seed_builtin_technology_roles()
+
+
 async def get_software_types(include_inactive: bool = False) -> list[dict]:
     return await _taxonomy_rows("software_types", include_inactive)
 
@@ -293,72 +312,73 @@ async def init_db() -> None:
     global _client, _db
     uri = getenv("MONGODB_URI")
     if not uri:
-        logger.warning("MONGODB_URI not set - using in-memory fallback")
-        print("MONGODB_URI not set - using in-memory fallback")
-        await seed_builtin_software_types()
-        await seed_builtin_taxonomy_technology_roles()
+        await _use_memory_fallback("MONGODB_URI not set")
         return
 
-    _client = AsyncIOMotorClient(uri, serverSelectionTimeoutMS=5000)
-    _db = _client[getenv("MONGODB_DB", "stacksniffer")]
+    try:
+        _client = AsyncIOMotorClient(uri, serverSelectionTimeoutMS=5000)
+        _db = _client[getenv("MONGODB_DB", "stacksniffer")]
 
-    # Core lookup/filter indexes used by active query paths.
-    await _db.analyses_result.create_index("stack.software_type")
-    await _db.analyses_result.create_index("stack.stack_pattern")
-    await _db.analyses_result.create_index("pipeline_version")
-    await _db.analyses_result.create_index("stack_embedding", sparse=True)
+        # Core lookup/filter indexes used by active query paths.
+        await _db.analyses_result.create_index("stack.software_type")
+        await _db.analyses_result.create_index("stack.stack_pattern")
+        await _db.analyses_result.create_index("pipeline_version")
+        await _db.analyses_result.create_index("stack_embedding", sparse=True)
 
-    await _db.analyses_request.create_index("repo_key")
-    # Corrections are read by (repo_key, field) via _id and repo_key in queries.
-    await _db.corrections.create_index("repo_key")
-    await _db.learned_technology_mappings.create_index("technology_key", unique=True)
-    await _db.feedback.create_index("repo_key")
-    await _db.analysis_events.create_index("repo_key")
-    await _db.software_type_disagreements.create_index(
-        [("repo_key", ASCENDING), ("commit_sha", ASCENDING), ("pipeline_version", ASCENDING)],
-        unique=True,
-    )
-    await _db.review_items.create_index("kind")
-    await _db.review_items.create_index([("kind", ASCENDING), ("status", ASCENDING), ("created_at", DESCENDING)])
-    await _db.review_items.create_index("status")
-    await _db.review_items.create_index("pipeline_value")
-    await _db.correction_events.create_index(
-        [("resolution", ASCENDING), ("submitted_at", DESCENDING)]
-    )
-    await _db.correction_events.create_index("review_item_id")
-    # Corrections are repository-scoped.  A global pipeline-value mapping such
-    # as deployable_service -> library would incorrectly relabel every service.
-    old_index = await _db.software_type_corrections.index_information()
-    if old_index.get("pipeline_value_1", {}).get("unique"):
-        await _db.software_type_corrections.drop_index("pipeline_value_1")
-    async for row in _db.software_type_corrections.find(
-        {"repo_key": {"$exists": False}}, {"evidence": 1},
-    ):
-        evidence = row.get("evidence") or {}
-        repo_key = evidence.get("repo_key")
-        if not repo_key and evidence.get("repo"):
-            repo_key = f"github:{evidence['repo']}"
-        if repo_key:
-            await _db.software_type_corrections.update_one(
-                {"_id": row["_id"]}, {"$set": {"repo_key": repo_key}},
-            )
-    await _db.software_type_corrections.create_index(
-        [("repo_key", ASCENDING), ("pipeline_value", ASCENDING)], unique=True,
-    )
+        await _db.analyses_request.create_index("repo_key")
+        # Corrections are read by (repo_key, field) via _id and repo_key in queries.
+        await _db.corrections.create_index("repo_key")
+        await _db.learned_technology_mappings.create_index("technology_key", unique=True)
+        await _db.feedback.create_index("repo_key")
+        await _db.analysis_events.create_index("repo_key")
+        await _db.software_type_disagreements.create_index(
+            [("repo_key", ASCENDING), ("commit_sha", ASCENDING), ("pipeline_version", ASCENDING)],
+            unique=True,
+        )
+        await _db.review_items.create_index("kind")
+        await _db.review_items.create_index([("kind", ASCENDING), ("status", ASCENDING), ("created_at", DESCENDING)])
+        await _db.review_items.create_index("status")
+        await _db.review_items.create_index("pipeline_value")
+        await _db.correction_events.create_index(
+            [("resolution", ASCENDING), ("submitted_at", DESCENDING)]
+        )
+        await _db.correction_events.create_index("review_item_id")
+        # Corrections are repository-scoped.  A global pipeline-value mapping such
+        # as deployable_service -> library would incorrectly relabel every service.
+        old_index = await _db.software_type_corrections.index_information()
+        if old_index.get("pipeline_value_1", {}).get("unique"):
+            await _db.software_type_corrections.drop_index("pipeline_value_1")
+        async for row in _db.software_type_corrections.find(
+            {"repo_key": {"$exists": False}}, {"evidence": 1},
+        ):
+            evidence = row.get("evidence") or {}
+            repo_key = evidence.get("repo_key")
+            if not repo_key and evidence.get("repo"):
+                repo_key = f"github:{evidence['repo']}"
+            if repo_key:
+                await _db.software_type_corrections.update_one(
+                    {"_id": row["_id"]}, {"$set": {"repo_key": repo_key}},
+                )
+        await _db.software_type_corrections.create_index(
+            [("repo_key", ASCENDING), ("pipeline_value", ASCENDING)], unique=True,
+        )
 
-    await _db.stack_feedback.create_index("analysis_id")
-    await _db.insights_feedback.create_index("analysis_id")
-    await _db.software_types.create_index("software_type_id", unique=True)
-    await _db.dep_technology_roles.create_index("technology_role", unique=True)
-    await _db.dep_technology_role_feedback.create_index("technology_role", unique=True)
-    await _db.taxonomy_software_types.create_index("active")
-    await _db.taxonomy_technology_roles.create_index("active")
-    await seed_builtin_software_types()
-    await seed_builtin_taxonomy_technology_roles()
-    await seed_builtin_technology_roles()   # idempotent, safe every boot
-    await sync_pending_technology_roles_to_review_queue()
-    logger.info("MongoDB connected: %s", getenv("MONGODB_DB", "stacksniffer"))
-    print(f"MongoDB connected: {getenv('MONGODB_DB', 'stacksniffer')}")
+        await _db.stack_feedback.create_index("analysis_id")
+        await _db.insights_feedback.create_index("analysis_id")
+        await _db.software_types.create_index("software_type_id", unique=True)
+        await _db.dep_technology_roles.create_index("technology_role", unique=True)
+        await _db.dep_technology_role_feedback.create_index("technology_role", unique=True)
+        await _db.taxonomy_software_types.create_index("active")
+        await _db.taxonomy_technology_roles.create_index("active")
+        await seed_builtin_software_types()
+        await seed_builtin_taxonomy_technology_roles()
+        await seed_builtin_technology_roles()   # idempotent, safe every boot
+        await sync_pending_technology_roles_to_review_queue()
+        logger.info("MongoDB connected: %s", getenv("MONGODB_DB", "stacksniffer"))
+        print(f"MongoDB connected: {getenv('MONGODB_DB', 'stacksniffer')}")
+    except (PyMongoError, OSError, TimeoutError) as exc:
+        logger.warning("MongoDB startup failed; falling back to memory", exc_info=True)
+        await _use_memory_fallback(str(exc))
 
 
 async def close_db() -> None:
@@ -1278,6 +1298,80 @@ async def get_analysis_events(repo_key: str | None = None) -> list[dict]:
     return sorted(events, key=lambda e: e.get("analyzed_at") or e.get("created_at"))
 
 
+async def get_learning_stats_inputs() -> dict:
+    """Read only the compact rows needed for the analytics summary page."""
+    def compact_feedback(row: dict) -> dict:
+        rated_output = row.get("rated_output") or {}
+        return {
+            "repo_key": row.get("repo_key"),
+            "rated_embedding": row.get("rated_embedding"),
+            "stack_embedding": row.get("stack_embedding"),
+            "correct_software_type": row.get("correct_software_type"),
+            "rated_output": {"software_type": rated_output.get("software_type")},
+        }
+
+    def compact_layer0_analysis(row: dict) -> dict:
+        stack = row.get("stack") or {}
+        identifier = row.get("_id")
+        return {
+            "_id": str(identifier) if identifier is not None else None,
+            "analysis_id": row.get("analysis_id"),
+            "repo_key": row.get("repo_key") or row.get("analysis_id") or (str(identifier) if identifier is not None else None),
+            "commit_sha": row.get("commit_sha"),
+            "pipeline_version": row.get("pipeline_version"),
+            "stack": {"layer0_prediction": stack.get("layer0_prediction")},
+        }
+
+    if _db is not None:
+        feedback_rows = await _db.feedback.find(
+            {},
+            {
+                "_id": 0,
+                "repo_key": 1,
+                "rated_embedding": 1,
+                "stack_embedding": 1,
+                "correct_software_type": 1,
+                "rated_output.software_type": 1,
+            },
+        ).to_list(10000)
+        layer0_rows = await _db.analyses_result.find(
+            {"stack.layer0_prediction": {"$exists": True, "$ne": None}},
+            {
+                "_id": 1,
+                "analysis_id": 1,
+                "repo_key": 1,
+                "commit_sha": 1,
+                "pipeline_version": 1,
+                "stack.layer0_prediction": 1,
+            },
+        ).to_list(10000)
+        pipeline_versions = await _db.analysis_events.distinct("pipeline_version")
+        disagreements = await get_software_type_disagreements()
+        return {
+            "feedback": [compact_feedback(row) for row in feedback_rows],
+            "layer0_analyses": [compact_layer0_analysis(row) for row in layer0_rows],
+            "pipeline_versions_seen": sorted(v for v in pipeline_versions if v),
+            "disagreements": disagreements,
+        }
+
+    feedback_rows = list(_memory("feedback").values())
+    layer0_rows = [
+        row for row in _memory("analyses_result").values()
+        if (row.get("stack") or {}).get("layer0_prediction")
+    ]
+    pipeline_versions = {
+        event.get("pipeline_version")
+        for event in _memory("analysis_events")
+        if event.get("pipeline_version")
+    }
+    return {
+        "feedback": [compact_feedback(row) for row in feedback_rows],
+        "layer0_analyses": [compact_layer0_analysis(row) for row in layer0_rows],
+        "pipeline_versions_seen": sorted(pipeline_versions),
+        "disagreements": await get_software_type_disagreements(),
+    }
+
+
 async def count_corrections() -> int:
     if _db is not None:
         return await _db.corrections.count_documents({})
@@ -1358,6 +1452,101 @@ async def get_all_analyses(with_embeddings_only: bool = False) -> list[dict]:
                 stack[field] = correction.get("value")
         doc["stack"] = stack
     return docs
+
+
+async def get_analysis_registry(
+    limit: int = 100,
+    sort_by: str = "time",
+    sort_order: str = "desc",
+) -> tuple[list[dict], int, dict[str, int]]:
+    """Read only the fields needed by the repository-history table."""
+    clamped_limit = max(1, min(int(limit), 500))
+    reverse = sort_order == "desc"
+    stack_fields = {
+        "software_type",
+        "layer0_prediction",
+        "software_type_ai",
+        "ai_classification_used",
+        "software_type_ai_reasoning",
+        "specific_identity",
+        "software_type_confidence",
+    }
+    repo_fields = {"full_name", "name", "default_branch"}
+
+    def compact_repo(repo: dict | None) -> dict:
+        repo = repo or {}
+        return {key: repo.get(key) for key in repo_fields if key in repo}
+
+    def compact_doc(doc: dict) -> dict:
+        stack = doc.get("stack") or {}
+        return _public_doc({
+            "_id": doc.get("_id"),
+            "analysis_id": doc.get("analysis_id"),
+            "repo_key": doc.get("repo_key") or doc.get("_id"),
+            "repo": compact_repo(doc.get("repo")),
+            "repo_metadata": compact_repo(doc.get("repo_metadata")),
+            "commit_sha": doc.get("commit_sha"),
+            "pipeline_version": doc.get("pipeline_version"),
+            "updated_at": doc.get("updated_at"),
+            "created_at": doc.get("created_at"),
+            "analyzed_at": doc.get("analyzed_at"),
+            "stack": {key: stack.get(key) for key in stack_fields if key in stack},
+        }) or {}
+
+    if _db is not None:
+        projection = {
+            "_id": 1,
+            "analysis_id": 1,
+            "repo_key": 1,
+            **{f"repo.{field}": 1 for field in repo_fields},
+            **{f"repo_metadata.{field}": 1 for field in repo_fields},
+            "commit_sha": 1,
+            "pipeline_version": 1,
+            "updated_at": 1,
+            "created_at": 1,
+            "analyzed_at": 1,
+            **{f"stack.{field}": 1 for field in stack_fields},
+        }
+        total = await _db.analyses_result.count_documents({})
+        docs = [compact_doc(doc) for doc in await _db.analyses_result.find({}, projection).to_list(10000)]
+        feedback_rows = await _db.feedback.aggregate([
+            {"$match": {"repo_key": {"$exists": True, "$ne": None}}},
+            {"$group": {"_id": "$repo_key", "count": {"$sum": 1}}},
+        ]).to_list(10000)
+        feedback_counts = {row["_id"]: int(row["count"]) for row in feedback_rows if row.get("_id")}
+    else:
+        docs = [compact_doc(v) for v in _memory("analyses_result").values()]
+        total = len(docs)
+        feedback_counts: dict[str, int] = {}
+        for feedback in _memory("feedback").values():
+            feedback_repo_key = feedback.get("repo_key")
+            if feedback_repo_key:
+                feedback_counts[feedback_repo_key] = feedback_counts.get(feedback_repo_key, 0) + 1
+
+    if _db is not None:
+        correction_rows = await _db.corrections.find({}, {"_id": 0}).to_list(10000)
+    else:
+        correction_rows = list(_memory("corrections").values())
+    corrections_by_repo: dict[str, list[dict]] = {}
+    for correction in correction_rows:
+        corrections_by_repo.setdefault(correction.get("repo_key", ""), []).append(correction)
+    for doc in docs:
+        repo_key = doc.get("repo_key") or doc.get("analysis_id") or doc.get("_id")
+        stack = dict(doc.get("stack") or {})
+        for correction in corrections_by_repo.get(repo_key, []):
+            field = correction.get("field")
+            if field in ALLOWED_CORRECTION_FIELDS:
+                stack[field] = correction.get("value")
+        doc["stack"] = stack
+
+    def sort_value(doc: dict) -> str:
+        if sort_by == "name":
+            repo = doc.get("repo_metadata") or doc.get("repo") or {}
+            return str(repo.get("full_name") or repo.get("name") or doc.get("repo_key") or "").casefold()
+        return str(doc.get("updated_at") or doc.get("created_at") or doc.get("analyzed_at") or "")
+
+    docs.sort(key=sort_value, reverse=reverse)
+    return docs[:clamped_limit], total, feedback_counts
 
 
 async def search_analysis_examples(kind: str, query: str, limit: int = 10) -> list[dict]:
@@ -2148,22 +2337,30 @@ async def find_by_software_type(software_type: str, limit: int = 20) -> list[dic
     return await cursor.to_list(limit)
 
 
-async def get_specific_identity_counts() -> list[dict]:
+async def get_specific_identity_counts(min_count: int = 1) -> list[dict]:
     """Frequency distribution of persisted sub-canonical identity observations."""
+    min_count = max(1, int(min_count))
+    active_types = await get_valid_software_types()
     if _db is None:
         counts: dict[str, int] = {}
         for document in _memory("analyses_result").values():
             identity = document.get("stack", {}).get("specific_identity")
-            if identity:
+            if identity and identity not in active_types:
                 counts[identity] = counts.get(identity, 0) + 1
         return [
             {"specific_identity": identity, "count": count}
             for identity, count in sorted(counts.items(), key=lambda item: (-item[1], item[0]))
+            if count >= min_count
         ]
 
     pipeline = [
-        {"$match": {"stack.specific_identity": {"$type": "string", "$ne": ""}}},
+        {"$match": {
+            "stack.specific_identity": {
+                "$type": "string", "$ne": "", "$nin": list(active_types),
+            },
+        }},
         {"$group": {"_id": "$stack.specific_identity", "count": {"$sum": 1}}},
+        {"$match": {"count": {"$gte": min_count}}},
         {"$sort": {"count": -1, "_id": 1}},
         {"$project": {"_id": 0, "specific_identity": "$_id", "count": 1}},
     ]

@@ -1,8 +1,14 @@
 import asyncio
+import asyncio
 import json
+import sys
+from pathlib import Path
 
-import backend.services.ai_pipeline as ai_pipeline
-import backend.services.storage_service as storage_service
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
+
+import services.ai_pipeline as ai_pipeline
+import services.storage_service as storage_service
 
 
 class _Response:
@@ -26,10 +32,10 @@ def _run(coro):
 
 def _configure_taxonomy(monkeypatch):
     async def options():
-        return "unknown | library | ml_platform"
+        return "unknown | library | ml_platform | application_platform"
 
     async def valid():
-        return {"unknown", "library", "ml_platform"}
+        return {"unknown", "library", "ml_platform", "application_platform"}
 
     async def feedback():
         return ""
@@ -161,3 +167,28 @@ def test_canonical_specific_identity_is_cleared(monkeypatch):
     result = _run(ai_pipeline.classify_software_type({}, [], repo_name="requests"))
 
     assert result["specific_identity"] is None
+
+
+def test_specific_identity_fallback_for_drawio(monkeypatch):
+    _configure_taxonomy(monkeypatch)
+    model = _Model({
+        "software_type": "application_platform",
+        "software_type_is_new": False,
+        "emergent_software_type": None,
+        "software_type_confidence": 0.88,
+        "software_type_reasoning": "Diagram editor with web and desktop surfaces",
+        "specific_identity": None,
+        "rejected": False,
+    })
+    monkeypatch.setattr(ai_pipeline, "_json_model", model)
+
+    result = _run(
+        ai_pipeline.classify_software_type(
+            {},
+            ["src/main/webapp/js/diagramly/App.js", "src/main/webapp/mxgraph/Editor.js"],
+            repo_name="jgraph/drawio",
+        )
+    )
+
+    assert result["software_type"] == "application_platform"
+    assert result["specific_identity"] == "diagram_editor"

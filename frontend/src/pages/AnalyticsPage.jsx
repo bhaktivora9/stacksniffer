@@ -29,12 +29,39 @@ function formatTime(value) {
   return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
 }
 
+async function readJsonResponse(response, label) {
+  const contentType = response.headers.get("content-type") || "";
+  if (!response.ok) {
+    let detail = "";
+    if (contentType.includes("application/json")) {
+      const payload = await response.json().catch(() => null);
+      detail = payload?.detail ? `: ${payload.detail}` : "";
+    }
+    throw new Error(`Could not load ${label} (${response.status})${detail}`);
+  }
+
+  if (!contentType.includes("application/json")) {
+    throw new Error(`Could not load ${label}: backend returned ${contentType || "unknown content"} instead of JSON`);
+  }
+
+  return response.json();
+}
+
+function networkErrorMessage(label, reason) {
+  const message = reason?.message || String(reason || "Unknown error");
+  if (message === "Failed to fetch") {
+    return `Could not reach ${label}. Confirm the FastAPI backend is running on http://127.0.0.1:8000 and use http, not https.`;
+  }
+  return `Could not reach ${label}: ${message}`;
+}
+
 export default function AnalyticsPage() {
   const [stats, setStats] = useState(null);
   const [events, setEvents] = useState([]);
   const [feedbackCounts, setFeedbackCounts] = useState({ software_type: 0, technology_role: 0, architectural_layer: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [waitingForBackend, setWaitingForBackend] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [trainLoading, setTrainLoading] = useState(false);
   const [trainResult, setTrainResult] = useState(null);
@@ -42,29 +69,54 @@ export default function AnalyticsPage() {
 
   useEffect(() => {
     let cancelled = false;
+    const waitTimer = window.setTimeout(() => {
+      if (!cancelled) setWaitingForBackend(true);
+    }, 2500);
+
     setLoading(true);
+    setWaitingForBackend(false);
     setError("");
-    Promise.all([
-      fetch(`${API_BASE}/api/learning/stats`).then((res) => {
-        if (!res.ok) throw new Error(`Could not load learning stats (${res.status})`);
-        return res.json();
-      }),
-      fetch(`${API_BASE}/api/learning/events?limit=500`).then((res) => {
-        if (!res.ok) throw new Error(`Could not load learning events (${res.status})`);
-        return res.json();
-      }),
-    ]).then(([nextStats, ledger]) => {
+
+    async function loadAnalytics() {
+      const [statsResult, eventsResult] = await Promise.allSettled([
+        fetch(`${API_BASE}/api/learning/stats`),
+        fetch(`${API_BASE}/api/learning/events?limit=500`),
+      ]);
+
+      if (statsResult.status === "rejected") {
+        throw new Error(networkErrorMessage("learning stats", statsResult.reason));
+      }
+
+      const nextStats = await readJsonResponse(statsResult.value, "learning stats");
+      let ledger = { events: [], feedback_counts: { software_type: 0, technology_role: 0, architectural_layer: 0 } };
+
+      if (eventsResult.status === "fulfilled") {
+        ledger = await readJsonResponse(eventsResult.value, "learning events");
+      }
+
       if (!cancelled) {
         setStats(nextStats);
         setEvents(ledger.events || []);
         setFeedbackCounts(ledger.feedback_counts || { software_type: 0, technology_role: 0, architectural_layer: 0 });
       }
-    }).catch((err) => {
-      if (!cancelled) setError(err.message);
-    }).finally(() => {
-      if (!cancelled) setLoading(false);
-    });
-    return () => { cancelled = true; };
+    }
+
+    loadAnalytics()
+      .catch((err) => {
+        if (!cancelled) setError(err.message);
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false);
+          setWaitingForBackend(false);
+        }
+        window.clearTimeout(waitTimer);
+      });
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(waitTimer);
+    };
   }, [refreshKey]);
 
   async function trainClassifier() {
@@ -121,7 +173,7 @@ export default function AnalyticsPage() {
           </p>
         </div>
 
-        {loading && <AnalyticsSkeleton />}
+        {loading && <AnalyticsSkeleton waitingForBackend={waitingForBackend} />}
         {error && <div className="app-glass rounded-xl border-red-400/30 p-6 text-sm text-red-400">{error}</div>}
 
         {!loading && !error && stats && <div className="space-y-5">
@@ -221,8 +273,11 @@ export default function AnalyticsPage() {
   </AppShell>;
 }
 
-function AnalyticsSkeleton() {
+function AnalyticsSkeleton({ waitingForBackend }) {
   return <div className="space-y-5 animate-pulse">
+    <div className="app-glass border-accent/20 px-4 py-3 font-mono text-xs text-muted">
+      {waitingForBackend ? "Waiting for analytics response from backend..." : "Loading classifier analytics..."}
+    </div>
     <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
       {Array.from({ length: 5 }).map((_, index) => <div key={index} className="app-glass rounded-xl p-5">
         <div className="h-3 w-24 rounded bg-border/70"/>

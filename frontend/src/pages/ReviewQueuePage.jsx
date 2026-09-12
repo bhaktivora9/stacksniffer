@@ -67,6 +67,7 @@ function ItemCard({
   const kind = item.kind;
   const diagnosis = kind === "classifier_diagnosis";
   const isEmergent = kind === "emergent_type" || kind === "emergent_role";
+  const isSpecificIdentity = kind === "specific_identity";
   const isInactiveCanonical = assignmentMethod === "inactive_canonical";
   const canMerge = isEmergent;
   const pipelineValue = item.pipeline_value || "unknown";
@@ -78,10 +79,10 @@ function ItemCard({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1 min-w-[220px]">
           <div className="text-xs uppercase tracking-wide text-muted">
-            {isInactiveCanonical ? "inactive canonical role" : kind}
+            {isInactiveCanonical ? "inactive canonical role" : isSpecificIdentity ? "observed specific identity" : kind}
           </div>
           <div className="font-mono">
-            <span className="text-muted">pipeline:</span>{" "}
+            <span className="text-muted">{isSpecificIdentity ? "identity:" : "pipeline:"}</span>{" "}
             <span className="text-text">{pipelineValue}</span>
           </div>
           <div className="font-mono">
@@ -111,6 +112,7 @@ function ItemCard({
       <EvidenceBlock evidence={item.evidence || {}} seenCount={item.seen_count} />
 
       {diagnosis && <div className="rounded border border-amber/30 bg-amber/10 px-3 py-2 text-xs text-amber">Global role contract: diagnose and fix the classifier, then prove the change against regression tests. This item cannot create a repository overlay.</div>}
+      {isSpecificIdentity && <div className="rounded border border-accent/30 bg-accent/10 px-3 py-2 text-xs text-accent">Observed repeatedly across analyses. Promotion requires maintainer review and a canonical taxonomy decision.</div>}
 
       <div className="flex flex-wrap items-center gap-2">
         {canMerge && (
@@ -128,7 +130,15 @@ function ItemCard({
             ))}
           </select>
         )}
-        {!diagnosis && <button
+        {isSpecificIdentity && <button
+            onClick={() => onApprove(item._id, selectedTarget)}
+            disabled={!canMutate}
+            title={canMutate ? undefined : "Admin login required"}
+            className="px-3 py-1.5 rounded border border-accent/35 bg-accent/10 text-accent text-xs disabled:opacity-40"
+          >
+            Promote
+          </button>}
+        {!diagnosis && !isSpecificIdentity && <button
             onClick={() => onApprove(item._id, selectedTarget)}
             disabled={!canMutate}
             title={canMutate ? undefined : "Admin login required"}
@@ -136,7 +146,7 @@ function ItemCard({
           >
             {isInactiveCanonical ? "Activate" : isEmergent ? "Promote" : "Approve"}
           </button>}
-        {!isEmergent && (
+        {!isEmergent && !isSpecificIdentity && (
           <button
             onClick={() => onReject(item._id)}
             disabled={!canMutate}
@@ -192,9 +202,13 @@ export default function ReviewQueuePage() {
   const filteredItems = useMemo(
     () => items.filter((item) => (
       item.status === status
-      && (activeTab === "correction"
-        ? item.kind === "correction" || item.kind === "classifier_diagnosis"
-        : item.kind === "emergent_type" || item.kind === "emergent_role")
+      && (
+        activeTab === "correction"
+          ? item.kind === "correction" || item.kind === "classifier_diagnosis"
+          : item.kind === "emergent_type"
+            || item.kind === "emergent_role"
+            || item.kind === "specific_identity"
+      )
     )),
     [items, activeTab, status],
   );
@@ -243,8 +257,27 @@ export default function ReviewQueuePage() {
         `/api/review/queue?kind=${kind}&status=${status}&page=${page}&limit=${limit}`,
         "GET",
       )));
-      setItems(responses.flatMap((response) => response.items || []));
-      setTotal(responses.reduce((sum, response) => sum + (response.total || 0), 0));
+      const identityResponse = activeTab === "emergent_taxonomy"
+        ? await fetch(`${API_BASE}/api/taxonomy/specific_identities`)
+        : null;
+      const identityData = identityResponse?.ok ? await identityResponse.json() : { specific_identities: [] };
+      const identityItems = (identityData.specific_identities || []).map((entry) => ({
+        _id: `specific_identity:${entry.specific_identity}`,
+        kind: "specific_identity",
+        pipeline_value: entry.specific_identity,
+        proposed_value: entry.specific_identity,
+        assignment_method: "frequency_observation",
+        seen_count: entry.count || 0,
+        evidence: {
+          source: "persisted analyses",
+          seen_count: entry.count || 0,
+          example: "specific_identity recurrence",
+        },
+        status: "pending",
+      }));
+      const queueItems = responses.flatMap((response) => response.items || []);
+      setItems([...queueItems, ...identityItems]);
+      setTotal(responses.reduce((sum, response) => sum + (response.total || 0), 0) + identityItems.length);
     } catch (err) {
       setError(err.message || "Failed to load review queue");
       setItems([]);
@@ -337,6 +370,16 @@ export default function ReviewQueuePage() {
   async function handleApprove(itemId) {
     const item = items.find((entry) => entry._id === itemId);
     if (!item) return;
+
+    if (item.kind === "specific_identity") {
+      await callReviewApi(
+        `/api/taxonomy/specific_identities/${encodeURIComponent(item.pipeline_value)}/promote`,
+        "POST",
+      );
+      showToast(`${item.pipeline_value} promoted to the software taxonomy`);
+      await refreshQueue();
+      return;
+    }
 
     if (item.kind === "correction") {
       await runAction(itemId, "approve", {

@@ -22,7 +22,6 @@ from os import getenv
 from typing import Literal
 from uuid import uuid4
 
-import services.github_service as github_service
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from models.schemas import (
     AnalyzeRequest,
@@ -32,7 +31,8 @@ from models.schemas import (
     UsageScope,
 )
 from models.taxonomy import canonicalize_software_type
-from services import storage_service
+from routers.deps import resolve_repo_key
+from services import github_service, storage_service
 from services.ai_pipeline import run_full_ai_pipeline
 from services.artifact_classifier import (
     assign_artifact_ownership,
@@ -44,6 +44,7 @@ from services.dep_classifier import (
 )
 from services.embedding_service import embed_stack
 from services.github_service import (
+    GitHubAuthError,
     GitHubRateLimitError,
     RepoNotFoundError,
     fetch_repo,
@@ -70,8 +71,6 @@ from services.software_type_guard import guard_library_classification
 from services.technology_dedup import dedup_stack
 from services.technology_role_registry import valid_technology_roles
 from sse_starlette.sse import EventSourceResponse
-
-from routers.deps import resolve_repo_key
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -359,6 +358,11 @@ async def analyze_repository(request: AnalyzeRequest):
         raise HTTPException(400, str(e))
     except RepoNotFoundError as e:
         raise HTTPException(404, str(e))
+    except GitHubAuthError as e:
+        raise HTTPException(401, {
+            "detail": str(e),
+            "fix": "Replace or remove GITHUB_TOKEN in backend/.env, then restart the backend.",
+        })
 
     except GitHubRateLimitError as e:
         raise HTTPException(429, {
@@ -368,6 +372,12 @@ async def analyze_repository(request: AnalyzeRequest):
                 "Add GITHUB_TOKEN to .env. "
                 "Unauthenticated: 60 req/hr. Authenticated: 5000 req/hr."
             ),
+        })
+    except Exception as e:
+        raise HTTPException(502, {
+            "detail": "GitHub API request failed",
+            "error": str(e)[:200],
+            "fix": "Check network/proxy access to https://api.github.com and retry.",
         })
 
     doc = await storage_service.get_repo(repo_key)
@@ -576,6 +586,11 @@ async def _run_pipeline_body(repo_key: str, head_sha: str) -> dict:
         raise HTTPException(400, str(e))
     except RepoNotFoundError as e:
         raise HTTPException(404, str(e))
+    except GitHubAuthError as e:
+        raise HTTPException(401, {
+            "detail": str(e),
+            "fix": "Replace or remove GITHUB_TOKEN in backend/.env, then restart the backend.",
+        })
     except GitHubRateLimitError as e:
         raise HTTPException(429, {
             "detail":              "GitHub API rate limit exceeded",
@@ -644,10 +659,10 @@ async def _run_pipeline_body(repo_key: str, head_sha: str) -> dict:
     # everything on DEP_CLASSIFICATION_FAILED.)
     # ---------------------------------------------------------------------------
     from services.dep_fallback import (
+        assert_deps_survived,
         build_base_detections,
         collect_unresolved_tail,
         enrich_with_classifications,
-        assert_deps_survived,
     )
 
     files_analyzed = len(repo.file_contents)
@@ -849,52 +864,45 @@ async def _run_pipeline_body(repo_key: str, head_sha: str) -> dict:
 
     # ---------------------------------------------------------------------------
     # PHASE 2b: SoftwareType classification (stack insights are disabled)
-    # Input: Phase 0 + Phase 2a detections (clean, no false positives)
-    # Suppressed when files_analyzed < 4 to prevent fabricated insights.
+    # Input: Phase 0 + Phase 2a detections (clean, no false positives).
+    # This remains enabled when file contents are unavailable: the classifier
+    # can still use the repository name, description, file tree, and manifests.
     # ---------------------------------------------------------------------------
-    if files_analyzed < 1:
-        logger.info("[analyze] Phase 2b suppressed - only %s files", files_analyzed)
-        ai = deepcopy(_AI_FAILED_DEFAULTS)
-        ai["software_type_reasoning"] = (
-            f"Suppressed: only {files_analyzed} files analyzed. "
-            "Insights would be fabricated from insufficient evidence."
-        )
-    else:
-        # Layer 0: trained software_type classifier (active after 50+ feedback items)
-        try:
-            from services.learning_service import predict_software_type
-            classifier_result = await predict_software_type(detections)
-            if classifier_result and classifier_result["confidence"] >= 0.85:
-                logger.info(
-                    "[analyze] Layer 0 classifier: %s (%.2f) - advisory; Gemini still runs",
-                    classifier_result["software_type"],
-                    classifier_result["confidence"],
-                )
-        except Exception as e:
-            logger.exception("[analyze] Layer 0 classifier failed")
-
-        # Phase 2b: Gemini software_type classification
-        await _emit_progress(
-            phase="infer", level="ai", message="Querying Gemini for repository classification",
-            provenance="ai", progress=0.72, verified_total=verified_total,
-        )
-        try:
-            ai = await asyncio.wait_for(
-                run_full_ai_pipeline(
-                    detections,
-                    repo.file_tree,
-                    repo.name,
-                    repo.description or "",
-                    flags=[],
-                ),
-                timeout=SOFTWARE_TYPE_TIMEOUT_SECONDS,
+    # Layer 0: trained software_type classifier (active after 50+ feedback items)
+    try:
+        from services.learning_service import predict_software_type
+        classifier_result = await predict_software_type(detections)
+        if classifier_result and classifier_result["confidence"] >= 0.85:
+            logger.info(
+                "[analyze] Layer 0 classifier: %s (%.2f) - advisory; Gemini still runs",
+                classifier_result["software_type"],
+                classifier_result["confidence"],
             )
-        except asyncio.TimeoutError:
-            logger.warning("[analyze] Phase 2b timed out after %ss", SOFTWARE_TYPE_TIMEOUT_SECONDS)
-            ai = deepcopy(_AI_FAILED_DEFAULTS)
-        except Exception as e:
-            logger.exception("[analyze] Phase 2b exception: %s", e)
-            ai = deepcopy(_AI_FAILED_DEFAULTS)
+    except Exception as e:
+        logger.exception("[analyze] Layer 0 classifier failed")
+
+    # Phase 2b: Gemini software_type classification
+    await _emit_progress(
+        phase="infer", level="ai", message="Querying Gemini for repository classification",
+        provenance="ai", progress=0.72, verified_total=verified_total,
+    )
+    try:
+        ai = await asyncio.wait_for(
+            run_full_ai_pipeline(
+                detections,
+                repo.file_tree,
+                repo.name,
+                repo.description or "",
+                flags=[],
+            ),
+            timeout=SOFTWARE_TYPE_TIMEOUT_SECONDS,
+        )
+    except asyncio.TimeoutError:
+        logger.warning("[analyze] Phase 2b timed out after %ss", SOFTWARE_TYPE_TIMEOUT_SECONDS)
+        ai = deepcopy(_AI_FAILED_DEFAULTS)
+    except Exception as e:
+        logger.exception("[analyze] Phase 2b exception: %s", e)
+        ai = deepcopy(_AI_FAILED_DEFAULTS)
 
     gemini_prediction = {
         "software_type": ai.get("software_type", "unknown"),
@@ -928,7 +936,13 @@ async def _run_pipeline_body(repo_key: str, head_sha: str) -> dict:
         repo_name=repo.name,
         description=repo.description or "",
     )
-    canonical_software_type = canonicalize_software_type(ai["software_type"]).value
+    active_software_types = await storage_service.get_valid_software_types()
+    if ai["software_type"] in active_software_types:
+        # Promoted taxonomy entries are DB-backed and therefore cannot be added
+        # to the static Python enum at runtime. Preserve approved dynamic IDs.
+        canonical_software_type = ai["software_type"]
+    else:
+        canonical_software_type = canonicalize_software_type(ai["software_type"]).value
     if canonical_software_type != ai["software_type"]:
         logger.debug(
             "[analyze] software_type canonicalized: %r -> %r",
@@ -1375,12 +1389,11 @@ async def list_analyses(
     sort_order: Literal["asc", "desc"] = "desc",
 ):
     """Return a compact registry for the repository-history UI."""
-    docs = await storage_service.get_all_analyses()
-    feedback_counts: dict[str, int] = {}
-    for feedback in await storage_service.get_all_feedback():
-        feedback_repo_key = feedback.get("repo_key")
-        if feedback_repo_key:
-            feedback_counts[feedback_repo_key] = feedback_counts.get(feedback_repo_key, 0) + 1
+    docs, total_count, feedback_counts = await storage_service.get_analysis_registry(
+        limit=limit,
+        sort_by=sort_by,
+        sort_order=sort_order,
+    )
     rows = []
     for doc in docs:
         stack = doc.get("stack") or {}
@@ -1410,14 +1423,7 @@ async def list_analyses(
             "feedback_count": feedback_counts.get(doc.get("repo_key") or doc.get("_id"), 0),
         })
 
-    def sort_value(row: dict) -> str:
-        if sort_by == "name":
-            repo = row.get("repo") or {}
-            return str(repo.get("full_name") or repo.get("name") or row.get("repo_key") or "").casefold()
-        return str(row.get("analyzed_at") or "")
-
-    rows.sort(key=sort_value, reverse=sort_order == "desc")
-    return {"analyses": rows[:max(1, min(limit, 500))], "count": len(docs)}
+    return {"analyses": rows, "count": total_count}
 
 @router.get("/analyse/{id:path}", include_in_schema=False)
 @router.get("/analyze/{id:path}")

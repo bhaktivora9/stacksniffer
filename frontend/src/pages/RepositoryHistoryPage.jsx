@@ -45,6 +45,20 @@ function TypeChip({ value, muted = false }) {
   </span>;
 }
 
+async function readJsonResponse(response, label) {
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    throw new Error(body.detail || `Could not load ${label} (${response.status})`);
+  }
+
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    throw new Error(`Could not load ${label}: backend returned non-JSON content`);
+  }
+
+  return response.json();
+}
+
 export default function RepositoryHistoryPage() {
   const [rows, setRows] = useState([]);
   const [softwareTypes, setSoftwareTypes] = useState([]);
@@ -53,6 +67,7 @@ export default function RepositoryHistoryPage() {
   const [type, setType] = useState("");
   const [sort, setSort] = useState("time-desc");
   const [loading, setLoading] = useState(true);
+  const [waitingForBackend, setWaitingForBackend] = useState(false);
   const [error, setError] = useState("");
   const [feedbackState, setFeedbackState] = useState({});
   const [correctionOpen, setCorrectionOpen] = useState(null);
@@ -61,26 +76,46 @@ export default function RepositoryHistoryPage() {
 
   useEffect(() => {
     let cancelled = false;
+    const waitingTimer = window.setTimeout(() => {
+      if (!cancelled) setWaitingForBackend(true);
+    }, 2500);
+
     setLoading(true);
+    setWaitingForBackend(false);
     setError("");
     const [sortBy, sortOrder] = sort.split("-");
-    Promise.all([
-      fetch(`${API_BASE}/api/analyses?limit=500&sort_by=${sortBy}&sort_order=${sortOrder}`).then((res) => {
-        if (!res.ok) throw new Error(`Could not load repository history (${res.status})`);
-        return res.json();
-      }),
-      fetch(`${API_BASE}/api/taxonomy/software_types`).then((res) => res.ok ? res.json() : { software_types: [] }),
-    ]).then(([data, taxonomy]) => {
-      if (cancelled) return;
-      setRows(data.analyses || []);
-      setTotal(data.count || 0);
-      setSoftwareTypes((taxonomy.software_types || []).filter((item) => !item.sentinel));
-    }).catch((err) => {
-      if (!cancelled) setError(err.message);
-    }).finally(() => {
-      if (!cancelled) setLoading(false);
-    });
-    return () => { cancelled = true; };
+
+    async function loadRegistry() {
+      try {
+        const [historyResponse, taxonomyResponse] = await Promise.all([
+          fetch(`${API_BASE}/api/analyses?limit=500&sort_by=${sortBy}&sort_order=${sortOrder}`),
+          fetch(`${API_BASE}/api/taxonomy/software_types`),
+        ]);
+        const data = await readJsonResponse(historyResponse, "repository history");
+        const taxonomy = taxonomyResponse.ok
+          ? await readJsonResponse(taxonomyResponse, "software type taxonomy").catch(() => ({ software_types: [] }))
+          : { software_types: [] };
+
+        if (cancelled) return;
+        setRows(data.analyses || []);
+        setTotal(data.count || 0);
+        setSoftwareTypes((taxonomy.software_types || []).filter((item) => !item.sentinel));
+      } catch (err) {
+        if (!cancelled) setError(err.message);
+      } finally {
+        window.clearTimeout(waitingTimer);
+        if (!cancelled) {
+          setLoading(false);
+          setWaitingForBackend(false);
+        }
+      }
+    }
+
+    loadRegistry();
+    return () => {
+      cancelled = true;
+      window.clearTimeout(waitingTimer);
+    };
   }, [sort]);
 
   useEffect(() => {
@@ -157,9 +192,9 @@ export default function RepositoryHistoryPage() {
         </div>
 
         <div className="app-glass overflow-hidden rounded-xl">
-          <div className="flex items-center justify-between border-b border-border/40 px-4 py-3"><h2 className="font-mono text-[11px] uppercase tracking-wider text-muted">Analysis Registry</h2><span className="rounded-full border border-accent/20 bg-accent/10 px-3 py-1 font-mono text-[10px] uppercase text-accent">{total} total</span></div>
+          <div className="flex items-center justify-between border-b border-border/40 px-4 py-3"><h2 className="font-mono text-[11px] uppercase tracking-wider text-muted">Analysis Registry</h2><span className="rounded-full border border-accent/20 bg-accent/10 px-3 py-1 font-mono text-[10px] uppercase text-accent">{loading ? "Loading" : `${total} total`}</span></div>
           {error && <div className="p-6 text-sm text-red-400">{error}</div>}
-          {loading && <div className="p-8 text-center font-mono text-xs text-muted animate-pulse">Loading analysis registry...</div>}
+          {loading && <div className="p-8 text-center font-mono text-xs text-muted animate-pulse">{waitingForBackend ? "Waiting for repository history from backend..." : "Loading analysis registry..."}</div>}
           {!loading && !error && <div className="overflow-x-auto"><table className="w-full min-w-[1680px] border-collapse text-left">
             <thead className="border-b border-border/30 bg-[#060e20]/50 font-mono text-[10px] uppercase tracking-wider text-muted"><tr><th className="w-[23%] px-4 py-3">Repository</th><th className="px-4 py-3">Last analyzed</th><th className="px-4 py-3">Type</th><th className="px-4 py-3">Classifier L0</th><th className="px-4 py-3">AI predicted</th><th className="px-4 py-3">Specific type</th><th className="px-4 py-3">Confidence</th><th className="px-4 py-3 text-center">Feedback received</th><th className="px-4 py-3">Give feedback</th><th className="px-4 py-3 text-right">Action</th></tr></thead>
             <tbody className="divide-y divide-border/20 font-mono text-xs">{filtered.map((row) => {
@@ -180,7 +215,7 @@ export default function RepositoryHistoryPage() {
               </tr>;
             })}</tbody>
           </table>{filtered.length === 0 && <div className="p-8 text-center text-sm text-muted">No repositories match these filters.</div>}</div>}
-          <div className="flex items-center justify-between border-t border-border/30 bg-surface/40 px-4 py-3 font-mono text-[10px] text-muted"><span>Showing {filtered.length ? 1 : 0}-{filtered.length} of {total}</span><div className="flex gap-1"><button disabled className="grid h-8 w-8 place-items-center rounded border border-border/50 disabled:opacity-30"><ChevronLeft size={15}/></button><button disabled={filtered.length === rows.length} className="grid h-8 w-8 place-items-center rounded border border-border/50 disabled:opacity-30"><ChevronRight size={15}/></button></div></div>
+          <div className="flex items-center justify-between border-t border-border/30 bg-surface/40 px-4 py-3 font-mono text-[10px] text-muted"><span>{loading ? "Waiting for backend response" : `Showing ${filtered.length ? 1 : 0}-${filtered.length} of ${total}`}</span><div className="flex gap-1"><button disabled className="grid h-8 w-8 place-items-center rounded border border-border/50 disabled:opacity-30"><ChevronLeft size={15}/></button><button disabled={loading || filtered.length === rows.length} className="grid h-8 w-8 place-items-center rounded border border-border/50 disabled:opacity-30"><ChevronRight size={15}/></button></div></div>
         </div>
       </div>
     </main>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { API_BASE } from "../config/api";
 import SimilarReposCard from "./SimilarReposCard";
@@ -257,10 +257,12 @@ export default function ProvenanceResult({
   onLayerCorrection,
   isAdmin = false,
 }) {
-  const { repo = {}, stack = {}, repository_classification: classification = {} } = result;
+  const repo = result?.repo ?? {};
+  const stack = result?.stack ?? {};
+  const classification = result?.repository_classification ?? {};
   const { primary, otherLanguages } = buildLanguageSummary(stack);
   const groups = buildArtifactLayerGroups(stack, classification);
-  const confidence = stack.software_type_confidence ?? 0;
+  const confidence = Number(stack.software_type_confidence) || 0;
   const topics = repo.topics ?? [];
   const [types, setTypes] = useState([]);
   const [roles, setRoles] = useState([]);
@@ -362,18 +364,21 @@ export default function ProvenanceResult({
             {typeFeedbackState === "idle" && (
               <>
                 <button className="vote yes" aria-label="Software type is correct" onClick={confirmSoftwareType}>✓</button>
-                <button className="vote no" aria-label={isAdmin ? "Correct software type" : "Software type is incorrect"} onClick={isAdmin ? () => setTypeFeedbackState("correcting") : submitSoftwareTypeNegativeFeedback}>×</button>
+                <button className="vote no" aria-label="Suggest a different software type" onClick={() => setTypeFeedbackState("correcting")}>×</button>
               </>
             )}
-            {isAdmin && typeFeedbackState === "correcting" && (
+            {typeFeedbackState === "correcting" && (
               <>
-                <button className="vote no active" aria-label="Cancel correction" onClick={() => setTypeFeedbackState("idle")}>×</button>
+                <button className="vote no active" aria-label="Cancel software type suggestion" onClick={() => setTypeFeedbackState("idle")}>×</button>
                 <select value={correctedType} onChange={(event) => setCorrectedType(event.target.value)}>
                   {types.filter((item) => item.id !== stack.software_type).map((item) => (
                     <option key={item.id} value={item.id}>{item.label}</option>
                   ))}
                 </select>
-                <button className="submit" disabled={!correctedType} onClick={submitSoftwareTypeCorrection}>submit correction</button>
+                <button className="submit" disabled={!correctedType} onClick={submitSoftwareTypeCorrection}>
+                  {isAdmin ? "submit correction" : "suggest type"}
+                </button>
+                {!isAdmin && <button className="submit muted" onClick={submitSoftwareTypeNegativeFeedback}>wrong only</button>}
               </>
             )}
             {typeFeedbackState === "submitting" && <span className="feedback-submitting">submitting feedback...</span>}

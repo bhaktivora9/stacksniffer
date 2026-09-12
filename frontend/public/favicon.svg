@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">StackSniffer favicon</title>
+  <desc id="desc">Yellow and emerald repository stack with a red magnifying glass.</desc>
+  <rect width="64" height="64" rx="12" fill="#0B0D0E"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M10 22 L28 14 L46 22 L28 30 Z" stroke="#FACC15" stroke-width="4.5"/>
+    <path d="M10 31 L28 39 L46 31" stroke="#10B981" stroke-width="4.5"/>
+    <path d="M10 40 L28 48 L40 42" stroke="#047857" stroke-width="4.5"/>
+    <circle cx="43" cy="42" r="8" stroke="#EF4444" stroke-width="4.5"/>
+    <path d="M49 48 L56 55" stroke="#EF4444" stroke-width="4.5"/>
+  </g>
+</svg>

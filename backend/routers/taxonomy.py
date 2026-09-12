@@ -158,8 +158,57 @@ async def list_software_types():
 @router.get("/specific_identities")
 async def list_specific_identity_counts():
     """Return observed finer-grained identities ranked for promotion review."""
-    identities = await storage_service.get_specific_identity_counts()
-    return {"specific_identities": identities, "count": len(identities)}
+    threshold = storage_service.SPECIFIC_IDENTITY_PROMOTION_THRESHOLD
+    identities = await storage_service.get_specific_identity_counts(min_count=threshold)
+    return {
+        "specific_identities": identities,
+        "count": len(identities),
+        "promotion_threshold": threshold,
+    }
+
+
+@router.post("/specific_identities/{identity}/promote")
+async def promote_specific_identity(
+    identity: str,
+    _auth: str = Depends(require_admin),
+):
+    """Promote a recurring specific identity into the active software taxonomy."""
+    normalized = identity.strip().lower().replace("-", "_").replace(" ", "_")
+    if not normalized or not all(character.isalnum() or character == "_" for character in normalized):
+        raise HTTPException(400, "identity must contain only letters, numbers, spaces, hyphens, or underscores")
+
+    valid_types = await storage_service.get_valid_software_types()
+    if normalized in valid_types:
+        raise HTTPException(409, f"{normalized} is already an active software_type")
+
+    threshold = storage_service.SPECIFIC_IDENTITY_PROMOTION_THRESHOLD
+    identities = await storage_service.get_specific_identity_counts(min_count=threshold)
+    candidate = next(
+        (entry for entry in identities if entry["specific_identity"] == normalized),
+        None,
+    )
+    if candidate is None:
+        raise HTTPException(
+            409,
+            f"{normalized} has not reached the promotion threshold of {threshold}",
+        )
+
+    await storage_service.record_emergent_software_type(
+        normalized,
+        f"specific_identity:{normalized}",
+    )
+    result = await storage_service.apply_taxonomy_action(
+        kind="software_type",
+        name=normalized,
+        action="promote",
+        source="specific_identity_review",
+    )
+    return {
+        **result,
+        "specific_identity": normalized,
+        "observed_count": candidate["count"],
+        "promotion_threshold": threshold,
+    }
 
 
 @router.get("/technology_roles")

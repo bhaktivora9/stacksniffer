@@ -257,11 +257,12 @@ async def update_patterns_from_corpus(min_samples: int = 3) -> dict:
 async def get_learning_stats() -> dict:
     from services import storage_service
 
-    feedback = await storage_service.get_all_feedback()
-    analyses = await storage_service.get_all_analyses()
     storage_stats = await storage_service.get_stats()
-    events = await storage_service.get_analysis_events()
-    disagreements = await storage_service.get_software_type_disagreements()
+    stats_inputs = await storage_service.get_learning_stats_inputs()
+    feedback = stats_inputs.get("feedback", [])
+    layer0_analyses = stats_inputs.get("layer0_analyses", [])
+    pipeline_versions_seen = stats_inputs.get("pipeline_versions_seen", [])
+    disagreements = stats_inputs.get("disagreements", [])
     # Count samples that could actually train a classifier — labeled AND with a
     # usable embedding. "50 feedback rows" of empty-embedding rows trains nothing.
     trainable = sum(
@@ -269,10 +270,6 @@ async def get_learning_stats() -> dict:
         if (f.get("rated_embedding") or f.get("stack_embedding"))
         and (f.get("correct_software_type") or (f.get("rated_output") or {}).get("software_type"))
     )
-    layer0_analyses = [
-        analysis for analysis in analyses
-        if ((analysis.get("stack") or {}).get("layer0_prediction"))
-    ]
 
     def _analysis_key(row: dict) -> tuple[str | None, str | None, str | None]:
         return (
@@ -357,8 +354,8 @@ async def get_learning_stats() -> dict:
         })
 
     return {
-        "corpus_size": len(analyses),
-        "total_analyses": storage_stats.get("total_analyses", len(analyses)),
+        "corpus_size": storage_stats.get("total_analyses", len(layer0_analyses)),
+        "total_analyses": storage_stats.get("total_analyses", len(layer0_analyses)),
         "feedback_collected": len(feedback),
         "trainable_samples": trainable,
         "repos_with_feedback": len({f.get("repo_key") for f in feedback if f.get("repo_key")}),
@@ -383,9 +380,7 @@ async def get_learning_stats() -> dict:
             "confidence_bands": confidence_bands,
             "disagreement_examples": disagreement_examples,
         },
-        "pipeline_versions_seen": sorted(
-            {e.get("pipeline_version") for e in events if e.get("pipeline_version")}
-        ),
+        "pipeline_versions_seen": pipeline_versions_seen,
         "training_pipeline": {
             "status": "ready" if trainable >= MIN_LABELED_SAMPLES else "collecting_data",
             "current_feedback": len(feedback),

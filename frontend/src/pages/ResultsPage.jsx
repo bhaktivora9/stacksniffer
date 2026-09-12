@@ -19,6 +19,17 @@ import { DEMO_RESULT } from "../data/demoResult";
 
 const DEMO_ID = "demo-stacksniffer-v1";
 
+function apiErrorMessage(body, fallback) {
+  const detail = body?.detail;
+  if (Array.isArray(detail)) {
+    return detail.map((item) => item?.msg || item?.message || String(item)).filter(Boolean).join("; ") || fallback;
+  }
+  if (detail && typeof detail === "object") {
+    return detail.detail || detail.message || detail.fix || JSON.stringify(detail);
+  }
+  return detail || body?.message || fallback;
+}
+
 function useHealthStatus() {
   const [health, setHealth] = useState(null);
   useEffect(() => {
@@ -138,7 +149,7 @@ export default function ResultsPage() {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data?.detail || `Hard refresh failed (${res.status})`);
+        throw new Error(apiErrorMessage(data, `Hard refresh failed (${res.status})`));
       }
       const data = await res.json();
       setResult(data);
@@ -174,10 +185,7 @@ export default function ResultsPage() {
     });
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      const detail = Array.isArray(body.detail)
-        ? body.detail.map((item) => item.msg).filter(Boolean).join("; ")
-        : body.detail;
-      throw new Error(detail || `Stack feedback failed (${res.status})`);
+      throw new Error(apiErrorMessage(body, `Stack feedback failed (${res.status})`));
     }
     return res.json();
   }
@@ -209,7 +217,12 @@ export default function ResultsPage() {
       await postStackFeedback(`${API_BASE}/api/feedback/${encodeURIComponent(analysisId)}`, {
         body: JSON.stringify({ software_type_correct: correct, correct_software_type: correctedType }),
       });
-      showToast(correct ? "Software type confirmed" : `Software type correction submitted: ${correctedType}`, correct ? "success" : "warn");
+      const message = correct
+        ? "Software type confirmed"
+        : correctedType
+          ? `Software type suggestion submitted: ${correctedType}`
+          : "Software type marked incorrect";
+      showToast(message, correct ? "success" : "warn");
       return true;
     } catch (err) {
       showToast(err.message || "Software type feedback failed", "error");

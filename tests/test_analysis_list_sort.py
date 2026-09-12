@@ -42,14 +42,19 @@ DOCS = [
     ],
 )
 def test_list_analyses_sorting(monkeypatch, sort_by, sort_order, expected):
-    async def get_all_analyses():
-        return DOCS
+    async def get_analysis_registry(limit=100, sort_by="time", sort_order="desc"):
+        docs = list(DOCS)
 
-    monkeypatch.setattr(analyze.storage_service, "get_all_analyses", get_all_analyses)
-    async def get_all_feedback():
-        return [{"repo_key": "github:owner/alpha"}, {"repo_key": "github:owner/alpha"}]
+        def sort_value(row):
+            if sort_by == "name":
+                repo = row.get("repo_metadata") or row.get("repo") or {}
+                return str(repo.get("full_name") or repo.get("name") or row.get("repo_key") or "").casefold()
+            return str(row.get("updated_at") or "")
 
-    monkeypatch.setattr(analyze.storage_service, "get_all_feedback", get_all_feedback)
+        docs.sort(key=sort_value, reverse=sort_order == "desc")
+        return docs[:limit], len(DOCS), {"github:owner/alpha": 2}
+
+    monkeypatch.setattr(analyze.storage_service, "get_analysis_registry", get_analysis_registry)
     result = asyncio.run(
         analyze.list_analyses(limit=100, sort_by=sort_by, sort_order=sort_order)
     )

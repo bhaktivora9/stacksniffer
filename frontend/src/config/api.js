@@ -1,5 +1,21 @@
-export const API_BASE =
+const configuredApiBase =
   import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") || "";
+
+function shouldUseDevProxy(apiBase) {
+  if (!import.meta.env.DEV || !apiBase) return false;
+
+  try {
+    const url = new URL(apiBase);
+    return ["localhost", "127.0.0.1", "::1", "[::1]"].includes(url.hostname)
+      && url.port === "8000";
+  } catch {
+    return false;
+  }
+}
+
+export const API_BASE = shouldUseDevProxy(configuredApiBase)
+  ? ""
+  : configuredApiBase;
 
 let adminAccessToken = null;
 const authListeners = new Set();
