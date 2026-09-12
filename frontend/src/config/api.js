@@ -66,9 +66,31 @@ export function apiUrl(path) {
   return targetUrl.toString();
 }
 
+async function logFailedResponse(url, response) {
+  const body = await response.clone().text().catch(() => "");
+  console.error("[api] request failed", {
+    url,
+    status: response.status,
+    statusText: response.statusText,
+    body: body.slice(0, 500),
+  });
+}
+
+export async function fetchApi(path, options = {}) {
+  const url = apiUrl(path);
+  try {
+    const response = await fetch(url, options);
+    if (!response.ok) await logFailedResponse(url, response);
+    return response;
+  } catch (error) {
+    console.error("[api] request failed", { url, error });
+    throw error;
+  }
+}
+
 export function adminFetch(path, options = {}) {
   const { headers, ...rest } = options;
-  return fetch(apiUrl(path), {
+  return fetchApi(path, {
     ...rest,
     headers: adminAuthHeaders(headers),
   });

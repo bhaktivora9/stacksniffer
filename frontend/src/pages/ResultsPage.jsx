@@ -12,6 +12,7 @@ import {
   API_BASE,
   adminFetch,
   clearAdminAccessToken,
+  fetchApi,
   getAdminAccessToken,
   subscribeAdminAuth,
 } from "../config/api";
@@ -70,7 +71,7 @@ export default function ResultsPage() {
     if (isDemo || result) return;
     (async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/analyze/${encodeURIComponent(analysisId)}`);
+        const res = await fetchApi(`/api/analyze/${encodeURIComponent(analysisId)}`);
         if (!res.ok) throw new Error(`Analysis not found (${res.status})`);
         const data = await res.json();
         setResult(data);
@@ -142,7 +143,7 @@ export default function ResultsPage() {
 
     setHardRefreshing(true);
     try {
-      const res = await fetch(`${API_BASE}/api/analyze`, {
+      const res = await fetchApi("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ repo_url: repoUrl, hard_refresh: true }),
