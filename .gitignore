@@ -32,3 +32,4 @@ __pycache__/
 frontend/vite-dev.err
 analyses.json
 seed_ground_truth_v2_prev.json
+.neon

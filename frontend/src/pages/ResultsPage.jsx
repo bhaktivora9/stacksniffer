@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useLocation, useNavigate, Link } from "react-router-dom";
 import { GitFork as Github, RefreshCw } from "lucide-react";
 import StackPanel from "../components/StackPanel";
@@ -17,6 +17,7 @@ import {
   subscribeAdminAuth,
 } from "../config/api";
 import { DEMO_RESULT } from "../data/demoResult";
+import { createAnalysis, subscribeToAnalysisEvents } from "../services/analyses";
 
 const DEMO_ID = "demo-stacksniffer-v1";
 
@@ -66,6 +67,9 @@ export default function ResultsPage() {
   const [feedbackState, setFeedbackState] = useState({});
   const [hardRefreshing, setHardRefreshing] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const closeRefreshStreamRef = useRef(null);
+
+  useEffect(() => () => closeRefreshStreamRef.current?.(), []);
 
   useEffect(() => {
     if (isDemo || result) return;
@@ -142,28 +146,33 @@ export default function ResultsPage() {
     }
 
     setHardRefreshing(true);
+    closeRefreshStreamRef.current?.();
+    let analysis;
     try {
-      const res = await fetchApi("/api/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ repo_url: repoUrl, hard_refresh: true }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(apiErrorMessage(data, `Hard refresh failed (${res.status})`));
-      }
-      const data = await res.json();
-      setResult(data);
-      navigate(`/results/${data.request_id || data.analysis_id}`, {
-        replace: true,
-        state: { result: data },
-      });
-      showToast("Analysis refreshed", "success");
+      // Resolves the current default-branch commit; an unchanged commit reuses the existing analysis.
+      analysis = await createAnalysis(repoUrl);
     } catch (err) {
       showToast(err.message || "Hard refresh failed", "error");
-    } finally {
       setHardRefreshing(false);
+      return;
     }
+
+    closeRefreshStreamRef.current = subscribeToAnalysisEvents(analysis.analysis_id, {
+      onEvent: (event) => {
+        if (event.state === "READY") {
+          setHardRefreshing(false);
+          showToast("Analysis refreshed", "success");
+          navigate(`/results/${encodeURIComponent(analysis.analysis_id)}`, { replace: true });
+        } else if (event.state === "FAILED" || event.state === "DEGRADED") {
+          setHardRefreshing(false);
+          showToast(event.message || "Hard refresh failed", "error");
+        }
+      },
+      onDisconnect: () => {
+        setHardRefreshing(false);
+        showToast("The analysis stream disconnected. You can retry safely.", "error");
+      },
+    });
   }
 
   function showToast(message, type = "success") {

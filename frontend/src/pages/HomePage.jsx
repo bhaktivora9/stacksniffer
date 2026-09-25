@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Link as LinkIcon, Search } from "lucide-react";
 import LoadingTerminal from "../components/LoadingTerminal";
 import { API_BASE } from "../config/api";
+import { createAnalysis, subscribeToAnalysisEvents } from "../services/analyses";
 import { DEMO_RESULT } from "../data/demoResult";
 import HomeLanding from "../components/HomeLanding";
 import AnalyzingScreen from "../components/AnalyzingScreen";
@@ -99,15 +100,16 @@ export default function HomePage() {
   const inputRef = useRef(null);
   const countdownRef = useRef(null);
   const pendingRetryUrl = useRef(null);
-  const eventSourceRef = useRef(null);
-  const jobRef = useRef(null);
+  const closeStreamRef = useRef(null);
+  const runRef = useRef(0);
 
   useEffect(() => {
     inputRef.current?.focus();
     return () => {
       clearInterval(stepTimerRef.current);
       clearInterval(countdownRef.current);
-      eventSourceRef.current?.close();
+      runRef.current += 1;
+      closeStreamRef.current?.();
     };
   }, []);
 
@@ -121,74 +123,48 @@ export default function HomePage() {
     if (urlError) setUrlError(validateUrl(val));
   }
 
-  function startStepAnimation() {
-    setCurrentStep(0);
-    let step = 0;
-    stepTimerRef.current = setInterval(() => {
-      step += 1;
-      if (step >= STEPS.length - 1) clearInterval(stepTimerRef.current);
-      setCurrentStep(step);
-    }, 800);
-  }
-
-  function startRateLimitCountdown(seconds, url) {
-    setRateLimitCountdown(seconds);
-    pendingRetryUrl.current = url;
-    countdownRef.current = setInterval(() => {
-      setRateLimitCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(countdownRef.current);
-          setRateLimitCountdown(null);
-          runAnalysis(pendingRetryUrl.current);
-          return null;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  }
-
   async function runAnalysis(url) {
     setError(null);
     setLoading(true);
     setStreamEvents([]);
     setStreamStatus("running");
-    eventSourceRef.current?.close();
-    const job = crypto.randomUUID();
-    jobRef.current = job;
-    let lastSeq = 0;
-    let terminal = false;
-    const source = new EventSource(`${API_BASE}/api/analyze/stream?repo=${encodeURIComponent(url)}&job=${encodeURIComponent(job)}`);
-    eventSourceRef.current = source;
-    source.onmessage = (message) => {
-      let event;
-      try { event = JSON.parse(message.data); } catch { return; }
-      if (!Number.isFinite(event.seq) || event.seq <= lastSeq) return;
-      lastSeq = event.seq;
-      setStreamEvents((current) => [...current, event]);
-      setCurrentStep({ ingest: 0, verify: 1, infer: 3, done: 4 }[event.phase] ?? 0);
-      if (event.level === "error") {
-        terminal = true;
-        source.close();
-        setStreamStatus("failed");
-        setError(event.error?.detail || event.message || "Analysis failed");
-      } else if (event.phase === "done") {
-        terminal = true;
-        source.close();
-        setStreamStatus("complete");
-        if (event.analysis_id) navigate(`/results/${encodeURIComponent(event.analysis_id)}`);
-      }
-    };
-    source.onerror = () => {
-      if (terminal) return;
-      source.close();
+    closeStreamRef.current?.();
+    const run = ++runRef.current;
+
+    let analysis;
+    try {
+      analysis = await createAnalysis(url);
+    } catch (err) {
+      if (run !== runRef.current) return;
+      setLoading(false);
       setStreamStatus("failed");
-      setError("The analysis stream disconnected. You can retry safely.");
-    };
+      setError(err.message || "Unable to create analysis");
+      return;
+    }
+    if (run !== runRef.current) return; // cancelled or superseded while the request was in flight
+
+    closeStreamRef.current = subscribeToAnalysisEvents(analysis.analysis_id, {
+      onEvent: (event) => {
+        setStreamEvents((current) => [...current, event]);
+        setCurrentStep({ INGESTING: 0, EXTRACTING: 1, INDEXING: 2, PROJECTING: 3, SUMMARIZING: 3, READY: 4 }[event.state] ?? 0);
+        if (["FAILED", "DEGRADED"].includes(event.state)) {
+          setStreamStatus("failed");
+          setError(event.message || "Analysis failed");
+        } else if (event.state === "READY") {
+          setStreamStatus("complete");
+          navigate(`/results/${encodeURIComponent(analysis.analysis_id)}`);
+        }
+      },
+      onDisconnect: () => {
+        setStreamStatus("failed");
+        setError("The analysis stream disconnected. You can retry safely.");
+      },
+    });
   }
 
-  async function cancelAnalysis() {
-    eventSourceRef.current?.close();
-    if (jobRef.current) await fetch(`${API_BASE}/api/analyze/${encodeURIComponent(jobRef.current)}/cancel`, { method: "POST" }).catch(() => {});
+  function cancelAnalysis() {
+    runRef.current += 1;
+    closeStreamRef.current?.();
     setLoading(false);
     setStreamStatus("idle");
     setStreamEvents([]);

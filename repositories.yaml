@@ -1,0 +1,13 @@
+schema_version: 1
+dataset_version: "r1.0.0"
+
+repositories:
+  # Allowed evaluation_purpose values: smoke, development, contrastive_train,
+  # retrieval_validation, retrieval_test, demo.
+  # frozen_commit resolved from ref 'mvp' via the GitHub API
+  - id: stacksniffer
+    url: https://github.com/bhaktivora9/stacksniffer
+    frozen_commit: "efb2927599ff35f96a6c72560d97c0df4ee199f7"
+    language: python
+    license: MIT
+    evaluation_purpose: smoke

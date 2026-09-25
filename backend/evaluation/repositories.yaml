@@ -1,0 +1,17 @@
+schema_version: 1
+dataset_version: "r1.0.0"
+
+repositories:
+  - id: example-python-service
+    url: https://github.com/example/example-python-service
+    frozen_commit: 0123456789abcdef0123456789abcdef01234567
+    language: python
+    license: MIT
+    evaluation_purpose: retrieval_test
+
+  - id: example-java-service
+    url: https://github.com/example/example-java-service
+    frozen_commit: fedcba9876543210fedcba9876543210fedcba98
+    language: java
+    license: Apache-2.0
+    evaluation_purpose: retrieval_validation
