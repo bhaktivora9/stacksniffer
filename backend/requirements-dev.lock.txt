@@ -1213,6 +1213,19 @@ tree-sitter==0.26.0 \
     # via
     #   -c requirements.lock.txt
     #   -r requirements.in
+tree-sitter-go==0.25.0 \
+    --hash=sha256:04b3b3cb4aff18e74e28d49b716c6f24cb71ddfdd66768987e26e4d0fa812f74 \
+    --hash=sha256:148255aca2f54b90d48c48a9dbb4c7faad6cad310a980b2c5a5a9822057ed145 \
+    --hash=sha256:30d4ada57a223dfc2c32d942f44d284d40f3d1215ddcf108f96807fd36d53022 \
+    --hash=sha256:4d338116cdf8a6c6ff990d2441929b41323ef17c710407abe0993c13417d6aad \
+    --hash=sha256:503b81a2b4c31e302869a1de3a352ad0912ccab3df9ac9950197b0a9ceeabd8f \
+    --hash=sha256:5608e089d2a29fa8d2b327abeb2ad1cdb8e223c440a6b0ceab0d3fa80bdeebae \
+    --hash=sha256:a7466e9b8d94dda94cae8d91629f26edb2d26166fd454d4831c3bf6dfa2e8d68 \
+    --hash=sha256:b852993063a3429a443e7bd0aa376dd7dd329d595819fabf56ac4cf9d7257b54 \
+    --hash=sha256:d5d62362059bf79997340773d47cc7e7e002883b527a05cca829c46e40b70ded
+    # via
+    #   -c requirements.lock.txt
+    #   -r requirements.in
 tree-sitter-java==0.23.5 \
     --hash=sha256:1ee45e790f8d31d416bc84a09dac2e2c6bc343e89b8a2e1d550513498eedfde7 \
     --hash=sha256:24acd59c4720dedad80d548fe4237e43ef2b7a4e94c8549b0ca6e4c4d7bf6e69 \

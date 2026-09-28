@@ -81,8 +81,10 @@ def check_fixture_coverage(language: str) -> None:
     facts = [f for case in cases for f in case.facts]
     resolutions = {f.resolution for f in facts if isinstance(f, metrics.RelationshipFact)}
     assert {"same_file", "cross_file", "external", "unresolvable"} <= resolutions
-    if language == "python":
-        assert "ambiguous" in resolutions  # e.g. a name bound by alternative imports
+    if language in ("python", "go"):
+        # No overloading: ambiguity is a name bound twice, by alternative imports (Python) or by
+        # build-tagged files (Go).
+        assert "ambiguous" in resolutions
     else:
         # JVM overloads are always statically determined, so ambiguity means same-name, same-arity
         # overloads that only argument types can tell apart; at least one call must target one.
@@ -136,8 +138,9 @@ def check_basis_and_certainty_are_evaluated(language: str) -> None:
     assert basis["total"] >= 10 and certainty["total"] >= 10
     assert basis["rate"] == 1.0, [m for m in data["errors"]["items"] if m["area"] == "resolution_basis"]
     assert certainty["rate"] == 1.0, [m for m in data["errors"]["items"] if m["area"] == "certainty"]
-    # Recall is published per expected basis, including the ones that need cross-file resolution.
-    assert "import_path" in data["resolution_recall_by_expected_basis"]
+    # Recall is published per expected basis, including the ones that need cross-file resolution
+    # (import_path for languages importing declarations, import_binding for Go's package imports).
+    assert {"import_path", "import_binding"} & set(data["resolution_recall_by_expected_basis"])
 
 
 def check_origin_is_reported_separately(language: str) -> None:

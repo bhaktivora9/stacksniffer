@@ -62,7 +62,7 @@ RESULTS_PATH = REPOSITORY_ROOT / "backend" / "evaluation" / "results" / "structu
 REPORT_PATH = REPOSITORY_ROOT / "docs" / "evaluation" / "structural-extraction-baseline.md"
 RESULT_SCHEMA_VERSION = 2
 # Bump when the gold set, the scoring rules or the published format change meaningfully.
-BASELINE_VERSION = 3  # 3: Scala (SS-BE-203)
+BASELINE_VERSION = 4  # 3: Scala; 4: Go and the method_set basis
 
 DECLARATION_TYPES = ("CLASS", "INTERFACE", "FUNCTION", "METHOD")
 RELATIONSHIP_TYPES = ("CONTAINS", "IMPORTS", "CALLS", "EXTENDS", "IMPLEMENTS")
@@ -91,12 +91,12 @@ CATEGORIES = (QUERY_OMISSION, INCORRECT_STABLE_KEY, RECEIVER_RESOLUTION, AMBIGUO
 # How an internal edge is (or should be) resolved. The first seven are produced by the analyzers;
 # the import/inference bases need repository-level resolution and are labelled so recall shows it.
 BASES = ("lexical_scope", "enclosing_class", "base_class", "type_name", "constructor", "declared_type",
-         "constructed_instance", "import_path", "import_binding", "inferred_type")
+         "constructed_instance", "method_set", "import_path", "import_binding", "inferred_type")
 RECEIVER_BASES = {"enclosing_class", "base_class", "declared_type", "constructed_instance", "inferred_type"}
 # The certainty each basis warrants (see RESOLUTION_BASIS in the analyzers).
 EXPECTED_CERTAINTY = {"lexical_scope": "MEDIUM", "enclosing_class": "MEDIUM", "base_class": "MEDIUM",
                       "type_name": "MEDIUM", "constructor": "MEDIUM", "declared_type": "LOW",
-                      "constructed_instance": "LOW"}
+                      "constructed_instance": "LOW", "method_set": "LOW"}
 ORIGINS = ("first_party", "generated", "vendored")
 # The capability each fact type depends on, for grouping metrics by declared capability level.
 FACT_CAPABILITY = {"CLASS": "declarations", "FUNCTION": "declarations", "METHOD": "declarations",

@@ -1,11 +1,843 @@
 {
   "schema_version": 2,
-  "baseline_version": 3,
+  "baseline_version": 4,
   "gold_version": 2,
   "review_status": [
     "pending_independent_review"
   ],
   "languages": {
+    "go": {
+      "cases": [
+        "go/basics",
+        "go/holdout_ratelimit",
+        "go/service"
+      ],
+      "extractor_versions": {
+        "go": "stacksniffer-go/1+tree-sitter-go@0.25.0"
+      },
+      "entities": {
+        "overall": {
+          "tp": 53,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "CLASS": {
+          "tp": 9,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "INTERFACE": {
+          "tp": 5,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "FUNCTION": {
+          "tp": 17,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "METHOD": {
+          "tp": 22,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "relationships": {
+        "overall": {
+          "tp": 126,
+          "fp": 11,
+          "fn": 9,
+          "precision": 0.9197,
+          "recall": 0.9333,
+          "f1": 0.9265
+        },
+        "CONTAINS": {
+          "tp": 53,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "IMPORTS": {
+          "tp": 19,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "CALLS": {
+          "tp": 44,
+          "fp": 11,
+          "fn": 9,
+          "precision": 0.8,
+          "recall": 0.8302,
+          "f1": 0.8148
+        },
+        "EXTENDS": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "IMPLEMENTS": {
+          "tp": 6,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "import_statements": {
+        "tp": 19,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "resolution": {
+        "CALLS": {
+          "same_file": {
+            "tp": 10,
+            "fp": 0,
+            "fn": 1,
+            "precision": 1.0,
+            "recall": 0.9091,
+            "f1": 0.9524
+          },
+          "cross_file": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 8,
+            "precision": 1.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "overall": {
+            "tp": 10,
+            "fp": 0,
+            "fn": 9,
+            "precision": 1.0,
+            "recall": 0.5263,
+            "f1": 0.6897
+          }
+        },
+        "EXTENDS": {
+          "same_file": {
+            "tp": 2,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "cross_file": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "overall": {
+            "tp": 2,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          }
+        },
+        "IMPLEMENTS": {
+          "same_file": {
+            "tp": 6,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "cross_file": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "overall": {
+            "tp": 6,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          }
+        },
+        "IMPORTS": {
+          "same_file": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "cross_file": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "overall": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          }
+        }
+      },
+      "resolved_edge_precision": {
+        "tp": 18,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "resolution_recall_by_expected_basis": {
+        "lexical_scope": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 2,
+          "precision": 1.0,
+          "recall": 0.3333,
+          "f1": 0.5
+        },
+        "enclosing_class": {
+          "tp": 5,
+          "fp": 0,
+          "fn": 1,
+          "precision": 1.0,
+          "recall": 0.8333,
+          "f1": 0.9091
+        },
+        "type_name": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "declared_type": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 1,
+          "precision": 1.0,
+          "recall": 0.8,
+          "f1": 0.8889
+        },
+        "method_set": {
+          "tp": 6,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "import_binding": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 2,
+          "precision": 1.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        "inferred_type": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 3,
+          "precision": 1.0,
+          "recall": 0.0,
+          "f1": 0.0
+        }
+      },
+      "basis_accuracy": {
+        "valid": 18,
+        "total": 18,
+        "rate": 1.0
+      },
+      "certainty_accuracy": {
+        "valid": 18,
+        "total": 18,
+        "rate": 1.0
+      },
+      "by_origin": {
+        "entities": {
+          "first_party": {
+            "tp": 51,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "generated": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "vendored": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          }
+        },
+        "relationships": {
+          "first_party": {
+            "tp": 121,
+            "fp": 11,
+            "fn": 9,
+            "precision": 0.9167,
+            "recall": 0.9308,
+            "f1": 0.9237
+          },
+          "generated": {
+            "tp": 3,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "vendored": {
+            "tp": 2,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          }
+        },
+        "classification": {
+          "valid": 13,
+          "total": 13,
+          "rate": 1.0
+        }
+      },
+      "by_capability_level": {
+        "PARTIAL": {
+          "capabilities": [
+            "calls",
+            "inheritance",
+            "interfaces"
+          ],
+          "tp": 59,
+          "fp": 11,
+          "fn": 9,
+          "precision": 0.8429,
+          "recall": 0.8676,
+          "f1": 0.8551
+        },
+        "SUPPORTED": {
+          "capabilities": [
+            "declarations",
+            "imports"
+          ],
+          "tp": 120,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "resolved_edge_precision_by_basis": {
+        "declared_type": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "enclosing_class": {
+          "tp": 5,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "lexical_scope": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "method_set": {
+          "tp": 6,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "type_name": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "unresolved_edges": {
+        "overall": {
+          "tp": 55,
+          "fp": 11,
+          "fn": 0,
+          "precision": 0.8333,
+          "recall": 1.0,
+          "f1": 0.9091
+        },
+        "ambiguous": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "external": {
+          "tp": 49,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "unresolvable": {
+          "tp": 5,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "evidence": {
+        "path_validity": {
+          "valid": 179,
+          "total": 179,
+          "rate": 1.0
+        },
+        "line_range_validity": {
+          "valid": 179,
+          "total": 179,
+          "rate": 1.0
+        },
+        "source_integrity": {
+          "valid": 152,
+          "total": 152,
+          "rate": 1.0
+        }
+      },
+      "decorators": {
+        "valid": 53,
+        "total": 53,
+        "rate": 1.0
+      },
+      "parse_status": {
+        "valid": 13,
+        "total": 13,
+        "rate": 1.0
+      },
+      "syntax_error_location": {
+        "valid": 1,
+        "total": 1,
+        "rate": 1.0
+      },
+      "malformed_isolation": {
+        "malformed_files": 1,
+        "isolated": 1,
+        "rate": 1.0,
+        "repository_failures": 0
+      },
+      "determinism": {
+        "identical_runs": {
+          "valid": 3,
+          "total": 3,
+          "rate": 1.0
+        },
+        "stable_keys": {
+          "valid": 131,
+          "total": 131,
+          "rate": 1.0
+        }
+      },
+      "unsupported_leakage": {
+        "count": 0,
+        "facts": []
+      },
+      "capabilities": {
+        "declared": {
+          "declarations": "SUPPORTED",
+          "imports": "SUPPORTED",
+          "calls": "PARTIAL",
+          "inheritance": "PARTIAL",
+          "interfaces": "PARTIAL",
+          "dependencies": "UNSUPPORTED",
+          "decorators": "UNSUPPORTED"
+        },
+        "expected": {
+          "declarations": "SUPPORTED",
+          "imports": "SUPPORTED",
+          "calls": "PARTIAL",
+          "inheritance": "PARTIAL",
+          "interfaces": "PARTIAL",
+          "dependencies": "UNSUPPORTED",
+          "decorators": "UNSUPPORTED"
+        },
+        "accuracy": 1.0,
+        "mismatched": [],
+        "consistency_issues": []
+      },
+      "splits": {
+        "development": {
+          "entities": {
+            "tp": 37,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "relationships": {
+            "tp": 93,
+            "fp": 8,
+            "fn": 7,
+            "precision": 0.9208,
+            "recall": 0.93,
+            "f1": 0.9254
+          },
+          "calls_resolution": {
+            "tp": 7,
+            "fp": 0,
+            "fn": 7,
+            "precision": 1.0,
+            "recall": 0.5,
+            "f1": 0.6667
+          }
+        },
+        "holdout": {
+          "entities": {
+            "tp": 16,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "relationships": {
+            "tp": 33,
+            "fp": 3,
+            "fn": 2,
+            "precision": 0.9167,
+            "recall": 0.9429,
+            "f1": 0.9296
+          },
+          "calls_resolution": {
+            "tp": 3,
+            "fp": 0,
+            "fn": 2,
+            "precision": 1.0,
+            "recall": 0.6,
+            "f1": 0.75
+          }
+        }
+      },
+      "gates": [
+        {
+          "gate": "declaration_precision",
+          "required": ">= 0.98",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "declaration_recall",
+          "required": ">= 0.95",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "import_precision",
+          "required": ">= 0.95",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "import_recall",
+          "required": ">= 0.95",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "resolved_edge_precision",
+          "required": ">= 0.9",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "evidence_path_validity",
+          "required": ">= 1.0",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "evidence_line_range_validity",
+          "required": ">= 1.0",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "deterministic_stable_keys",
+          "required": ">= 1.0",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "unsupported_fact_leakage",
+          "required": "<= 0",
+          "actual": 0,
+          "passed": true
+        },
+        {
+          "gate": "repository_failures_from_malformed_files",
+          "required": "<= 0",
+          "actual": 0,
+          "passed": true
+        }
+      ],
+      "gates_passed": true,
+      "errors": {
+        "by_category": {
+          "parser query gap": 2,
+          "normalization error": 0,
+          "receiver-resolution error": 2,
+          "ambiguity": 0,
+          "cross-file limitation": 16,
+          "evidence-range error": 0,
+          "incorrect fixture label": 0,
+          "parser error recovery": 0,
+          "unsupported-fact leakage": 0
+        },
+        "items": [
+          {
+            "id": "go/basics:relationships:missed:CALLS function:shapes/shape.go::shapes.Largest function:shapes/util.go::shapes.pick (emitted as external:pick)",
+            "case": "go/basics",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS function:shapes/shape.go::shapes.Largest function:shapes/util.go::shapes.pick (emitted as external:pick)",
+            "category": "cross-file limitation",
+            "fact_id": "go.basics.calls_shapes_largest_shapes_pick_71"
+          },
+          {
+            "id": "go/basics:relationships:missed:CALLS function:shapes/shape.go::shapes.Total method:shapes/shape.go::shapes.Shape.Area (emitted as external:s.Area)",
+            "case": "go/basics",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS function:shapes/shape.go::shapes.Total method:shapes/shape.go::shapes.Shape.Area (emitted as external:s.Area)",
+            "category": "receiver-resolution error",
+            "fact_id": "go.basics.calls_shapes_total_shapes_shape_area_56"
+          },
+          {
+            "id": "go/basics:relationships:missed:CALLS function:shapes/util.go::shapes.Sorted method:shapes/shape.go::shapes.Shape.Area (emitted as external:<expression>.Area)",
+            "case": "go/basics",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS function:shapes/util.go::shapes.Sorted method:shapes/shape.go::shapes.Shape.Area (emitted as external:<expression>.Area)",
+            "category": "cross-file limitation",
+            "fact_id": "go.basics.calls_shapes_sorted_shapes_shape_area_13"
+          },
+          {
+            "id": "go/basics:relationships:unexpected:CALLS function:shapes/shape.go::shapes.Largest external:pick (label: CALLS function:shapes/shape.go::shapes.Largest function:shapes/util.go::shapes.pick)",
+            "case": "go/basics",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS function:shapes/shape.go::shapes.Largest external:pick (label: CALLS function:shapes/shape.go::shapes.Largest function:shapes/util.go::shapes.pick)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "go/basics:relationships:unexpected:CALLS function:shapes/shape.go::shapes.Total external:s.Area (label: CALLS function:shapes/shape.go::shapes.Total method:shapes/shape.go::shapes.Shape.Area)",
+            "case": "go/basics",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS function:shapes/shape.go::shapes.Total external:s.Area (label: CALLS function:shapes/shape.go::shapes.Total method:shapes/shape.go::shapes.Shape.Area)",
+            "category": "receiver-resolution error"
+          },
+          {
+            "id": "go/basics:relationships:unexpected:CALLS function:shapes/util.go::shapes.Sorted external:<expression>.Area (label: CALLS function:shapes/util.go::shapes.Sorted method:shapes/shape.go::shapes.Shape.Area)",
+            "case": "go/basics",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS function:shapes/util.go::shapes.Sorted external:<expression>.Area (label: CALLS function:shapes/util.go::shapes.Sorted method:shapes/shape.go::shapes.Shape.Area)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "go/holdout_ratelimit:relationships:missed:CALLS method:limiter/config.go::limiter.chain.Allow method:limiter/limiter.go::limiter.Limiter.Allow (emitted as external:l.Allow)",
+            "case": "go/holdout_ratelimit",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:limiter/config.go::limiter.chain.Allow method:limiter/limiter.go::limiter.Limiter.Allow (emitted as external:l.Allow)",
+            "category": "cross-file limitation",
+            "fact_id": "go.holdout_ratelimit.calls_limiter_chain_allow_limiter_limiter_allow_19"
+          },
+          {
+            "id": "go/holdout_ratelimit:relationships:missed:CALLS method:limiter/limiter.go::limiter.TokenBucket.Wait function:limiter/config.go::limiter.backoff (emitted as external:backoff)",
+            "case": "go/holdout_ratelimit",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:limiter/limiter.go::limiter.TokenBucket.Wait function:limiter/config.go::limiter.backoff (emitted as external:backoff)",
+            "category": "cross-file limitation",
+            "fact_id": "go.holdout_ratelimit.calls_limiter_tokenbucket_wait_limiter_backoff_49"
+          },
+          {
+            "id": "go/holdout_ratelimit:relationships:unexpected:CALLS function:limiter/config.go::limiter.backoff external:time.Duration",
+            "case": "go/holdout_ratelimit",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS function:limiter/config.go::limiter.backoff external:time.Duration",
+            "category": "parser query gap"
+          },
+          {
+            "id": "go/holdout_ratelimit:relationships:unexpected:CALLS method:limiter/config.go::limiter.chain.Allow external:l.Allow (label: CALLS method:limiter/config.go::limiter.chain.Allow method:limiter/limiter.go::limiter.Limiter.Allow)",
+            "case": "go/holdout_ratelimit",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:limiter/config.go::limiter.chain.Allow external:l.Allow (label: CALLS method:limiter/config.go::limiter.chain.Allow method:limiter/limiter.go::limiter.Limiter.Allow)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "go/holdout_ratelimit:relationships:unexpected:CALLS method:limiter/limiter.go::limiter.TokenBucket.Wait external:backoff (label: CALLS method:limiter/limiter.go::limiter.TokenBucket.Wait function:limiter/config.go::limiter.backoff)",
+            "case": "go/holdout_ratelimit",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:limiter/limiter.go::limiter.TokenBucket.Wait external:backoff (label: CALLS method:limiter/limiter.go::limiter.TokenBucket.Wait function:limiter/config.go::limiter.backoff)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "go/service:relationships:missed:CALLS method:internal/server/server.go::server.Server.Handle function:api/api.pb.go::api.Render (emitted as external:api.Render)",
+            "case": "go/service",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:internal/server/server.go::server.Server.Handle function:api/api.pb.go::api.Render (emitted as external:api.Render)",
+            "category": "cross-file limitation",
+            "fact_id": "go.service.calls_server_server_handle_api_render_35"
+          },
+          {
+            "id": "go/service:relationships:missed:CALLS method:internal/server/server.go::server.Server.Handle method:internal/store/store.go::store.Store.Get (emitted as external:<expression>.Get)",
+            "case": "go/service",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:internal/server/server.go::server.Server.Handle method:internal/store/store.go::store.Store.Get (emitted as external:<expression>.Get)",
+            "category": "cross-file limitation",
+            "fact_id": "go.service.calls_server_server_handle_store_store_get_30"
+          },
+          {
+            "id": "go/service:relationships:missed:CALLS method:internal/server/server.go::server.Server.Start function:vendor/github.com/acme/retry/retry.go::retry.Do (emitted as external:retry.Do)",
+            "case": "go/service",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:internal/server/server.go::server.Server.Start function:vendor/github.com/acme/retry/retry.go::retry.Do (emitted as external:retry.Do)",
+            "category": "cross-file limitation",
+            "fact_id": "go.service.calls_server_server_start_retry_do_39"
+          },
+          {
+            "id": "go/service:relationships:missed:CALLS method:internal/server/server.go::server.Server.mux method:internal/server/legacy.go::server.Server.logStart (emitted as external:s.logStart)",
+            "case": "go/service",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:internal/server/server.go::server.Server.mux method:internal/server/legacy.go::server.Server.logStart (emitted as external:s.logStart)",
+            "category": "cross-file limitation",
+            "fact_id": "go.service.calls_server_server_mux_server_server_logstart_47"
+          },
+          {
+            "id": "go/service:relationships:unexpected:CALLS function:internal/server/server.go::server.New external:time.Duration",
+            "case": "go/service",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS function:internal/server/server.go::server.New external:time.Duration",
+            "category": "parser query gap"
+          },
+          {
+            "id": "go/service:relationships:unexpected:CALLS method:internal/server/server.go::server.Server.Handle external:api.Render (label: CALLS method:internal/server/server.go::server.Server.Handle function:api/api.pb.go::api.Render)",
+            "case": "go/service",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:internal/server/server.go::server.Server.Handle external:api.Render (label: CALLS method:internal/server/server.go::server.Server.Handle function:api/api.pb.go::api.Render)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "go/service:relationships:unexpected:CALLS method:internal/server/server.go::server.Server.Handle external:s.store.Get (label: CALLS method:internal/server/server.go::server.Server.Handle method:internal/store/store.go::store.Store.Get)",
+            "case": "go/service",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:internal/server/server.go::server.Server.Handle external:s.store.Get (label: CALLS method:internal/server/server.go::server.Server.Handle method:internal/store/store.go::store.Store.Get)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "go/service:relationships:unexpected:CALLS method:internal/server/server.go::server.Server.Start external:retry.Do (label: CALLS method:internal/server/server.go::server.Server.Start function:vendor/github.com/acme/retry/retry.go::retry.Do)",
+            "case": "go/service",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:internal/server/server.go::server.Server.Start external:retry.Do (label: CALLS method:internal/server/server.go::server.Server.Start function:vendor/github.com/acme/retry/retry.go::retry.Do)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "go/service:relationships:unexpected:CALLS method:internal/server/server.go::server.Server.mux external:s.logStart (label: CALLS method:internal/server/server.go::server.Server.mux method:internal/server/legacy.go::server.Server.logStart)",
+            "case": "go/service",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:internal/server/server.go::server.Server.mux external:s.logStart (label: CALLS method:internal/server/server.go::server.Server.mux method:internal/server/legacy.go::server.Server.logStart)",
+            "category": "cross-file limitation"
+          }
+        ]
+      }
+    },
     "java": {
       "cases": [
         "java/basics",

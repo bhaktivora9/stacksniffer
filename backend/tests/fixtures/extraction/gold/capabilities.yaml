@@ -25,3 +25,11 @@ languages:
     interfaces: PARTIAL
     dependencies: UNSUPPORTED
     decorators: SUPPORTED
+  go:
+    declarations: SUPPORTED
+    imports: SUPPORTED
+    calls: PARTIAL
+    inheritance: PARTIAL
+    interfaces: PARTIAL
+    dependencies: UNSUPPORTED
+    decorators: UNSUPPORTED
