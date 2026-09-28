@@ -13,7 +13,13 @@ from uuid import uuid4
 import pytest
 
 from backend.evaluation import extraction_metrics as metrics
-from backend.services.extraction.analyzers import GoAnalyzer, JavaAnalyzer, PythonAnalyzer, ScalaAnalyzer
+from backend.services.extraction.analyzers import (
+    GoAnalyzer,
+    JavaAnalyzer,
+    JavaScriptAnalyzer,
+    PythonAnalyzer,
+    ScalaAnalyzer,
+)
 from backend.services.extraction.builder import FileFactsBuilder
 from backend.services.extraction.contracts import (
     AnalyzerCapabilities, CanonicalEntity, CanonicalRelationship, CancellationToken, Capability, CapabilityLevel,
@@ -26,8 +32,10 @@ from extraction_benchmark_support import LANGUAGES, requires_grammars
 pytestmark = requires_grammars
 
 # A multi-file fixture with a malformed file, per language.
-FIXTURE = {"python": "python/shop_app", "java": "java/orders_service", "scala": "scala/broker", "go": "go/service"}
-ANALYZER = {"python": PythonAnalyzer, "java": JavaAnalyzer, "scala": ScalaAnalyzer, "go": GoAnalyzer}
+FIXTURE = {"python": "python/shop_app", "java": "java/orders_service", "scala": "scala/broker", "go": "go/service",
+           "javascript": "javascript/webapp"}
+ANALYZER = {"python": PythonAnalyzer, "java": JavaAnalyzer, "scala": ScalaAnalyzer, "go": GoAnalyzer,
+            "javascript": JavaScriptAnalyzer}
 DUPLICATES = {
     "python": ("dup.py", b"def handler():\n    return 1\n\n\ndef handler():\n    return 2\n", "function", "handler"),
     "java": ("Dup.java", b"class Dup {\n  void go() {\n    new Runnable() { public void run() {} };\n"
@@ -35,6 +43,8 @@ DUPLICATES = {
     "scala": ("Dup.scala", b"class Dup {\n  def go(): Unit = {\n    new Runnable { def run(): Unit = () }\n"
                            b"    new Runnable { def run(): Unit = () }\n  }\n}\n", "method", "run"),
     "go": ("dup.go", b"package dup\n\nfunc init() {}\n\nfunc init() {}\n", "function", "init"),
+    "javascript": ("dup.js", b"function handler() { return 1; }\nfunction handler() { return 2; }\n",
+                   "function", "handler"),
 }
 
 
@@ -189,8 +199,10 @@ def test_downgrading_a_capability_blocks_its_facts(language):
     analyzed = [f for f in files if f.language == language]
     # Files that contain calls are rejected whole rather than silently trimmed ...
     assert any(f.parse_status is ParseStatus.FAILED and f.errors[0].code == "contract_violation" for f in analyzed)
-    if all(f.parse_status is ParseStatus.FAILED for f in analyzed):
-        # ... and when that rejects every file, the repository fails instead of completing empty.
+    first_party = [f for f in analyzed if not (f.is_generated or f.is_vendored)]
+    if all(f.parse_status is ParseStatus.FAILED for f in first_party):
+        # ... and when that rejects every first-party file (the crash threshold ignores generated
+        # and vendored code), the repository fails instead of completing empty.
         assert failure and "every file" in failure
     else:
         assert failure is None
@@ -240,6 +252,15 @@ def test_go_methods_of_a_type_declared_elsewhere_belong_to_their_file():
     legacy = "internal/server/legacy.go"
     method = next(e for f in extract("go") for e in f.entities if e.stable_key.endswith("::server.Server.logStart"))
     assert method.path == legacy and method.parent_key == f"file:{legacy}"
+
+
+def test_javascript_object_literal_functions_are_members_not_names_in_scope():
+    source = b"const api = { get(id) { return id; } };\nfunction caller() {\n  api.get(1);\n  get(2);\n}\n"
+    file = analyze("javascript", "api.js", source)
+    targets = {r.target_key: dict(r.metadata) for r in file.relationships if r.relationship_type.value == "CALLS"}
+    assert targets["function:api.js::api.get"]["resolution_basis"] == "lexical_scope"
+    assert targets[next(k for k in targets if k.startswith("external:") and k.endswith(":get"))]["resolution"] \
+        == "unresolved"
 
 
 @pytest.mark.parametrize("language", LANGUAGES)
@@ -423,6 +444,43 @@ func helper(x int) {}
         "r.Add": ("method:repo.go::repo.Repo.Add", "enclosing_class", "MEDIUM"),
         "other.Add": ("method:repo.go::repo.Repo.Add", "declared_type", "LOW"),
     }),
+    "javascript": ("repo.js", b"""class Repo {
+  add(x) {}
+
+  viaUntypedParameter(other) {
+    other.add(1);
+  }
+
+  viaInferredLocal() {
+    const local = new Repo();
+    local.add(2);
+  }
+
+  viaCallback(items) {
+    items.forEach((x) => x.add(3));
+  }
+
+  viaFunction() {
+    helper(4);
+  }
+
+  viaThis() {
+    this.add(5);
+  }
+
+  /** @param {Repo} typed */
+  viaTypedParameter(typed) {
+    typed.add(6);
+  }
+}
+
+function helper(x) {}
+""", {
+        "other.add": None, "local.add": None, "x.add": None,
+        "helper": ("function:repo.js::helper", "lexical_scope", "MEDIUM"),
+        "this.add": ("method:repo.js::Repo.add", "enclosing_class", "MEDIUM"),
+        "typed.add": ("method:repo.js::Repo.add", "declared_type", "LOW"),
+    }),
 }
 
 
@@ -480,6 +538,8 @@ def test_an_edge_is_as_certain_as_its_strongest_site_regardless_of_order(languag
                              b"    m()\n  }\n}\n"),
         "go": ("a.go", b"package a\n\ntype A struct{}\n\nfunc (a *A) M() {}\n\nfunc (a *A) Run(other *A) {\n"
                        b"\tother.M()\n\ta.M()\n}\n"),
+        "javascript": ("a.js", b"class A {\n  m() {}\n  /** @param {A} other */\n  run(other) {\n    other.m();\n"
+                               b"    this.m();\n  }\n}\n"),
     }[language]
     edge = next(r for r in analyze(language, path, source).relationships
                 if r.relationship_type.value == "CALLS" and "run" in r.source_key.lower()

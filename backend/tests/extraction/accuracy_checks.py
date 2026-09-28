@@ -81,9 +81,9 @@ def check_fixture_coverage(language: str) -> None:
     facts = [f for case in cases for f in case.facts]
     resolutions = {f.resolution for f in facts if isinstance(f, metrics.RelationshipFact)}
     assert {"same_file", "cross_file", "external", "unresolvable"} <= resolutions
-    if language in ("python", "go"):
-        # No overloading: ambiguity is a name bound twice, by alternative imports (Python) or by
-        # build-tagged files (Go).
+    if language not in ("java", "scala"):
+        # No overloading: ambiguity is a name bound to alternatives, by imports (Python), build-tagged
+        # files (Go) or a run-time choice (JavaScript).
         assert "ambiguous" in resolutions
     else:
         # JVM overloads are always statically determined, so ambiguity means same-name, same-arity

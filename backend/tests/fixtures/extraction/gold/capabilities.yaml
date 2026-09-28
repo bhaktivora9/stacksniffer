@@ -33,3 +33,11 @@ languages:
     interfaces: PARTIAL
     dependencies: UNSUPPORTED
     decorators: UNSUPPORTED
+  javascript:
+    declarations: SUPPORTED
+    imports: SUPPORTED
+    calls: PARTIAL
+    inheritance: PARTIAL
+    interfaces: UNSUPPORTED
+    dependencies: UNSUPPORTED
+    decorators: UNSUPPORTED

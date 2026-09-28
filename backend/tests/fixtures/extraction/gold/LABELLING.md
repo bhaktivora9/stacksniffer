@@ -195,3 +195,27 @@ rather than by editing the label.
   (`s.handler.Handle` passed as an argument). The receiver of a method is its `this`
   (`enclosing_class`); calls through a package qualifier into the repository are
   `import_binding`; a function defined in several build-tagged files is `ambiguous`.
+
+## JavaScript conventions
+
+- Qualified names are module-relative and dotted by nesting, as in Python: `Cart`, `Cart.add`,
+  `Cart.#items`-style private names as written, `checkout`, `handler.format` for a function
+  nested in `handler`. There are no signatures; getters and setters are named like the property.
+- `CLASS`: class declarations and classes bound to a name (`const A = class {}`); an anonymous
+  `export default class` is `default`. `METHOD`: methods (static, private, async, accessors,
+  `constructor`) and class fields whose value is a function. `FUNCTION`: function declarations,
+  functions and arrows bound to a name, `exports.name = function` / `module.exports.name = ...`
+  (named `name`), and the functions of an object literal bound to a name (`api.get`).
+  Anonymous callbacks are not declarations: their calls belong to the enclosing declaration.
+- Spans exclude `export` and JSDoc; a lone `const f = ...` spans the whole statement.
+- IMPORTS: one fact per `import`, `export ... from`, `require('m')` and `import('m')`, with
+  `module` the specifier as written. A relative specifier targets the repository FILE it resolves
+  to (Node resolution, e.g. `./pricing` is `pricing.js`); packages are external.
+- EXTENDS: `class A extends B` when B is a name or member chain (mixin calls are not labelled).
+- CALLS: `f()`, `a.b()`, `new C()` (C's `constructor` method, else the class), `super(...)`
+  (the base class's constructor, else the base class), including builtins. `this` is the class in
+  methods and in arrows inside them, not in nested `function`s. JavaScript has no declared types:
+  JSDoc `@param {T} x` and `@type {T}` count as declared (`declared_type`); anything else,
+  including `const x = new C()`, is inferred. `obj.f()` on an object literal bound in scope is
+  `lexical_scope`; a static call through a class name is `type_name`; a name bound to one of
+  several functions at run time is `ambiguous`.

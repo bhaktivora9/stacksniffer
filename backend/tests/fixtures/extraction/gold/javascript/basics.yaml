@@ -1,0 +1,544 @@
+# Gold labels for javascript/basics. Written from the fixture source, never from extractor output.
+# CONTAINS facts are derived from the entity structure below by the evaluator.
+gold_version: 2
+fixture: javascript/basics
+language: javascript
+split: development
+description: 'ES modules and CommonJS in one package: classes with constructors, static and private methods, getters, arrow-function class fields,
+  inheritance from a Node class and a same-file class, super calls, JSDoc parameter types, named, aliased and namespace imports, require, an object
+  literal of functions, and a name bound to one of two functions at run time.'
+labelled_from: source
+review:
+  status: pending_independent_review
+  reviewer: null
+files:
+  src/cart.js:
+    parse_status: PARSED
+    origin: first_party
+  src/pricing.js:
+    parse_status: PARSED
+    origin: first_party
+  src/audit.js:
+    parse_status: PARSED
+    origin: first_party
+  src/legacy.js:
+    parse_status: PARSED
+    origin: first_party
+facts:
+- id: javascript.basics.class_cart_item
+  kind: entity
+  entity_type: CLASS
+  qualified_name: Item
+  file: src/cart.js
+  start_line: 5
+  end_line: 18
+- id: javascript.basics.method_cart_item_constructor
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Item.constructor
+  file: src/cart.js
+  start_line: 6
+  end_line: 9
+- id: javascript.basics.method_cart_item_price
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Item.price
+  file: src/cart.js
+  start_line: 11
+  end_line: 13
+- id: javascript.basics.method_cart_item_parse
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Item.parse
+  file: src/cart.js
+  start_line: 15
+  end_line: 17
+  note: static
+- id: javascript.basics.class_cart_cart
+  kind: entity
+  entity_type: CLASS
+  qualified_name: Cart
+  file: src/cart.js
+  start_line: 20
+  end_line: 45
+- id: javascript.basics.method_cart_cart_onchange
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Cart.onChange
+  file: src/cart.js
+  start_line: 22
+  end_line: 22
+  note: arrow-function class field
+- id: javascript.basics.method_cart_cart_add
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Cart.add
+  file: src/cart.js
+  start_line: 24
+  end_line: 27
+- id: javascript.basics.method_cart_cart_line
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Cart.line
+  file: src/cart.js
+  start_line: 33
+  end_line: 35
+  note: JSDoc is not part of the declaration
+- id: javascript.basics.method_cart_cart_count
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Cart.count
+  file: src/cart.js
+  start_line: 37
+  end_line: 39
+  note: getter
+- id: javascript.basics.method_cart_cart_total
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Cart.total
+  file: src/cart.js
+  start_line: 41
+  end_line: 44
+- id: javascript.basics.class_cart_giftcart
+  kind: entity
+  entity_type: CLASS
+  qualified_name: GiftCart
+  file: src/cart.js
+  start_line: 47
+  end_line: 52
+- id: javascript.basics.method_cart_giftcart_add
+  kind: entity
+  entity_type: METHOD
+  qualified_name: GiftCart.add
+  file: src/cart.js
+  start_line: 48
+  end_line: 51
+- id: javascript.basics.function_cart_checkout
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: checkout
+  file: src/cart.js
+  start_line: 54
+  end_line: 60
+- id: javascript.basics.function_cart_helpers_summarize
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: helpers.summarize
+  file: src/cart.js
+  start_line: 63
+  end_line: 65
+  note: object literal method
+- id: javascript.basics.function_cart_helpers_format
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: helpers.format
+  file: src/cart.js
+  start_line: 66
+  end_line: 66
+  note: object literal arrow
+- id: javascript.basics.function_pricing_discount
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: discount
+  file: src/pricing.js
+  start_line: 3
+  end_line: 5
+- id: javascript.basics.function_pricing_round
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: round
+  file: src/pricing.js
+  start_line: 7
+  end_line: 9
+- id: javascript.basics.function_audit_record
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: record
+  file: src/audit.js
+  start_line: 3
+  end_line: 5
+- id: javascript.basics.function_legacy_filefor
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: fileFor
+  file: src/legacy.js
+  start_line: 4
+  end_line: 6
+  note: exports.fileFor = function
+- id: javascript.basics.function_legacy_cost
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: cost
+  file: src/legacy.js
+  start_line: 8
+  end_line: 8
+  note: module.exports.cost = arrow
+- id: javascript.basics.imports_cart_js_pricing_js_1
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:src/cart.js
+  target_key: file:src/pricing.js
+  resolution: cross_file
+  evidence:
+  - file: src/cart.js
+    start_line: 1
+    end_line: 1
+  module: ./pricing.js
+  basis: import_path
+- id: javascript.basics.imports_cart_js_audit_js_2
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:src/cart.js
+  target_key: file:src/audit.js
+  resolution: cross_file
+  evidence:
+  - file: src/cart.js
+    start_line: 2
+    end_line: 2
+  module: ./audit.js
+  basis: import_path
+- id: javascript.basics.imports_cart_js_external_events_3
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:src/cart.js
+  target_key: external:events
+  resolution: external
+  evidence:
+  - file: src/cart.js
+    start_line: 3
+    end_line: 3
+  module: events
+- id: javascript.basics.imports_legacy_js_external_path_1
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:src/legacy.js
+  target_key: external:path
+  resolution: external
+  evidence:
+  - file: src/legacy.js
+    start_line: 1
+    end_line: 1
+  module: path
+  note: require
+- id: javascript.basics.imports_legacy_js_pricing_js_2
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:src/legacy.js
+  target_key: file:src/pricing.js
+  resolution: cross_file
+  evidence:
+  - file: src/legacy.js
+    start_line: 2
+    end_line: 2
+  module: ./pricing
+  basis: import_path
+  note: require without extension resolves to pricing.js
+- id: javascript.basics.extends_cart_external_eventemitter_20
+  kind: relationship
+  relationship_type: EXTENDS
+  source_key: class:src/cart.js::Cart
+  target_key: external:EventEmitter
+  resolution: external
+  evidence:
+  - file: src/cart.js
+    start_line: 20
+    end_line: 20
+- id: javascript.basics.extends_giftcart_cart_47
+  kind: relationship
+  relationship_type: EXTENDS
+  source_key: class:src/cart.js::GiftCart
+  target_key: class:src/cart.js::Cart
+  resolution: same_file
+  evidence:
+  - file: src/cart.js
+    start_line: 47
+    end_line: 47
+  basis: type_name
+- id: javascript.basics.calls_item_parse_item_constructor_16
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/cart.js::Item.parse
+  target_key: method:src/cart.js::Item.constructor
+  resolution: same_file
+  evidence:
+  - file: src/cart.js
+    start_line: 16
+    end_line: 16
+  basis: constructor
+- id: javascript.basics.calls_cart_onchange_external_this_emit_22
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/cart.js::Cart.onChange
+  target_key: external:this.emit
+  resolution: external
+  evidence:
+  - file: src/cart.js
+    start_line: 22
+    end_line: 22
+  note: inherited from EventEmitter
+- id: javascript.basics.calls_cart_onchange_cart_total_22
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/cart.js::Cart.onChange
+  target_key: method:src/cart.js::Cart.total
+  resolution: same_file
+  evidence:
+  - file: src/cart.js
+    start_line: 22
+    end_line: 22
+  basis: enclosing_class
+  note: arrow keeps this
+- id: javascript.basics.calls_cart_add_external_this_items_push_25
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/cart.js::Cart.add
+  target_key: external:this.#items.push
+  resolution: external
+  evidence:
+  - file: src/cart.js
+    start_line: 25
+    end_line: 25
+- id: javascript.basics.calls_cart_add_cart_onchange_26
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/cart.js::Cart.add
+  target_key: method:src/cart.js::Cart.onChange
+  resolution: same_file
+  evidence:
+  - file: src/cart.js
+    start_line: 26
+    end_line: 26
+  basis: enclosing_class
+- id: javascript.basics.calls_cart_line_round_34
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/cart.js::Cart.line
+  target_key: function:src/pricing.js::round
+  resolution: cross_file
+  evidence:
+  - file: src/cart.js
+    start_line: 34
+    end_line: 34
+  basis: import_binding
+  note: imported as roundCents
+- id: javascript.basics.calls_cart_line_item_price_34
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/cart.js::Cart.line
+  target_key: method:src/cart.js::Item.price
+  resolution: same_file
+  evidence:
+  - file: src/cart.js
+    start_line: 34
+    end_line: 34
+  basis: declared_type
+  note: JSDoc @param {Item} item
+- id: javascript.basics.calls_cart_total_external_this_items_map_42
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/cart.js::Cart.total
+  target_key: external:this.#items.map
+  resolution: external
+  evidence:
+  - file: src/cart.js
+    start_line: 42
+    end_line: 42
+- id: javascript.basics.calls_cart_total_cart_line_42
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/cart.js::Cart.total
+  target_key: method:src/cart.js::Cart.line
+  resolution: same_file
+  evidence:
+  - file: src/cart.js
+    start_line: 42
+    end_line: 42
+  basis: enclosing_class
+  note: inside an arrow callback
+- id: javascript.basics.calls_cart_total_discount_43
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/cart.js::Cart.total
+  target_key: function:src/pricing.js::discount
+  resolution: cross_file
+  evidence:
+  - file: src/cart.js
+    start_line: 43
+    end_line: 43
+  basis: import_binding
+- id: javascript.basics.calls_cart_total_external_lines_reduce_43
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/cart.js::Cart.total
+  target_key: external:lines.reduce
+  resolution: external
+  evidence:
+  - file: src/cart.js
+    start_line: 43
+    end_line: 43
+- id: javascript.basics.calls_giftcart_add_cart_add_49
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/cart.js::GiftCart.add
+  target_key: method:src/cart.js::Cart.add
+  resolution: same_file
+  evidence:
+  - file: src/cart.js
+    start_line: 49
+    end_line: 49
+  basis: base_class
+- id: javascript.basics.calls_giftcart_add_record_50
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/cart.js::GiftCart.add
+  target_key: function:src/audit.js::record
+  resolution: cross_file
+  evidence:
+  - file: src/cart.js
+    start_line: 50
+    end_line: 50
+  basis: import_binding
+  note: namespace import
+- id: javascript.basics.calls_checkout_external_parse_56
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:src/cart.js::checkout
+  target_key: external:parse
+  resolution: ambiguous
+  evidence:
+  - file: src/cart.js
+    start_line: 56
+    end_line: 56
+  note: JSON5.parse or JSON.parse, chosen at run time
+- id: javascript.basics.calls_checkout_giftcart_57
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:src/cart.js::checkout
+  target_key: class:src/cart.js::GiftCart
+  resolution: same_file
+  evidence:
+  - file: src/cart.js
+    start_line: 57
+    end_line: 57
+  basis: constructor
+  note: 'no declared constructor: the class'
+- id: javascript.basics.calls_checkout_giftcart_add_58
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:src/cart.js::checkout
+  target_key: method:src/cart.js::GiftCart.add
+  resolution: same_file
+  evidence:
+  - file: src/cart.js
+    start_line: 58
+    end_line: 58
+  basis: inferred_type
+  note: gift is inferred from new GiftCart
+- id: javascript.basics.calls_checkout_item_parse_58
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:src/cart.js::checkout
+  target_key: method:src/cart.js::Item.parse
+  resolution: same_file
+  evidence:
+  - file: src/cart.js
+    start_line: 58
+    end_line: 58
+  basis: type_name
+  note: static call through the class
+- id: javascript.basics.calls_checkout_helpers_summarize_59
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:src/cart.js::checkout
+  target_key: function:src/cart.js::helpers.summarize
+  resolution: same_file
+  evidence:
+  - file: src/cart.js
+    start_line: 59
+    end_line: 59
+  basis: lexical_scope
+  note: helpers is a module-level object literal
+- id: javascript.basics.calls_helpers_summarize_external_cart_total_64
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:src/cart.js::helpers.summarize
+  target_key: external:cart.total
+  resolution: unresolvable
+  evidence:
+  - file: src/cart.js
+    start_line: 64
+    end_line: 64
+  note: untyped parameter
+- id: javascript.basics.calls_helpers_format_external_expression_tofixed_66
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:src/cart.js::helpers.format
+  target_key: external:<expression>.toFixed
+  resolution: external
+  evidence:
+  - file: src/cart.js
+    start_line: 66
+    end_line: 66
+- id: javascript.basics.calls_discount_round_4
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:src/pricing.js::discount
+  target_key: function:src/pricing.js::round
+  resolution: same_file
+  evidence:
+  - file: src/pricing.js
+    start_line: 4
+    end_line: 4
+  basis: lexical_scope
+- id: javascript.basics.calls_round_external_math_round_8
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:src/pricing.js::round
+  target_key: external:Math.round
+  resolution: external
+  evidence:
+  - file: src/pricing.js
+    start_line: 8
+    end_line: 8
+- id: javascript.basics.calls_record_external_log_push_4
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:src/audit.js::record
+  target_key: external:log.push
+  resolution: external
+  evidence:
+  - file: src/audit.js
+    start_line: 4
+    end_line: 4
+- id: javascript.basics.calls_record_external_date_now_4
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:src/audit.js::record
+  target_key: external:Date.now
+  resolution: external
+  evidence:
+  - file: src/audit.js
+    start_line: 4
+    end_line: 4
+- id: javascript.basics.calls_filefor_external_path_join_5
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:src/legacy.js::fileFor
+  target_key: external:path.join
+  resolution: external
+  evidence:
+  - file: src/legacy.js
+    start_line: 5
+    end_line: 5
+- id: javascript.basics.calls_cost_round_8
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:src/legacy.js::cost
+  target_key: function:src/pricing.js::round
+  resolution: cross_file
+  evidence:
+  - file: src/legacy.js
+    start_line: 8
+    end_line: 8
+  basis: import_binding
+  note: destructured from require

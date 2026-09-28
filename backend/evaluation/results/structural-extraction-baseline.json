@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "baseline_version": 4,
+  "baseline_version": 5,
   "gold_version": 2,
   "review_status": [
     "pending_independent_review"
@@ -1934,6 +1934,998 @@
             "area": "relationships",
             "outcome": "unexpected",
             "detail": "IMPORTS file:src/main/java/com/acme/orders/service/PricingPolicy.java external:com.acme.orders.model.LineItem (label: IMPORTS file:src/main/java/com/acme/orders/service/PricingPolicy.java class:src/main/java/com/acme/orders/model/LineItem.java::com.acme.orders.model.LineItem)",
+            "category": "cross-file limitation"
+          }
+        ]
+      }
+    },
+    "javascript": {
+      "cases": [
+        "javascript/basics",
+        "javascript/holdout_events",
+        "javascript/webapp"
+      ],
+      "extractor_versions": {
+        "javascript": "stacksniffer-javascript/1+tree-sitter-javascript@0.25.0"
+      },
+      "entities": {
+        "overall": {
+          "tp": 38,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "CLASS": {
+          "tp": 6,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "INTERFACE": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "FUNCTION": {
+          "tp": 16,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "METHOD": {
+          "tp": 16,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "relationships": {
+        "overall": {
+          "tp": 95,
+          "fp": 18,
+          "fn": 18,
+          "precision": 0.8407,
+          "recall": 0.8407,
+          "f1": 0.8407
+        },
+        "CONTAINS": {
+          "tp": 38,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "IMPORTS": {
+          "tp": 5,
+          "fp": 8,
+          "fn": 8,
+          "precision": 0.3846,
+          "recall": 0.3846,
+          "f1": 0.3846
+        },
+        "CALLS": {
+          "tp": 48,
+          "fp": 10,
+          "fn": 10,
+          "precision": 0.8276,
+          "recall": 0.8276,
+          "f1": 0.8276
+        },
+        "EXTENDS": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "IMPLEMENTS": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "import_statements": {
+        "tp": 13,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "resolution": {
+        "CALLS": {
+          "same_file": {
+            "tp": 18,
+            "fp": 0,
+            "fn": 1,
+            "precision": 1.0,
+            "recall": 0.9474,
+            "f1": 0.973
+          },
+          "cross_file": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 9,
+            "precision": 1.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "overall": {
+            "tp": 18,
+            "fp": 0,
+            "fn": 10,
+            "precision": 1.0,
+            "recall": 0.6429,
+            "f1": 0.7826
+          }
+        },
+        "EXTENDS": {
+          "same_file": {
+            "tp": 2,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "cross_file": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "overall": {
+            "tp": 2,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          }
+        },
+        "IMPLEMENTS": {
+          "same_file": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "cross_file": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "overall": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          }
+        },
+        "IMPORTS": {
+          "same_file": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "cross_file": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 8,
+            "precision": 1.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "overall": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 8,
+            "precision": 1.0,
+            "recall": 0.0,
+            "f1": 0.0
+          }
+        }
+      },
+      "resolved_edge_precision": {
+        "tp": 20,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "resolution_recall_by_expected_basis": {
+        "lexical_scope": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "enclosing_class": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "base_class": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "type_name": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "constructor": {
+          "tp": 5,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "declared_type": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "import_path": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 8,
+          "precision": 1.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        "import_binding": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 9,
+          "precision": 1.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        "inferred_type": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 1,
+          "precision": 1.0,
+          "recall": 0.0,
+          "f1": 0.0
+        }
+      },
+      "basis_accuracy": {
+        "valid": 20,
+        "total": 20,
+        "rate": 1.0
+      },
+      "certainty_accuracy": {
+        "valid": 20,
+        "total": 20,
+        "rate": 1.0
+      },
+      "by_origin": {
+        "entities": {
+          "first_party": {
+            "tp": 36,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "generated": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "vendored": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          }
+        },
+        "relationships": {
+          "first_party": {
+            "tp": 90,
+            "fp": 18,
+            "fn": 18,
+            "precision": 0.8333,
+            "recall": 0.8333,
+            "f1": 0.8333
+          },
+          "generated": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "vendored": {
+            "tp": 4,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          }
+        },
+        "classification": {
+          "valid": 12,
+          "total": 12,
+          "rate": 1.0
+        }
+      },
+      "by_capability_level": {
+        "PARTIAL": {
+          "capabilities": [
+            "calls",
+            "inheritance"
+          ],
+          "tp": 52,
+          "fp": 10,
+          "fn": 10,
+          "precision": 0.8387,
+          "recall": 0.8387,
+          "f1": 0.8387
+        },
+        "SUPPORTED": {
+          "capabilities": [
+            "declarations",
+            "imports"
+          ],
+          "tp": 89,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "resolved_edge_precision_by_basis": {
+        "base_class": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "constructor": {
+          "tp": 5,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "declared_type": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "enclosing_class": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "lexical_scope": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "type_name": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "unresolved_edges": {
+        "overall": {
+          "tp": 37,
+          "fp": 18,
+          "fn": 0,
+          "precision": 0.6727,
+          "recall": 1.0,
+          "f1": 0.8043
+        },
+        "ambiguous": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "external": {
+          "tp": 32,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "unresolvable": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "evidence": {
+        "path_validity": {
+          "valid": 133,
+          "total": 133,
+          "rate": 1.0
+        },
+        "line_range_validity": {
+          "valid": 133,
+          "total": 133,
+          "rate": 1.0
+        },
+        "source_integrity": {
+          "valid": 126,
+          "total": 126,
+          "rate": 1.0
+        }
+      },
+      "decorators": {
+        "valid": 38,
+        "total": 38,
+        "rate": 1.0
+      },
+      "parse_status": {
+        "valid": 12,
+        "total": 12,
+        "rate": 1.0
+      },
+      "syntax_error_location": {
+        "valid": 1,
+        "total": 1,
+        "rate": 1.0
+      },
+      "malformed_isolation": {
+        "malformed_files": 1,
+        "isolated": 1,
+        "rate": 1.0,
+        "repository_failures": 0
+      },
+      "determinism": {
+        "identical_runs": {
+          "valid": 3,
+          "total": 3,
+          "rate": 1.0
+        },
+        "stable_keys": {
+          "valid": 104,
+          "total": 104,
+          "rate": 1.0
+        }
+      },
+      "unsupported_leakage": {
+        "count": 0,
+        "facts": []
+      },
+      "capabilities": {
+        "declared": {
+          "declarations": "SUPPORTED",
+          "imports": "SUPPORTED",
+          "calls": "PARTIAL",
+          "inheritance": "PARTIAL",
+          "interfaces": "UNSUPPORTED",
+          "dependencies": "UNSUPPORTED",
+          "decorators": "UNSUPPORTED"
+        },
+        "expected": {
+          "declarations": "SUPPORTED",
+          "imports": "SUPPORTED",
+          "calls": "PARTIAL",
+          "inheritance": "PARTIAL",
+          "interfaces": "UNSUPPORTED",
+          "dependencies": "UNSUPPORTED",
+          "decorators": "UNSUPPORTED"
+        },
+        "accuracy": 1.0,
+        "mismatched": [],
+        "consistency_issues": []
+      },
+      "splits": {
+        "development": {
+          "entities": {
+            "tp": 28,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "relationships": {
+            "tp": 72,
+            "fp": 16,
+            "fn": 16,
+            "precision": 0.8182,
+            "recall": 0.8182,
+            "f1": 0.8182
+          },
+          "calls_resolution": {
+            "tp": 12,
+            "fp": 0,
+            "fn": 9,
+            "precision": 1.0,
+            "recall": 0.5714,
+            "f1": 0.7273
+          }
+        },
+        "holdout": {
+          "entities": {
+            "tp": 10,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "relationships": {
+            "tp": 23,
+            "fp": 2,
+            "fn": 2,
+            "precision": 0.92,
+            "recall": 0.92,
+            "f1": 0.92
+          },
+          "calls_resolution": {
+            "tp": 6,
+            "fp": 0,
+            "fn": 1,
+            "precision": 1.0,
+            "recall": 0.8571,
+            "f1": 0.9231
+          }
+        }
+      },
+      "gates": [
+        {
+          "gate": "declaration_precision",
+          "required": ">= 0.98",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "declaration_recall",
+          "required": ">= 0.95",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "import_precision",
+          "required": ">= 0.95",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "import_recall",
+          "required": ">= 0.95",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "resolved_edge_precision",
+          "required": ">= 0.9",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "evidence_path_validity",
+          "required": ">= 1.0",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "evidence_line_range_validity",
+          "required": ">= 1.0",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "deterministic_stable_keys",
+          "required": ">= 1.0",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "unsupported_fact_leakage",
+          "required": "<= 0",
+          "actual": 0,
+          "passed": true
+        },
+        {
+          "gate": "repository_failures_from_malformed_files",
+          "required": "<= 0",
+          "actual": 0,
+          "passed": true
+        }
+      ],
+      "gates_passed": true,
+      "errors": {
+        "by_category": {
+          "parser query gap": 0,
+          "normalization error": 0,
+          "receiver-resolution error": 2,
+          "ambiguity": 0,
+          "cross-file limitation": 34,
+          "evidence-range error": 0,
+          "incorrect fixture label": 0,
+          "parser error recovery": 0,
+          "unsupported-fact leakage": 0
+        },
+        "items": [
+          {
+            "id": "javascript/basics:relationships:missed:CALLS function:src/cart.js::checkout method:src/cart.js::GiftCart.add (emitted as external:gift.add)",
+            "case": "javascript/basics",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS function:src/cart.js::checkout method:src/cart.js::GiftCart.add (emitted as external:gift.add)",
+            "category": "receiver-resolution error",
+            "fact_id": "javascript.basics.calls_checkout_giftcart_add_58"
+          },
+          {
+            "id": "javascript/basics:relationships:missed:CALLS function:src/legacy.js::cost function:src/pricing.js::round (emitted as external:round)",
+            "case": "javascript/basics",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS function:src/legacy.js::cost function:src/pricing.js::round (emitted as external:round)",
+            "category": "cross-file limitation",
+            "fact_id": "javascript.basics.calls_cost_round_8"
+          },
+          {
+            "id": "javascript/basics:relationships:missed:CALLS method:src/cart.js::Cart.line function:src/pricing.js::round (emitted as external:roundCents)",
+            "case": "javascript/basics",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:src/cart.js::Cart.line function:src/pricing.js::round (emitted as external:roundCents)",
+            "category": "cross-file limitation",
+            "fact_id": "javascript.basics.calls_cart_line_round_34"
+          },
+          {
+            "id": "javascript/basics:relationships:missed:CALLS method:src/cart.js::Cart.total function:src/pricing.js::discount (emitted as external:discount)",
+            "case": "javascript/basics",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:src/cart.js::Cart.total function:src/pricing.js::discount (emitted as external:discount)",
+            "category": "cross-file limitation",
+            "fact_id": "javascript.basics.calls_cart_total_discount_43"
+          },
+          {
+            "id": "javascript/basics:relationships:missed:CALLS method:src/cart.js::GiftCart.add function:src/audit.js::record (emitted as external:audit.record)",
+            "case": "javascript/basics",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:src/cart.js::GiftCart.add function:src/audit.js::record (emitted as external:audit.record)",
+            "category": "cross-file limitation",
+            "fact_id": "javascript.basics.calls_giftcart_add_record_50"
+          },
+          {
+            "id": "javascript/basics:relationships:missed:IMPORTS file:src/cart.js file:src/audit.js (emitted as external:./audit.js)",
+            "case": "javascript/basics",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "IMPORTS file:src/cart.js file:src/audit.js (emitted as external:./audit.js)",
+            "category": "cross-file limitation",
+            "fact_id": "javascript.basics.imports_cart_js_audit_js_2"
+          },
+          {
+            "id": "javascript/basics:relationships:missed:IMPORTS file:src/cart.js file:src/pricing.js (emitted as external:./pricing.js)",
+            "case": "javascript/basics",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "IMPORTS file:src/cart.js file:src/pricing.js (emitted as external:./pricing.js)",
+            "category": "cross-file limitation",
+            "fact_id": "javascript.basics.imports_cart_js_pricing_js_1"
+          },
+          {
+            "id": "javascript/basics:relationships:missed:IMPORTS file:src/legacy.js file:src/pricing.js (emitted as external:./pricing)",
+            "case": "javascript/basics",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "IMPORTS file:src/legacy.js file:src/pricing.js (emitted as external:./pricing)",
+            "category": "cross-file limitation",
+            "fact_id": "javascript.basics.imports_legacy_js_pricing_js_2"
+          },
+          {
+            "id": "javascript/basics:relationships:unexpected:CALLS function:src/cart.js::checkout external:gift.add (label: CALLS function:src/cart.js::checkout method:src/cart.js::GiftCart.add)",
+            "case": "javascript/basics",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS function:src/cart.js::checkout external:gift.add (label: CALLS function:src/cart.js::checkout method:src/cart.js::GiftCart.add)",
+            "category": "receiver-resolution error"
+          },
+          {
+            "id": "javascript/basics:relationships:unexpected:CALLS function:src/legacy.js::cost external:round (label: CALLS function:src/legacy.js::cost function:src/pricing.js::round)",
+            "case": "javascript/basics",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS function:src/legacy.js::cost external:round (label: CALLS function:src/legacy.js::cost function:src/pricing.js::round)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "javascript/basics:relationships:unexpected:CALLS method:src/cart.js::Cart.line external:roundCents (label: CALLS method:src/cart.js::Cart.line function:src/pricing.js::round)",
+            "case": "javascript/basics",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:src/cart.js::Cart.line external:roundCents (label: CALLS method:src/cart.js::Cart.line function:src/pricing.js::round)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "javascript/basics:relationships:unexpected:CALLS method:src/cart.js::Cart.total external:discount (label: CALLS method:src/cart.js::Cart.total function:src/pricing.js::discount)",
+            "case": "javascript/basics",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:src/cart.js::Cart.total external:discount (label: CALLS method:src/cart.js::Cart.total function:src/pricing.js::discount)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "javascript/basics:relationships:unexpected:CALLS method:src/cart.js::GiftCart.add external:audit.record (label: CALLS method:src/cart.js::GiftCart.add function:src/audit.js::record)",
+            "case": "javascript/basics",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:src/cart.js::GiftCart.add external:audit.record (label: CALLS method:src/cart.js::GiftCart.add function:src/audit.js::record)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "javascript/basics:relationships:unexpected:IMPORTS file:src/cart.js external:./audit.js (label: IMPORTS file:src/cart.js file:src/audit.js)",
+            "case": "javascript/basics",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPORTS file:src/cart.js external:./audit.js (label: IMPORTS file:src/cart.js file:src/audit.js)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "javascript/basics:relationships:unexpected:IMPORTS file:src/cart.js external:./pricing.js (label: IMPORTS file:src/cart.js file:src/pricing.js)",
+            "case": "javascript/basics",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPORTS file:src/cart.js external:./pricing.js (label: IMPORTS file:src/cart.js file:src/pricing.js)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "javascript/basics:relationships:unexpected:IMPORTS file:src/legacy.js external:./pricing (label: IMPORTS file:src/legacy.js file:src/pricing.js)",
+            "case": "javascript/basics",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPORTS file:src/legacy.js external:./pricing (label: IMPORTS file:src/legacy.js file:src/pricing.js)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "javascript/holdout_events:relationships:missed:CALLS method:lib/bus.js::DurableBus.publish function:lib/retry.js::retry (emitted as external:retry)",
+            "case": "javascript/holdout_events",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:lib/bus.js::DurableBus.publish function:lib/retry.js::retry (emitted as external:retry)",
+            "category": "cross-file limitation",
+            "fact_id": "javascript.holdout_events.calls_durablebus_publish_retry_37"
+          },
+          {
+            "id": "javascript/holdout_events:relationships:missed:IMPORTS file:lib/bus.js file:lib/retry.js (emitted as external:./retry.js)",
+            "case": "javascript/holdout_events",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "IMPORTS file:lib/bus.js file:lib/retry.js (emitted as external:./retry.js)",
+            "category": "cross-file limitation",
+            "fact_id": "javascript.holdout_events.imports_bus_js_retry_js_2"
+          },
+          {
+            "id": "javascript/holdout_events:relationships:unexpected:CALLS method:lib/bus.js::DurableBus.publish external:retry (label: CALLS method:lib/bus.js::DurableBus.publish function:lib/retry.js::retry)",
+            "case": "javascript/holdout_events",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:lib/bus.js::DurableBus.publish external:retry (label: CALLS method:lib/bus.js::DurableBus.publish function:lib/retry.js::retry)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "javascript/holdout_events:relationships:unexpected:IMPORTS file:lib/bus.js external:./retry.js (label: IMPORTS file:lib/bus.js file:lib/retry.js)",
+            "case": "javascript/holdout_events",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPORTS file:lib/bus.js external:./retry.js (label: IMPORTS file:lib/bus.js file:lib/retry.js)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "javascript/webapp:relationships:missed:CALLS function:server/app.js::createApp function:server/routes/orders.js::ordersRouter (emitted as external:ordersRouter)",
+            "case": "javascript/webapp",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS function:server/app.js::createApp function:server/routes/orders.js::ordersRouter (emitted as external:ordersRouter)",
+            "category": "cross-file limitation",
+            "fact_id": "javascript.webapp.calls_createapp_ordersrouter_9"
+          },
+          {
+            "id": "javascript/webapp:relationships:missed:CALLS function:server/app.js::createApp function:src/__generated__/schema.js::validate (emitted as external:validate)",
+            "case": "javascript/webapp",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS function:server/app.js::createApp function:src/__generated__/schema.js::validate (emitted as external:validate)",
+            "category": "cross-file limitation",
+            "fact_id": "javascript.webapp.calls_createapp_validate_10"
+          },
+          {
+            "id": "javascript/webapp:relationships:missed:CALLS function:server/app.js::createApp function:vendor/tinyfn.js::debounce (emitted as external:debounce)",
+            "case": "javascript/webapp",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS function:server/app.js::createApp function:vendor/tinyfn.js::debounce (emitted as external:debounce)",
+            "category": "cross-file limitation",
+            "fact_id": "javascript.webapp.calls_createapp_debounce_11"
+          },
+          {
+            "id": "javascript/webapp:relationships:missed:CALLS function:server/legacy.js::start function:server/app.js::createApp (emitted as external:createApp)",
+            "case": "javascript/webapp",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS function:server/legacy.js::start function:server/app.js::createApp (emitted as external:createApp)",
+            "category": "cross-file limitation",
+            "fact_id": "javascript.webapp.calls_start_createapp_4"
+          },
+          {
+            "id": "javascript/webapp:relationships:missed:IMPORTS file:server/app.js file:server/routes/orders.js (emitted as external:./routes/orders.js)",
+            "case": "javascript/webapp",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "IMPORTS file:server/app.js file:server/routes/orders.js (emitted as external:./routes/orders.js)",
+            "category": "cross-file limitation",
+            "fact_id": "javascript.webapp.imports_app_js_orders_js_2"
+          },
+          {
+            "id": "javascript/webapp:relationships:missed:IMPORTS file:server/app.js file:src/__generated__/schema.js (emitted as external:../src/__generated__/schema.js)",
+            "case": "javascript/webapp",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "IMPORTS file:server/app.js file:src/__generated__/schema.js (emitted as external:../src/__generated__/schema.js)",
+            "category": "cross-file limitation",
+            "fact_id": "javascript.webapp.imports_app_js_schema_js_3"
+          },
+          {
+            "id": "javascript/webapp:relationships:missed:IMPORTS file:server/app.js file:vendor/tinyfn.js (emitted as external:../vendor/tinyfn.js)",
+            "case": "javascript/webapp",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "IMPORTS file:server/app.js file:vendor/tinyfn.js (emitted as external:../vendor/tinyfn.js)",
+            "category": "cross-file limitation",
+            "fact_id": "javascript.webapp.imports_app_js_tinyfn_js_4"
+          },
+          {
+            "id": "javascript/webapp:relationships:missed:IMPORTS file:server/legacy.js file:server/app.js (emitted as external:./app.js)",
+            "case": "javascript/webapp",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "IMPORTS file:server/legacy.js file:server/app.js (emitted as external:./app.js)",
+            "category": "cross-file limitation",
+            "fact_id": "javascript.webapp.imports_legacy_js_app_js_1"
+          },
+          {
+            "id": "javascript/webapp:relationships:unexpected:CALLS function:server/app.js::createApp external:debounce (label: CALLS function:server/app.js::createApp function:vendor/tinyfn.js::debounce)",
+            "case": "javascript/webapp",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS function:server/app.js::createApp external:debounce (label: CALLS function:server/app.js::createApp function:vendor/tinyfn.js::debounce)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "javascript/webapp:relationships:unexpected:CALLS function:server/app.js::createApp external:ordersRouter (label: CALLS function:server/app.js::createApp function:server/routes/orders.js::ordersRouter)",
+            "case": "javascript/webapp",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS function:server/app.js::createApp external:ordersRouter (label: CALLS function:server/app.js::createApp function:server/routes/orders.js::ordersRouter)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "javascript/webapp:relationships:unexpected:CALLS function:server/app.js::createApp external:validate (label: CALLS function:server/app.js::createApp function:src/__generated__/schema.js::validate)",
+            "case": "javascript/webapp",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS function:server/app.js::createApp external:validate (label: CALLS function:server/app.js::createApp function:src/__generated__/schema.js::validate)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "javascript/webapp:relationships:unexpected:CALLS function:server/legacy.js::start external:createApp (label: CALLS function:server/legacy.js::start function:server/app.js::createApp)",
+            "case": "javascript/webapp",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS function:server/legacy.js::start external:createApp (label: CALLS function:server/legacy.js::start function:server/app.js::createApp)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "javascript/webapp:relationships:unexpected:IMPORTS file:server/app.js external:../src/__generated__/schema.js (label: IMPORTS file:server/app.js file:src/__generated__/schema.js)",
+            "case": "javascript/webapp",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPORTS file:server/app.js external:../src/__generated__/schema.js (label: IMPORTS file:server/app.js file:src/__generated__/schema.js)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "javascript/webapp:relationships:unexpected:IMPORTS file:server/app.js external:../vendor/tinyfn.js (label: IMPORTS file:server/app.js file:vendor/tinyfn.js)",
+            "case": "javascript/webapp",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPORTS file:server/app.js external:../vendor/tinyfn.js (label: IMPORTS file:server/app.js file:vendor/tinyfn.js)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "javascript/webapp:relationships:unexpected:IMPORTS file:server/app.js external:./routes/orders.js (label: IMPORTS file:server/app.js file:server/routes/orders.js)",
+            "case": "javascript/webapp",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPORTS file:server/app.js external:./routes/orders.js (label: IMPORTS file:server/app.js file:server/routes/orders.js)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "javascript/webapp:relationships:unexpected:IMPORTS file:server/legacy.js external:./app.js (label: IMPORTS file:server/legacy.js file:server/app.js)",
+            "case": "javascript/webapp",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPORTS file:server/legacy.js external:./app.js (label: IMPORTS file:server/legacy.js file:server/app.js)",
             "category": "cross-file limitation"
           }
         ]

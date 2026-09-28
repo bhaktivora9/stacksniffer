@@ -5,7 +5,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Iterable
 
-from .analyzers import FileLevelAnalyzer, GoAnalyzer, JavaAnalyzer, PythonAnalyzer, ScalaAnalyzer
+from .analyzers import (
+    FileLevelAnalyzer,
+    GoAnalyzer,
+    JavaAnalyzer,
+    JavaScriptAnalyzer,
+    PythonAnalyzer,
+    ScalaAnalyzer,
+)
 from .contracts import LanguageAnalyzer
 
 _EXTENSIONS = {
@@ -49,7 +56,7 @@ class AnalyzerRegistry:
 
     @classmethod
     def default(cls) -> AnalyzerRegistry:
-        return cls([PythonAnalyzer(), JavaAnalyzer(), ScalaAnalyzer(), GoAnalyzer()])
+        return cls([PythonAnalyzer(), JavaAnalyzer(), ScalaAnalyzer(), GoAnalyzer(), JavaScriptAnalyzer()])
 
     @property
     def analyzers(self) -> tuple[LanguageAnalyzer, ...]:

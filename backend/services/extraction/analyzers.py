@@ -1,4 +1,4 @@
-"""Language analyzers: Python, Java, Scala and Go over Tree-sitter, plus the file-level fallback.
+"""Language analyzers: Python, Java, Scala, Go and JavaScript over Tree-sitter, plus the file-level fallback.
 
 Resolution is deliberately local to one file. A reference is linked to an
 entity only when the file's own declarations determine it: lexical scopes and
@@ -150,6 +150,8 @@ class _FileState:
         self.package: str | None = None
         self.objects: dict[str, list[str]] = defaultdict(list)  # Scala singleton objects by name
         self.traits: set[str] = set()
+        self.handled: set[int] = set()  # node ids a language walked out of order (JavaScript)
+        self.js_objects: dict[tuple[str, str], str] = {}  # (namespace, name) -> object-literal owner
 
 
 class TreeSitterAnalyzer:
@@ -1803,3 +1805,463 @@ def scope_file(state, scope) -> str:
     while state.parent_namespace.get(namespace) is not None:
         namespace = state.parent_namespace[namespace]
     return namespace
+
+
+# --- JavaScript ------------------------------------------------------------------------------
+
+_JS_FUNCTION_VALUES = ("arrow_function", "function_expression", "function", "generator_function")
+_JS_CLASS_VALUES = ("class",)
+_JS_JSDOC_PARAM = re.compile(r"@param\s+\{\s*\??([A-Za-z_$][\w$]*)\s*=?\s*\}\s*\[?([A-Za-z_$][\w$]*)")
+_JS_JSDOC_TYPE = re.compile(r"@type\s+\{\s*\??([A-Za-z_$][\w$]*)\s*\}")
+
+
+def _js_string(node: Any) -> str | None:
+    if node is None or node.type not in ("string", "template_string"):
+        return None
+    fragments = [c for c in node.named_children if c.type == "string_fragment"]
+    if node.type == "template_string" and any(c.type == "template_substitution" for c in node.named_children):
+        return None  # not a static specifier
+    return "".join(text_of(f) for f in fragments)
+
+
+def _js_bound_names(node: Any) -> list[str]:
+    """Identifiers a parameter or binding pattern introduces."""
+    if node is None:
+        return []
+    if node.type in ("identifier", "shorthand_property_identifier_pattern"):
+        return [text_of(node)]
+    if node.type == "assignment_pattern":
+        return _js_bound_names(node.child_by_field_name("left"))
+    if node.type == "pair_pattern":
+        return _js_bound_names(node.child_by_field_name("value"))
+    if node.type in ("rest_pattern", "object_pattern", "array_pattern", "formal_parameters",
+                     "object_assignment_pattern"):
+        return [name for child in node.named_children for name in _js_bound_names(child)]
+    return []
+
+
+def _js_jsdoc(node: Any) -> str:
+    """The `/** ... */` comment directly before a declaration (or its export/declaration wrapper)."""
+    while node is not None and node.parent is not None and node.parent.type in (
+            "export_statement", "lexical_declaration", "variable_declaration") and node.prev_named_sibling is None:
+        node = node.parent
+    previous = node.prev_named_sibling if node is not None else None
+    if previous is None and node is not None and node.parent is not None and node.parent.type == "export_statement":
+        previous = node.parent.prev_named_sibling
+    if previous is not None and previous.type == "comment" and text_of(previous).startswith("/**") \
+            and previous.end_point[0] + 1 >= node.start_point[0]:
+        return text_of(previous)
+    return ""
+
+
+def _js_chain_is_simple(node: Any) -> bool:
+    while node.type == "member_expression":
+        node = node.child_by_field_name("object")
+    return node.type in ("identifier", "this", "super")
+
+
+class JavaScriptAnalyzer(TreeSitterAnalyzer):
+    """ECMAScript modules and CommonJS. JavaScript has no declared types; JSDoc `@param {T} x` and
+    `@type {T}` annotations supply them. Interfaces and decorators do not exist in the language."""
+
+    language = "javascript"
+    extractor = "tree-sitter-javascript"
+    analyzer_version = "stacksniffer-javascript/1"
+    capabilities = AnalyzerCapabilities({
+        Capability.DECLARATIONS: S,
+        Capability.IMPORTS: S,
+        Capability.CALLS: P,
+        Capability.INHERITANCE: P,
+        Capability.INTERFACES: U,
+        Capability.DEPENDENCIES: U,  # package.json is not interpreted
+        Capability.DECORATORS: U,
+    })
+
+    def __init__(self, adapter: TreeSitterParserAdapter | None = None):
+        super().__init__(adapter or TreeSitterParserAdapter("javascript", "tree_sitter_javascript",
+                                                            "tree-sitter-javascript"))
+
+    def visit(self, node, scope, state, builder):
+        kind = node.type
+        if kind == "ERROR" and node.parent is not None:
+            return None
+        if node.id in state.handled:
+            return None  # an object-literal function already walked as a declaration
+        if kind == "import_statement" or (kind == "export_statement" and node.child_by_field_name("source")):
+            module = _js_string(node.child_by_field_name("source"))
+            if module:
+                self._import(builder, module, node)
+            self._bind_imports(node, scope, state)
+            return None
+        if kind == "class_declaration":
+            name = node.child_by_field_name("name")
+            return self._class(node, text_of(name) if name is not None else "default", node, scope, state, builder)
+        if kind in ("function_declaration", "generator_function_declaration"):
+            name = node.child_by_field_name("name")
+            return self._function(node, text_of(name) if name is not None else "default", node, scope, state,
+                                  builder, method=False)
+        if kind == "export_statement":
+            value = node.child_by_field_name("value")
+            if value is not None and value.type in _JS_FUNCTION_VALUES + _JS_CLASS_VALUES:  # export default <anon>
+                handler = self._class if value.type in _JS_CLASS_VALUES else self._function
+                extra = {} if value.type in _JS_CLASS_VALUES else {"method": False}
+                named = value.child_by_field_name("name")
+                child = handler(value, text_of(named) if named is not None else "default", value, scope, state,
+                                builder, **extra)
+                return None if child is None else self._walk_children_as(value, child, state, builder)
+            return scope
+        if kind == "variable_declarator":
+            return self._declarator(node, scope, state, builder)
+        if kind in ("method_definition", "field_definition") and node.parent is not None \
+                and node.parent.type == "class_body":
+            return self._member(node, scope, state, builder)
+        if kind == "assignment_expression" and self._commonjs_export(node, scope, state, builder):
+            return None
+        if kind in ("arrow_function", "function_expression", "function", "generator_function"):
+            return self._anonymous(node, scope, state)
+        if kind in ("catch_clause", "for_in_statement"):
+            pattern = node.child_by_field_name("parameter") or node.child_by_field_name("left")
+            state.bound[scope.namespace].update(_js_bound_names(pattern))
+        elif kind == "call_expression":
+            self._call(node, scope, state, builder)
+        elif kind == "new_expression":
+            self._new(node, scope, state)
+        return scope
+
+    def _walk_children_as(self, node, scope, state, builder):
+        """Walk ``node``'s children with ``scope`` (used where a declaration has no wrapper)."""
+        stack = [(child, scope) for child in reversed(node.children)]
+        while stack:
+            current, current_scope = stack.pop()
+            child_scope = self.visit(current, current_scope, state, builder)
+            if child_scope is not None:
+                stack.extend((c, child_scope) for c in reversed(current.children))
+        return None
+
+    # -- imports ----------------------------------------------------------------------------
+
+    def _import(self, builder, module, site):
+        target = builder.external("import", module, span_of(site))
+        builder.relationship(RelationshipType.IMPORTS, builder.file_key, target, span_of(site),
+                             certainty=Certainty.EXACT,
+                             metadata={"module": module, "relative": module.startswith("."), "resolution": "unresolved"})
+
+    @staticmethod
+    def _bind_imports(node, scope, state):
+        clause = next((c for c in node.named_children if c.type == "import_clause"), None)
+        for identifier in (n for n in walk(clause) if n.type == "identifier") if clause is not None else []:
+            if identifier.parent.type == "import_specifier" and identifier.parent.child_by_field_name("alias") \
+                    is not None and identifier == identifier.parent.child_by_field_name("name"):
+                continue  # `{ Router as R }` binds R
+            state.bound[scope.namespace].add(text_of(identifier))
+
+    # -- declarations -----------------------------------------------------------------------
+
+    def _qualified(self, scope, name) -> str:
+        return f"{scope.qualified_name}.{name}" if scope.qualified_name else name
+
+    def _class(self, node, name, span_node, scope, state, builder):
+        if node.type == "class_declaration" and _scala_header_broken(node):
+            return None
+        qualified = self._qualified(scope, name)
+        key = builder.entity(EntityType.CLASS, name, span_of(span_node), parent_key=scope.key,
+                             qualified_name=qualified, metadata={})
+        state.classes.add(key)
+        state.types[name].append(key)
+        state.names[scope.namespace][name].append(_Declaration(key, span_of(node).start_line, True))
+        heritage = next((c for c in node.named_children if c.type == "class_heritage"), None)
+        base = next((c for c in heritage.named_children if c.type != "comment"), None) if heritage else None
+        if base is not None and base.type in ("identifier", "member_expression") and _js_chain_is_simple(base):
+            base_name = _name(text_of(base))
+            lookup = "type" if base.type == "identifier" else "none"
+            state.references.append(_Reference(RelationshipType.EXTENDS, key, span_of(base), "type", base_name,
+                                               lookup=lookup, name=base_name, scope=scope))
+            if lookup == "type":
+                state.bases[key].append(base_name)
+                state.superclass[key] = base_name
+        # A class body is not a lexical scope for its members: they are reached through `this`.
+        return _Scope(key, "class", qualified, key, None, scope.namespace, None)
+
+    def _function(self, node, name, span_node, scope, state, builder, *, method, class_key=None,
+                  arrow=False, metadata=None, owner=None):
+        if node.type in ("function_declaration", "generator_function_declaration") and _scala_header_broken(node):
+            return None
+        parameters = node.child_by_field_name("parameters") or node.child_by_field_name("parameter")
+        if parameters is not None and parameters.has_error:
+            return None
+        qualified = self._qualified(scope, name)
+        key = builder.entity(EntityType.METHOD if method else EntityType.FUNCTION, name, span_of(span_node),
+                             parent_key=scope.key, qualified_name=qualified, metadata=metadata or {})
+        if method or owner:
+            state.members[class_key or owner][name].append(key)
+        else:
+            state.names[scope.namespace][name].append(_Declaration(key, span_of(node).start_line, True))
+        state.parent_namespace[key] = scope.namespace
+        state.bound[key].update(_js_bound_names(parameters))
+        for type_name, parameter in _JS_JSDOC_PARAM.findall(_js_jsdoc(span_node)):
+            state.variables[key][parameter] = type_name
+            state.bound[key].discard(parameter)
+        # `this` is the class in methods and in arrow functions that inherit it; not in `function`s.
+        this_class = class_key if method else (scope.class_key if arrow else None)
+        return _Scope(key, "callable", qualified, this_class, key, key, None)
+
+    def _declarator(self, node, scope, state, builder):
+        name_node = node.child_by_field_name("name")
+        value = node.child_by_field_name("value")
+        if name_node is None or name_node.type != "identifier":
+            state.bound[scope.namespace].update(_js_bound_names(name_node))
+            return scope
+        name = text_of(name_node)
+        declaration = node.parent
+        single = declaration is not None and len([c for c in declaration.named_children
+                                                  if c.type == "variable_declarator"]) == 1
+        span_node = declaration if single else node
+        if value is not None and value.type in _JS_FUNCTION_VALUES:
+            child = self._function(value, name, span_node, scope, state, builder, method=False,
+                                   arrow=value.type == "arrow_function")
+            if child is not None:
+                self._walk_children_as(value, child, state, builder)
+            return None
+        if value is not None and value.type in _JS_CLASS_VALUES:
+            child = self._class(value, name, span_node, scope, state, builder)
+            if child is not None:
+                self._walk_children_as(value, child, state, builder)
+            return None
+        if value is not None and value.type == "call_expression" and self._require(value, builder):
+            state.bound[scope.namespace].add(name)
+            return None
+        if value is not None and value.type == "object":
+            self._object(value, name, scope, state, builder)
+        declared = _JS_JSDOC_TYPE.search(_js_jsdoc(span_node))
+        if declared:
+            state.variables[scope.namespace][name] = declared.group(1)
+        else:
+            state.bound[scope.namespace].add(name)
+        return scope
+
+    def _object(self, value, name, scope, state, builder):
+        """Functions in an object literal bound to a name: `const api = { get() {}, put: x => x }`."""
+        holder = _Scope(scope.key, scope.kind, self._qualified(scope, name), scope.class_key, scope.callable_key,
+                        scope.namespace, None)
+        # Its functions are members of the object (reached as `name.member()`), not names in scope.
+        owner = f"object:{holder.qualified_name}@{scope.namespace}"
+        state.js_objects[(scope.namespace, name)] = owner
+        for member in value.named_children:
+            if member.type == "method_definition":
+                key_node = member.child_by_field_name("name")
+                function, span_node = member, member
+            elif member.type == "pair" and (member.child_by_field_name("value") is not None
+                                             and member.child_by_field_name("value").type in _JS_FUNCTION_VALUES):
+                key_node, function, span_node = member.child_by_field_name("key"), \
+                    member.child_by_field_name("value"), member
+            else:
+                continue
+            child = self._function(function, _name(text_of(key_node)).strip("'\""), span_node, holder, state,
+                                   builder, method=False, arrow=function.type == "arrow_function", owner=owner)
+            if child is not None:
+                self._walk_children_as(function, child, state, builder)
+            state.handled.add(member.id)
+
+    def _member(self, node, scope, state, builder):
+        name_node = node.child_by_field_name("name") or node.child_by_field_name("property")
+        name = _name(text_of(name_node))
+        tokens = {c.type for c in node.children if not c.is_named}
+        metadata = {k: True for k in ("static", "async") if k in tokens}
+        for accessor in ("get", "set"):
+            if accessor in tokens:
+                metadata["accessor"] = accessor
+        if node.type == "field_definition":
+            value = node.child_by_field_name("value")
+            if value is None or value.type not in _JS_FUNCTION_VALUES:
+                return scope  # a data field: its initializer's calls belong to the class
+            child = self._function(value, name, node, scope, state, builder, method=True, class_key=scope.class_key,
+                                   arrow=value.type == "arrow_function", metadata=metadata)
+            if child is not None:
+                self._walk_children_as(value, child, state, builder)
+            return None
+        if name == "constructor":
+            child = self._function(node, name, node, scope, state, builder, method=True, class_key=scope.class_key,
+                                   metadata=metadata)
+            if child is not None:
+                state.constructors[scope.class_key].append(child.key)
+            return child
+        return self._function(node, name, node, scope, state, builder, method=True, class_key=scope.class_key,
+                              metadata=metadata)
+
+    def _commonjs_export(self, node, scope, state, builder) -> bool:
+        """`exports.name = function ...` and `module.exports.name = ...` declare `name`."""
+        left, right = node.child_by_field_name("left"), node.child_by_field_name("right")
+        if left is None or right is None or left.type != "member_expression" or right.type not in _JS_FUNCTION_VALUES:
+            return False
+        target = _name(text_of(left.child_by_field_name("object")))
+        if target not in ("exports", "module.exports"):
+            return False
+        name = _name(text_of(left.child_by_field_name("property")))
+        statement = node.parent if node.parent is not None and node.parent.type == "expression_statement" else node
+        child = self._function(right, name, statement, scope, state, builder, method=False,
+                               arrow=right.type == "arrow_function")
+        if child is not None:
+            self._walk_children_as(right, child, state, builder)
+        return True
+
+    def _anonymous(self, node, scope, state):
+        """A callback: not a declaration, so its calls belong to the enclosing function, but its
+        parameters shadow outer names and a `function` rebinds `this`."""
+        namespace = f"anonymous@{node.id}"
+        state.parent_namespace[namespace] = scope.namespace
+        parameters = node.child_by_field_name("parameters") or node.child_by_field_name("parameter")
+        state.bound[namespace].update(_js_bound_names(parameters))
+        this_class = scope.class_key if node.type == "arrow_function" else None
+        return _Scope(scope.key, scope.kind, scope.qualified_name, this_class, scope.callable_key, namespace,
+                      scope.body_id)
+
+    # -- references -------------------------------------------------------------------------
+
+    def _require(self, call, builder) -> bool:
+        function = call.child_by_field_name("function")
+        arguments = call.child_by_field_name("arguments")
+        first = arguments.named_children[0] if arguments is not None and arguments.named_children else None
+        if function is not None and (function.type == "import" or text_of(function) == "require"):
+            module = _js_string(first)
+            if module:
+                self._import(builder, module, call)
+                return True
+        return False
+
+    def _call(self, node, scope, state, builder):
+        if self._require(node, builder):
+            return
+        function = node.child_by_field_name("function")
+        source = scope.callable_key or scope.key
+        span = span_of(node)
+        arguments = node.child_by_field_name("arguments")
+        count = len([c for c in arguments.named_children if c.type != "comment"]) if arguments is not None else None
+        if function is None:
+            return
+        if function.type == "identifier":
+            name = text_of(function)
+            state.references.append(_Reference(RelationshipType.CALLS, source, span, "call", name, lookup="lexical",
+                                               name=name, scope=scope, arguments=count))
+        elif function.type == "super":
+            state.references.append(_Reference(RelationshipType.CALLS, source, span, "call", "super",
+                                               lookup="super_constructor", name="super", scope=scope,
+                                               arguments=count))
+        elif function.type == "member_expression":
+            receiver = function.child_by_field_name("object")
+            name = _name(text_of(function.child_by_field_name("property")))
+            simple = _js_chain_is_simple(receiver)
+            display = f"{_name(text_of(receiver)) if simple else EXPRESSION}.{name}"
+            receiver_name, lookup = None, "none"
+            if receiver.type == "this":
+                lookup = "this"
+            elif receiver.type == "super":
+                lookup = "super"
+            elif receiver.type == "identifier":
+                lookup, receiver_name = "receiver", text_of(receiver)
+            elif receiver.type == "new_expression":
+                constructor = receiver.child_by_field_name("constructor")
+                if constructor is not None and constructor.type == "identifier":
+                    lookup, receiver_name = "instance", text_of(constructor)
+            state.references.append(_Reference(RelationshipType.CALLS, source, span, "call", display, lookup=lookup,
+                                               name=name, scope=scope, arguments=count, receiver=receiver_name))
+
+    def _new(self, node, scope, state):
+        constructor = node.child_by_field_name("constructor")
+        if constructor is None or not _js_chain_is_simple(constructor):
+            return
+        name = _name(text_of(constructor))
+        arguments = node.child_by_field_name("arguments")
+        state.references.append(_Reference(
+            RelationshipType.CALLS, scope.callable_key or scope.key, span_of(node), "call", name,
+            lookup="new" if constructor.type == "identifier" else "none", name=name, scope=scope,
+            arguments=len(arguments.named_children) if arguments is not None else 0))
+
+    # -- resolution -------------------------------------------------------------------------
+
+    def candidates(self, ref, state):
+        scope = ref.scope
+        if ref.lookup == "type":
+            return list(state.types.get(ref.name, []))
+        if ref.lookup == "lexical":
+            found = self._lexical(state, scope.namespace, ref.name)
+            return [k for k in found if k not in state.classes]  # calling a class without `new` is an error
+        if ref.lookup == "this":
+            return self._members(state, scope.class_key, ref.name) if scope.class_key else []
+        if ref.lookup == "super":
+            return self._members(state, scope.class_key, ref.name, bases_only=True) if scope.class_key else []
+        if ref.lookup == "super_constructor":
+            base = state.superclass.get(scope.class_key)
+            return self._constructor(state, base) if base else []
+        if ref.lookup == "new":
+            classes = [k for k in self._lexical(state, scope.namespace, ref.name) if k in state.classes]
+            return self._constructor(state, classes[0]) if len(classes) == 1 else []
+        if ref.lookup == "instance":
+            classes = [k for k in self._lexical(state, scope.namespace, ref.receiver) if k in state.classes]
+            return self._members(state, classes[0], ref.name) if len(classes) == 1 else []
+        if ref.lookup == "receiver":
+            owner = self._object_owner(state, scope.namespace, ref.receiver)
+            if owner is not None:  # helpers.summarize() on an object literal bound in scope
+                state.basis_override[id(ref)] = "lexical"
+                return list(state.members[owner].get(ref.name, []))
+            type_name, shadowed = self._declared(state, scope.namespace, ref.receiver)
+            if type_name:
+                keys = state.types.get(type_name, [])
+                return self._members(state, keys[0], ref.name) if len(keys) == 1 else []
+            if not shadowed:
+                classes = [k for k in self._lexical(state, scope.namespace, ref.receiver) if k in state.classes]
+                if len(classes) == 1:  # Class.staticMethod()
+                    state.basis_override[id(ref)] = "type"
+                    return self._members(state, classes[0], ref.name)
+            return []
+        return []
+
+    @staticmethod
+    def _constructor(state, class_key) -> list[str]:
+        constructors = state.constructors.get(class_key, [])
+        return constructors[:1] if constructors else [class_key]
+
+    @staticmethod
+    def _lexical(state, namespace, name) -> list[str]:
+        while namespace is not None:
+            declarations = state.names[namespace].get(name)
+            if declarations:
+                return [d.key for d in declarations]
+            if name in state.bound[namespace] or name in state.variables.get(namespace, {}):
+                return []
+            namespace = state.parent_namespace.get(namespace)
+        return []
+
+    @staticmethod
+    def _declared(state, namespace, name) -> tuple[str | None, bool]:
+        while namespace is not None:
+            if name in state.variables.get(namespace, {}):
+                return state.variables[namespace][name], False
+            if state.names[namespace].get(name):
+                return None, False  # a declared function or class: it has no declared variable type
+            if name in state.bound[namespace]:
+                return None, True
+            namespace = state.parent_namespace.get(namespace)
+        return None, False
+
+    @staticmethod
+    def _object_owner(state, namespace, name) -> str | None:
+        """The object literal ``name`` is bound to in the nearest scope that binds it, if any."""
+        while namespace is not None:
+            if (namespace, name) in state.js_objects:
+                return state.js_objects[(namespace, name)]
+            if state.names[namespace].get(name) or name in state.variables.get(namespace, {}) \
+                    or name in state.bound[namespace]:
+                return None
+            namespace = state.parent_namespace.get(namespace)
+        return None
+
+    def prepare(self, state) -> None:
+        for class_key, names in list(state.bases.items()):
+            state.bases[class_key] = [k for n in names for k in state.types.get(n, [])[:1]
+                                      if len(state.types.get(n, [])) == 1]
+        for class_key, name in list(state.superclass.items()):
+            keys = state.types.get(name, [])
+            if len(keys) == 1:
+                state.superclass[class_key] = keys[0]
+            else:
+                del state.superclass[class_key]

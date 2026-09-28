@@ -1,0 +1,256 @@
+# Gold labels for javascript/holdout_events. Written from the fixture source, never from extractor output.
+# CONTAINS facts are derived from the entity structure below by the evaluator.
+gold_version: 2
+fixture: javascript/holdout_events
+language: javascript
+split: holdout
+description: 'Held out (labelled before the JavaScript analyzer was first run): an event bus with a static private singleton, private methods,
+  super() into a class without a declared constructor, super.method(), an arrow in a module-level export, and a retry helper in another file.'
+labelled_from: source
+review:
+  status: pending_independent_review
+  reviewer: null
+files:
+  lib/bus.js:
+    parse_status: PARSED
+    origin: first_party
+  lib/retry.js:
+    parse_status: PARSED
+    origin: first_party
+facts:
+- id: javascript.holdout_events.class_bus_bus
+  kind: entity
+  entity_type: CLASS
+  qualified_name: Bus
+  file: lib/bus.js
+  start_line: 4
+  end_line: 21
+- id: javascript.holdout_events.method_bus_bus_get
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Bus.get
+  file: lib/bus.js
+  start_line: 7
+  end_line: 10
+  note: static
+- id: javascript.holdout_events.method_bus_bus_publish
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Bus.publish
+  file: lib/bus.js
+  start_line: 12
+  end_line: 16
+- id: javascript.holdout_events.method_bus_bus_wrap
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Bus.#wrap
+  file: lib/bus.js
+  start_line: 18
+  end_line: 20
+- id: javascript.holdout_events.function_bus_nextid
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: nextId
+  file: lib/bus.js
+  start_line: 24
+  end_line: 27
+- id: javascript.holdout_events.class_bus_durablebus
+  kind: entity
+  entity_type: CLASS
+  qualified_name: DurableBus
+  file: lib/bus.js
+  start_line: 29
+  end_line: 40
+- id: javascript.holdout_events.method_bus_durablebus_constructor
+  kind: entity
+  entity_type: METHOD
+  qualified_name: DurableBus.constructor
+  file: lib/bus.js
+  start_line: 30
+  end_line: 33
+- id: javascript.holdout_events.method_bus_durablebus_publish
+  kind: entity
+  entity_type: METHOD
+  qualified_name: DurableBus.publish
+  file: lib/bus.js
+  start_line: 35
+  end_line: 39
+- id: javascript.holdout_events.function_bus_subscribe
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: subscribe
+  file: lib/bus.js
+  start_line: 42
+  end_line: 42
+- id: javascript.holdout_events.function_retry_retry
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: retry
+  file: lib/retry.js
+  start_line: 1
+  end_line: 9
+- id: javascript.holdout_events.imports_bus_js_external_node_events_1
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:lib/bus.js
+  target_key: external:node:events
+  resolution: external
+  evidence:
+  - file: lib/bus.js
+    start_line: 1
+    end_line: 1
+  module: node:events
+- id: javascript.holdout_events.imports_bus_js_retry_js_2
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:lib/bus.js
+  target_key: file:lib/retry.js
+  resolution: cross_file
+  evidence:
+  - file: lib/bus.js
+    start_line: 2
+    end_line: 2
+  module: ./retry.js
+  basis: import_path
+- id: javascript.holdout_events.extends_bus_external_eventemitter_4
+  kind: relationship
+  relationship_type: EXTENDS
+  source_key: class:lib/bus.js::Bus
+  target_key: external:EventEmitter
+  resolution: external
+  evidence:
+  - file: lib/bus.js
+    start_line: 4
+    end_line: 4
+- id: javascript.holdout_events.extends_durablebus_bus_29
+  kind: relationship
+  relationship_type: EXTENDS
+  source_key: class:lib/bus.js::DurableBus
+  target_key: class:lib/bus.js::Bus
+  resolution: same_file
+  evidence:
+  - file: lib/bus.js
+    start_line: 29
+    end_line: 29
+  basis: type_name
+- id: javascript.holdout_events.calls_bus_get_bus_8
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/bus.js::Bus.get
+  target_key: class:lib/bus.js::Bus
+  resolution: same_file
+  evidence:
+  - file: lib/bus.js
+    start_line: 8
+    end_line: 8
+  basis: constructor
+  note: 'no declared constructor: the class'
+- id: javascript.holdout_events.calls_bus_publish_bus_wrap_13
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/bus.js::Bus.publish
+  target_key: method:lib/bus.js::Bus.#wrap
+  resolution: same_file
+  evidence:
+  - file: lib/bus.js
+    start_line: 13
+    end_line: 13
+  basis: enclosing_class
+- id: javascript.holdout_events.calls_bus_publish_external_this_emit_14
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/bus.js::Bus.publish
+  target_key: external:this.emit
+  resolution: external
+  evidence:
+  - file: lib/bus.js
+    start_line: 14
+    end_line: 14
+- id: javascript.holdout_events.calls_bus_wrap_nextid_19
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/bus.js::Bus.#wrap
+  target_key: function:lib/bus.js::nextId
+  resolution: same_file
+  evidence:
+  - file: lib/bus.js
+    start_line: 19
+    end_line: 19
+  basis: lexical_scope
+- id: javascript.holdout_events.calls_durablebus_constructor_bus_31
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/bus.js::DurableBus.constructor
+  target_key: class:lib/bus.js::Bus
+  resolution: same_file
+  evidence:
+  - file: lib/bus.js
+    start_line: 31
+    end_line: 31
+  basis: constructor
+  note: super() with no declared constructor
+- id: javascript.holdout_events.calls_durablebus_publish_bus_publish_36
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/bus.js::DurableBus.publish
+  target_key: method:lib/bus.js::Bus.publish
+  resolution: same_file
+  evidence:
+  - file: lib/bus.js
+    start_line: 36
+    end_line: 36
+  basis: base_class
+- id: javascript.holdout_events.calls_durablebus_publish_retry_37
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/bus.js::DurableBus.publish
+  target_key: function:lib/retry.js::retry
+  resolution: cross_file
+  evidence:
+  - file: lib/bus.js
+    start_line: 37
+    end_line: 37
+  basis: import_binding
+- id: javascript.holdout_events.calls_durablebus_publish_external_this_store_save_37
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/bus.js::DurableBus.publish
+  target_key: external:this.store.save
+  resolution: unresolvable
+  evidence:
+  - file: lib/bus.js
+    start_line: 37
+    end_line: 37
+  note: untyped field
+- id: javascript.holdout_events.calls_subscribe_bus_get_42
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:lib/bus.js::subscribe
+  target_key: method:lib/bus.js::Bus.get
+  resolution: same_file
+  evidence:
+  - file: lib/bus.js
+    start_line: 42
+    end_line: 42
+  basis: type_name
+- id: javascript.holdout_events.calls_subscribe_external_expression_on_42
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:lib/bus.js::subscribe
+  target_key: external:<expression>.on
+  resolution: external
+  evidence:
+  - file: lib/bus.js
+    start_line: 42
+    end_line: 42
+- id: javascript.holdout_events.calls_retry_external_task_4
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:lib/retry.js::retry
+  target_key: external:task
+  resolution: unresolvable
+  evidence:
+  - file: lib/retry.js
+    start_line: 4
+    end_line: 4
+  note: calls a parameter

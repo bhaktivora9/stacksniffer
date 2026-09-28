@@ -1,0 +1,398 @@
+# Gold labels for javascript/webapp. Written from the fixture source, never from extractor output.
+# CONTAINS facts are derived from the entity structure below by the evaluator.
+gold_version: 2
+fixture: javascript/webapp
+language: javascript
+split: development
+description: 'An Express-style app: relative imports across directories into generated and vendored modules, handlers in arrow callbacks, a JSDoc-typed
+  local, calls through a module-level router, a CommonJS file with a syntax error, and a package.json dependency.'
+labelled_from: source
+review:
+  status: pending_independent_review
+  reviewer: null
+files:
+  package.json:
+    parse_status: UNSUPPORTED
+    origin: first_party
+  server/app.js:
+    parse_status: PARSED
+    origin: first_party
+  server/routes/orders.js:
+    parse_status: PARSED
+    origin: first_party
+  server/legacy.js:
+    parse_status: PARTIAL
+    syntax_error_lines:
+    - 7
+    origin: first_party
+  src/__generated__/schema.js:
+    parse_status: PARSED
+    origin: generated
+  vendor/tinyfn.js:
+    parse_status: PARSED
+    origin: vendored
+facts:
+- id: javascript.webapp.function_app_createapp
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: createApp
+  file: server/app.js
+  start_line: 6
+  end_line: 13
+- id: javascript.webapp.class_orders_orderservice
+  kind: entity
+  entity_type: CLASS
+  qualified_name: OrderService
+  file: server/routes/orders.js
+  start_line: 3
+  end_line: 12
+- id: javascript.webapp.method_orders_orderservice_constructor
+  kind: entity
+  entity_type: METHOD
+  qualified_name: OrderService.constructor
+  file: server/routes/orders.js
+  start_line: 5
+  end_line: 7
+- id: javascript.webapp.method_orders_orderservice_find
+  kind: entity
+  entity_type: METHOD
+  qualified_name: OrderService.find
+  file: server/routes/orders.js
+  start_line: 9
+  end_line: 11
+- id: javascript.webapp.function_orders_ordersrouter
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: ordersRouter
+  file: server/routes/orders.js
+  start_line: 14
+  end_line: 23
+- id: javascript.webapp.function_legacy_start
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: start
+  file: server/legacy.js
+  start_line: 3
+  end_line: 5
+- id: javascript.webapp.function_schema_validate
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: validate
+  file: src/__generated__/schema.js
+  start_line: 2
+  end_line: 4
+- id: javascript.webapp.function_tinyfn_debounce
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: debounce
+  file: vendor/tinyfn.js
+  start_line: 1
+  end_line: 7
+- id: javascript.webapp.imports_app_js_external_express_1
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:server/app.js
+  target_key: external:express
+  resolution: external
+  evidence:
+  - file: server/app.js
+    start_line: 1
+    end_line: 1
+  module: express
+- id: javascript.webapp.imports_app_js_orders_js_2
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:server/app.js
+  target_key: file:server/routes/orders.js
+  resolution: cross_file
+  evidence:
+  - file: server/app.js
+    start_line: 2
+    end_line: 2
+  module: ./routes/orders.js
+  basis: import_path
+- id: javascript.webapp.imports_app_js_schema_js_3
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:server/app.js
+  target_key: file:src/__generated__/schema.js
+  resolution: cross_file
+  evidence:
+  - file: server/app.js
+    start_line: 3
+    end_line: 3
+  module: ../src/__generated__/schema.js
+  basis: import_path
+- id: javascript.webapp.imports_app_js_tinyfn_js_4
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:server/app.js
+  target_key: file:vendor/tinyfn.js
+  resolution: cross_file
+  evidence:
+  - file: server/app.js
+    start_line: 4
+    end_line: 4
+  module: ../vendor/tinyfn.js
+  basis: import_path
+- id: javascript.webapp.imports_orders_js_external_express_1
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:server/routes/orders.js
+  target_key: external:express
+  resolution: external
+  evidence:
+  - file: server/routes/orders.js
+    start_line: 1
+    end_line: 1
+  module: express
+- id: javascript.webapp.imports_legacy_js_app_js_1
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:server/legacy.js
+  target_key: file:server/app.js
+  resolution: cross_file
+  evidence:
+  - file: server/legacy.js
+    start_line: 1
+    end_line: 1
+  module: ./app.js
+  basis: import_path
+  note: require
+- id: javascript.webapp.calls_createapp_external_express_7
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:server/app.js::createApp
+  target_key: external:express
+  resolution: external
+  evidence:
+  - file: server/app.js
+    start_line: 7
+    end_line: 7
+- id: javascript.webapp.calls_createapp_external_app_use_8
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:server/app.js::createApp
+  target_key: external:app.use
+  resolution: external
+  evidence:
+  - file: server/app.js
+    start_line: 8
+    end_line: 8
+- id: javascript.webapp.calls_createapp_external_app_use_9
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:server/app.js::createApp
+  target_key: external:app.use
+  resolution: external
+  evidence:
+  - file: server/app.js
+    start_line: 9
+    end_line: 9
+- id: javascript.webapp.calls_createapp_external_express_json_8
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:server/app.js::createApp
+  target_key: external:express.json
+  resolution: external
+  evidence:
+  - file: server/app.js
+    start_line: 8
+    end_line: 8
+- id: javascript.webapp.calls_createapp_ordersrouter_9
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:server/app.js::createApp
+  target_key: function:server/routes/orders.js::ordersRouter
+  resolution: cross_file
+  evidence:
+  - file: server/app.js
+    start_line: 9
+    end_line: 9
+  basis: import_binding
+- id: javascript.webapp.calls_createapp_external_app_post_10
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:server/app.js::createApp
+  target_key: external:app.post
+  resolution: external
+  evidence:
+  - file: server/app.js
+    start_line: 10
+    end_line: 10
+- id: javascript.webapp.calls_createapp_external_res_json_10
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:server/app.js::createApp
+  target_key: external:res.json
+  resolution: external
+  evidence:
+  - file: server/app.js
+    start_line: 10
+    end_line: 10
+- id: javascript.webapp.calls_createapp_validate_10
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:server/app.js::createApp
+  target_key: function:src/__generated__/schema.js::validate
+  resolution: cross_file
+  evidence:
+  - file: server/app.js
+    start_line: 10
+    end_line: 10
+  basis: import_binding
+  note: generated module
+- id: javascript.webapp.calls_createapp_debounce_11
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:server/app.js::createApp
+  target_key: function:vendor/tinyfn.js::debounce
+  resolution: cross_file
+  evidence:
+  - file: server/app.js
+    start_line: 11
+    end_line: 11
+  basis: import_binding
+  note: vendored module
+- id: javascript.webapp.calls_createapp_external_app_listen_bind_11
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:server/app.js::createApp
+  target_key: external:app.listen.bind
+  resolution: external
+  evidence:
+  - file: server/app.js
+    start_line: 11
+    end_line: 11
+- id: javascript.webapp.calls_orderservice_find_external_this_db_get_10
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:server/routes/orders.js::OrderService.find
+  target_key: external:this.db.get
+  resolution: external
+  evidence:
+  - file: server/routes/orders.js
+    start_line: 10
+    end_line: 10
+- id: javascript.webapp.calls_ordersrouter_external_router_15
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:server/routes/orders.js::ordersRouter
+  target_key: external:Router
+  resolution: external
+  evidence:
+  - file: server/routes/orders.js
+    start_line: 15
+    end_line: 15
+- id: javascript.webapp.calls_ordersrouter_orderservice_constructor_17
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:server/routes/orders.js::ordersRouter
+  target_key: method:server/routes/orders.js::OrderService.constructor
+  resolution: same_file
+  evidence:
+  - file: server/routes/orders.js
+    start_line: 17
+    end_line: 17
+  basis: constructor
+- id: javascript.webapp.calls_ordersrouter_external_router_get_18
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:server/routes/orders.js::ordersRouter
+  target_key: external:router.get
+  resolution: external
+  evidence:
+  - file: server/routes/orders.js
+    start_line: 18
+    end_line: 21
+- id: javascript.webapp.calls_ordersrouter_orderservice_find_19
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:server/routes/orders.js::ordersRouter
+  target_key: method:server/routes/orders.js::OrderService.find
+  resolution: same_file
+  evidence:
+  - file: server/routes/orders.js
+    start_line: 19
+    end_line: 19
+  basis: declared_type
+  note: JSDoc @type {OrderService}
+- id: javascript.webapp.calls_ordersrouter_external_res_status_20
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:server/routes/orders.js::ordersRouter
+  target_key: external:res.status
+  resolution: external
+  evidence:
+  - file: server/routes/orders.js
+    start_line: 20
+    end_line: 20
+- id: javascript.webapp.calls_ordersrouter_external_expression_json_20
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:server/routes/orders.js::ordersRouter
+  target_key: external:<expression>.json
+  resolution: external
+  evidence:
+  - file: server/routes/orders.js
+    start_line: 20
+    end_line: 20
+- id: javascript.webapp.calls_start_createapp_4
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:server/legacy.js::start
+  target_key: function:server/app.js::createApp
+  resolution: cross_file
+  evidence:
+  - file: server/legacy.js
+    start_line: 4
+    end_line: 4
+  basis: import_binding
+- id: javascript.webapp.calls_start_external_expression_listen_4
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:server/legacy.js::start
+  target_key: external:<expression>.listen
+  resolution: external
+  evidence:
+  - file: server/legacy.js
+    start_line: 4
+    end_line: 4
+- id: javascript.webapp.calls_debounce_external_cleartimeout_4
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:vendor/tinyfn.js::debounce
+  target_key: external:clearTimeout
+  resolution: external
+  evidence:
+  - file: vendor/tinyfn.js
+    start_line: 4
+    end_line: 4
+- id: javascript.webapp.calls_debounce_external_settimeout_5
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:vendor/tinyfn.js::debounce
+  target_key: external:setTimeout
+  resolution: external
+  evidence:
+  - file: vendor/tinyfn.js
+    start_line: 5
+    end_line: 5
+- id: javascript.webapp.calls_debounce_external_fn_5
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:vendor/tinyfn.js::debounce
+  target_key: external:fn
+  resolution: unresolvable
+  evidence:
+  - file: vendor/tinyfn.js
+    start_line: 5
+    end_line: 5
+  note: calls a parameter
+- id: javascript.webapp.unsupported_express
+  kind: unsupported
+  capability: dependencies
+  entity_type: DEPENDENCY
+  name: express
+  file: package.json
+  note: declared npm dependency; dependency extraction is UNSUPPORTED
