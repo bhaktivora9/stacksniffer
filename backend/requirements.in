@@ -1,0 +1,35 @@
+# Direct runtime dependencies of the backend; development/test ones are in requirements-dev.in.
+# Edit the .in files, never a lock. All locks are hashed and compiled under Python 3.12.7
+# (runtime.txt) with pip-tools 7.6.1 and the flags
+#   --generate-hashes --allow-unsafe --strip-extras --no-header
+#
+#   requirements.lock.txt              runtime; Render installs it through requirements.txt
+#   requirements-dev.lock.txt          runtime + dev; CI (Linux)
+#   requirements-dev.windows.lock.txt  the same versions plus Windows-only packages; local dev
+#
+# The Linux locks are compiled in python:3.12.7-slim from this directory:
+#   pip-compile <flags> -o requirements.lock.txt requirements.in
+#   pip-compile <flags> -o requirements-dev.lock.txt requirements-dev.in
+# The Windows lock is compiled on Windows under 3.12.7, seeded from the Linux dev lock so the
+# shared versions stay identical:
+#   copy requirements-dev.lock.txt requirements-dev.windows.lock.txt
+#   pip-compile <flags> -o requirements-dev.windows.lock.txt requirements-dev.in
+# Install for local development:  pip install -r requirements-dev.windows.lock.txt
+fastapi==0.141.1
+uvicorn==0.54.0
+httpx==0.28.1
+python-dotenv==1.2.3
+google-generativeai==0.8.6
+pydantic==2.13.5
+motor==3.3.2
+pymongo==4.6.1
+sse-starlette==3.4.11
+psycopg[binary]==3.3.6
+pyyaml==6.0.3
+tree-sitter==0.26.0
+tree-sitter-python==0.25.0
+tree-sitter-java==0.23.5
+tree-sitter-scala==0.26.2
+# Needed on Windows development machines only; pinned here so the Linux-compiled lock carries them.
+colorama==0.4.6 ; sys_platform == "win32"
+tzdata==2026.4 ; sys_platform == "win32"

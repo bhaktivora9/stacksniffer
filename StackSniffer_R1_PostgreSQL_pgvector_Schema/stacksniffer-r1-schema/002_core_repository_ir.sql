@@ -40,18 +40,37 @@ CREATE TABLE core.analysis (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     completed_at TIMESTAMPTZ,
     metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    -- An analysis whose next stage is not deployed yet rests in AWAITING_STAGE:
+    --   last_completed_stage  the last stage whose output is persisted (e.g. EXTRACTING)
+    --   awaiting_stage        the stage to resume at once it exists (e.g. INDEXING)
+    last_completed_stage TEXT,
+    awaiting_stage TEXT,
     CONSTRAINT analysis_pipeline_version_not_blank CHECK (btrim(structural_pipeline_version) <> ''),
     CONSTRAINT analysis_status_ck CHECK (
         status IN (
             'QUEUED', 'INGESTING', 'EXTRACTING', 'INDEXING', 'PROJECTING',
-            'SUMMARIZING', 'READY', 'DEGRADED', 'FAILED'
+            'SUMMARIZING', 'AWAITING_STAGE', 'READY', 'DEGRADED', 'FAILED'
         )
+    ),
+    CONSTRAINT analysis_pipeline_stage_ck CHECK (
+        (last_completed_stage IS NULL OR last_completed_stage IN (
+            'INGESTING', 'EXTRACTING', 'INDEXING', 'PROJECTING', 'SUMMARIZING'))
+        AND (awaiting_stage IS NULL OR awaiting_stage IN ('INDEXING', 'PROJECTING', 'SUMMARIZING'))
+    ),
+    -- An analysis at rest in AWAITING_STAGE must say what it completed and what it awaits.
+    CONSTRAINT analysis_awaiting_stage_complete_ck CHECK (
+        status <> 'AWAITING_STAGE' OR (last_completed_stage IS NOT NULL AND awaiting_stage IS NOT NULL)
     ),
     CONSTRAINT analysis_identity_uq UNIQUE (repository_version_id, structural_pipeline_version)
 );
 
 CREATE INDEX analysis_status_created_idx
     ON core.analysis (status, created_at);
+
+-- The worker finds resumable analyses by the stage they wait for.
+CREATE INDEX analysis_awaiting_stage_idx
+    ON core.analysis (awaiting_stage, created_at)
+    WHERE status = 'AWAITING_STAGE';
 
 CREATE TABLE core.analysis_attempt (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -183,6 +202,11 @@ CREATE TABLE core.entity_evidence (
     PRIMARY KEY (entity_id, evidence_id, evidence_role)
 );
 
+-- The primary key leads with entity_id, so deleting evidence (every analysis delete
+-- cascades through it) needs its own index to find the link rows.
+CREATE INDEX entity_evidence_evidence_id_idx
+    ON core.entity_evidence (evidence_id);
+
 CREATE TABLE core.repository_edge (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     analysis_id UUID NOT NULL REFERENCES core.analysis(id) ON DELETE CASCADE,
@@ -231,6 +255,9 @@ CREATE TABLE core.edge_evidence (
     evidence_id UUID NOT NULL REFERENCES core.evidence(id) ON DELETE CASCADE,
     PRIMARY KEY (edge_id, evidence_id)
 );
+
+CREATE INDEX edge_evidence_evidence_id_idx
+    ON core.edge_evidence (evidence_id);
 
 COMMIT;
 

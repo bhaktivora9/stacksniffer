@@ -1,0 +1,81 @@
+# Gold labels for python/malformed. Written from the fixture source, never from extractor output.
+# CONTAINS facts are derived from the entity structure below by the evaluator.
+gold_version: 2
+fixture: python/malformed
+language: python
+split: development
+description: A syntax error between valid declarations; everything that parses is still expected.
+labelled_from: source
+review:
+  status: pending_independent_review
+  reviewer: null
+files:
+  broken.py:
+    parse_status: PARTIAL
+    syntax_error_lines:
+    - 9
+    origin: first_party
+facts:
+- id: python.malformed.load
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: load
+  file: broken.py
+  start_line: 4
+  end_line: 6
+- id: python.malformed.aftererror
+  kind: entity
+  entity_type: CLASS
+  qualified_name: AfterError
+  file: broken.py
+  start_line: 13
+  end_line: 15
+- id: python.malformed.aftererror_ok
+  kind: entity
+  entity_type: METHOD
+  qualified_name: AfterError.ok
+  file: broken.py
+  start_line: 14
+  end_line: 15
+- id: python.malformed.imports_file_broken_py_json
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:broken.py
+  target_key: external:json
+  resolution: external
+  evidence:
+  - file: broken.py
+    start_line: 1
+    end_line: 1
+  module: json
+- id: python.malformed.calls_load_open
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:broken.py::load
+  target_key: external:open
+  resolution: external
+  evidence:
+  - file: broken.py
+    start_line: 5
+    end_line: 5
+- id: python.malformed.calls_load_json_load
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:broken.py::load
+  target_key: external:json.load
+  resolution: external
+  evidence:
+  - file: broken.py
+    start_line: 6
+    end_line: 6
+- id: python.malformed.calls_aftererror_ok_load
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:broken.py::AfterError.ok
+  target_key: function:broken.py::load
+  resolution: same_file
+  evidence:
+  - file: broken.py
+    start_line: 15
+    end_line: 15
+  basis: lexical_scope

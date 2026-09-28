@@ -1,0 +1,3529 @@
+{
+  "schema_version": 2,
+  "baseline_version": 3,
+  "gold_version": 2,
+  "review_status": [
+    "pending_independent_review"
+  ],
+  "languages": {
+    "java": {
+      "cases": [
+        "java/basics",
+        "java/cross_file",
+        "java/holdout_billing",
+        "java/holdout_inventory",
+        "java/malformed",
+        "java/orders_service"
+      ],
+      "extractor_versions": {
+        "java": "stacksniffer-java/2+tree-sitter-java@0.23.5"
+      },
+      "entities": {
+        "overall": {
+          "tp": 88,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "CLASS": {
+          "tp": 24,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "INTERFACE": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "FUNCTION": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "METHOD": {
+          "tp": 60,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "relationships": {
+        "overall": {
+          "tp": 158,
+          "fp": 27,
+          "fn": 27,
+          "precision": 0.8541,
+          "recall": 0.8541,
+          "f1": 0.8541
+        },
+        "CONTAINS": {
+          "tp": 88,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "IMPORTS": {
+          "tp": 15,
+          "fp": 9,
+          "fn": 9,
+          "precision": 0.625,
+          "recall": 0.625,
+          "f1": 0.625
+        },
+        "CALLS": {
+          "tp": 49,
+          "fp": 16,
+          "fn": 16,
+          "precision": 0.7538,
+          "recall": 0.7538,
+          "f1": 0.7538
+        },
+        "EXTENDS": {
+          "tp": 2,
+          "fp": 1,
+          "fn": 1,
+          "precision": 0.6667,
+          "recall": 0.6667,
+          "f1": 0.6667
+        },
+        "IMPLEMENTS": {
+          "tp": 4,
+          "fp": 1,
+          "fn": 1,
+          "precision": 0.8,
+          "recall": 0.8,
+          "f1": 0.8
+        }
+      },
+      "import_statements": {
+        "tp": 24,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "resolution": {
+        "CALLS": {
+          "same_file": {
+            "tp": 20,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "cross_file": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 16,
+            "precision": 1.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "overall": {
+            "tp": 20,
+            "fp": 0,
+            "fn": 16,
+            "precision": 1.0,
+            "recall": 0.5556,
+            "f1": 0.7143
+          }
+        },
+        "EXTENDS": {
+          "same_file": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "cross_file": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 1,
+            "precision": 1.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "overall": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 1,
+            "precision": 1.0,
+            "recall": 0.5,
+            "f1": 0.6667
+          }
+        },
+        "IMPLEMENTS": {
+          "same_file": {
+            "tp": 3,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "cross_file": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 1,
+            "precision": 1.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "overall": {
+            "tp": 3,
+            "fp": 0,
+            "fn": 1,
+            "precision": 1.0,
+            "recall": 0.75,
+            "f1": 0.8571
+          }
+        },
+        "IMPORTS": {
+          "same_file": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "cross_file": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 9,
+            "precision": 1.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "overall": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 9,
+            "precision": 1.0,
+            "recall": 0.0,
+            "f1": 0.0
+          }
+        }
+      },
+      "resolved_edge_precision": {
+        "tp": 24,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "resolution_recall_by_expected_basis": {
+        "enclosing_class": {
+          "tp": 13,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "base_class": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 1,
+          "precision": 1.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        "type_name": {
+          "tp": 6,
+          "fp": 0,
+          "fn": 2,
+          "precision": 1.0,
+          "recall": 0.75,
+          "f1": 0.8571
+        },
+        "constructor": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 7,
+          "precision": 1.0,
+          "recall": 0.3,
+          "f1": 0.4615
+        },
+        "declared_type": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 8,
+          "precision": 1.0,
+          "recall": 0.2,
+          "f1": 0.3333
+        },
+        "import_path": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 9,
+          "precision": 1.0,
+          "recall": 0.0,
+          "f1": 0.0
+        }
+      },
+      "basis_accuracy": {
+        "valid": 24,
+        "total": 24,
+        "rate": 1.0
+      },
+      "certainty_accuracy": {
+        "valid": 24,
+        "total": 24,
+        "rate": 1.0
+      },
+      "by_origin": {
+        "entities": {
+          "first_party": {
+            "tp": 82,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "generated": {
+            "tp": 2,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "vendored": {
+            "tp": 4,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          }
+        },
+        "relationships": {
+          "first_party": {
+            "tp": 148,
+            "fp": 27,
+            "fn": 27,
+            "precision": 0.8457,
+            "recall": 0.8457,
+            "f1": 0.8457
+          },
+          "generated": {
+            "tp": 4,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "vendored": {
+            "tp": 6,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          }
+        },
+        "classification": {
+          "valid": 18,
+          "total": 18,
+          "rate": 1.0
+        }
+      },
+      "by_capability_level": {
+        "PARTIAL": {
+          "capabilities": [
+            "calls",
+            "inheritance",
+            "interfaces"
+          ],
+          "tp": 59,
+          "fp": 18,
+          "fn": 18,
+          "precision": 0.7662,
+          "recall": 0.7662,
+          "f1": 0.7662
+        },
+        "SUPPORTED": {
+          "capabilities": [
+            "declarations",
+            "imports"
+          ],
+          "tp": 196,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "resolved_edge_precision_by_basis": {
+        "constructor": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "declared_type": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "enclosing_class": {
+          "tp": 13,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "type_name": {
+          "tp": 6,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "unresolved_edges": {
+        "overall": {
+          "tp": 46,
+          "fp": 27,
+          "fn": 0,
+          "precision": 0.6301,
+          "recall": 1.0,
+          "f1": 0.7731
+        },
+        "external": {
+          "tp": 41,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "unresolvable": {
+          "tp": 5,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "evidence": {
+        "path_validity": {
+          "valid": 246,
+          "total": 246,
+          "rate": 1.0
+        },
+        "line_range_validity": {
+          "valid": 246,
+          "total": 246,
+          "rate": 1.0
+        },
+        "source_integrity": {
+          "valid": 229,
+          "total": 229,
+          "rate": 1.0
+        }
+      },
+      "decorators": {
+        "valid": 88,
+        "total": 88,
+        "rate": 1.0
+      },
+      "parse_status": {
+        "valid": 18,
+        "total": 18,
+        "rate": 1.0
+      },
+      "syntax_error_location": {
+        "valid": 2,
+        "total": 2,
+        "rate": 1.0
+      },
+      "malformed_isolation": {
+        "malformed_files": 2,
+        "isolated": 2,
+        "rate": 1.0,
+        "repository_failures": 0
+      },
+      "determinism": {
+        "identical_runs": {
+          "valid": 6,
+          "total": 6,
+          "rate": 1.0
+        },
+        "stable_keys": {
+          "valid": 171,
+          "total": 171,
+          "rate": 1.0
+        }
+      },
+      "unsupported_leakage": {
+        "count": 0,
+        "facts": []
+      },
+      "capabilities": {
+        "declared": {
+          "declarations": "SUPPORTED",
+          "imports": "SUPPORTED",
+          "calls": "PARTIAL",
+          "inheritance": "PARTIAL",
+          "interfaces": "PARTIAL",
+          "dependencies": "UNSUPPORTED",
+          "decorators": "SUPPORTED"
+        },
+        "expected": {
+          "declarations": "SUPPORTED",
+          "imports": "SUPPORTED",
+          "calls": "PARTIAL",
+          "inheritance": "PARTIAL",
+          "interfaces": "PARTIAL",
+          "dependencies": "UNSUPPORTED",
+          "decorators": "SUPPORTED"
+        },
+        "accuracy": 1.0,
+        "mismatched": [],
+        "consistency_issues": []
+      },
+      "splits": {
+        "development": {
+          "entities": {
+            "tp": 76,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "relationships": {
+            "tp": 133,
+            "fp": 26,
+            "fn": 26,
+            "precision": 0.8365,
+            "recall": 0.8365,
+            "f1": 0.8365
+          },
+          "calls_resolution": {
+            "tp": 17,
+            "fp": 0,
+            "fn": 15,
+            "precision": 1.0,
+            "recall": 0.5312,
+            "f1": 0.6939
+          }
+        },
+        "holdout": {
+          "entities": {
+            "tp": 12,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "relationships": {
+            "tp": 25,
+            "fp": 1,
+            "fn": 1,
+            "precision": 0.9615,
+            "recall": 0.9615,
+            "f1": 0.9615
+          },
+          "calls_resolution": {
+            "tp": 3,
+            "fp": 0,
+            "fn": 1,
+            "precision": 1.0,
+            "recall": 0.75,
+            "f1": 0.8571
+          }
+        }
+      },
+      "gates": [
+        {
+          "gate": "declaration_precision",
+          "required": ">= 0.98",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "declaration_recall",
+          "required": ">= 0.95",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "import_precision",
+          "required": ">= 0.95",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "import_recall",
+          "required": ">= 0.95",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "resolved_edge_precision",
+          "required": ">= 0.9",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "evidence_path_validity",
+          "required": ">= 1.0",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "evidence_line_range_validity",
+          "required": ">= 1.0",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "deterministic_stable_keys",
+          "required": ">= 1.0",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "unsupported_fact_leakage",
+          "required": "<= 0",
+          "actual": 0,
+          "passed": true
+        },
+        {
+          "gate": "repository_failures_from_malformed_files",
+          "required": "<= 0",
+          "actual": 0,
+          "passed": true
+        }
+      ],
+      "gates_passed": true,
+      "errors": {
+        "by_category": {
+          "parser query gap": 0,
+          "normalization error": 0,
+          "receiver-resolution error": 0,
+          "ambiguity": 0,
+          "cross-file limitation": 54,
+          "evidence-range error": 0,
+          "incorrect fixture label": 0,
+          "parser error recovery": 0,
+          "unsupported-fact leakage": 0
+        },
+        "items": [
+          {
+            "id": "java/cross_file:relationships:missed:CALLS class:src/com/acme/api/UserController.java::com.acme.api.UserController class:src/com/acme/repo/UserRepository.java::com.acme.repo.UserRepository (emitted as external:UserRepository)",
+            "case": "java/cross_file",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS class:src/com/acme/api/UserController.java::com.acme.api.UserController class:src/com/acme/repo/UserRepository.java::com.acme.repo.UserRepository (emitted as external:UserRepository)",
+            "category": "cross-file limitation",
+            "fact_id": "java.cross_file.calls_com_acme_api_usercontroller_com_acme_repo_userreposito"
+          },
+          {
+            "id": "java/cross_file:relationships:missed:CALLS method:src/com/acme/api/UserController.java::com.acme.api.UserController.show(String) method:src/com/acme/repo/UserRepository.java::com.acme.repo.UserRepository.find(String) (emitted as external:repository.find)",
+            "case": "java/cross_file",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:src/com/acme/api/UserController.java::com.acme.api.UserController.show(String) method:src/com/acme/repo/UserRepository.java::com.acme.repo.UserRepository.find(String) (emitted as external:repository.find)",
+            "category": "cross-file limitation",
+            "fact_id": "java.cross_file.calls_com_acme_api_usercontroller_show_string_com_acme_repo_"
+          },
+          {
+            "id": "java/cross_file:relationships:missed:IMPORTS file:src/com/acme/api/UserController.java class:src/com/acme/repo/UserRepository.java::com.acme.repo.UserRepository (emitted as external:com.acme.repo.UserRepository)",
+            "case": "java/cross_file",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "IMPORTS file:src/com/acme/api/UserController.java class:src/com/acme/repo/UserRepository.java::com.acme.repo.UserRepository (emitted as external:com.acme.repo.UserRepository)",
+            "category": "cross-file limitation",
+            "fact_id": "java.cross_file.imports_file_src_com_acme_api_usercontroller_java_com_acme_r"
+          },
+          {
+            "id": "java/cross_file:relationships:unexpected:CALLS class:src/com/acme/api/UserController.java::com.acme.api.UserController external:UserRepository (label: CALLS class:src/com/acme/api/UserController.java::com.acme.api.UserController class:src/com/acme/repo/UserRepository.java::com.acme.repo.UserRepository)",
+            "case": "java/cross_file",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS class:src/com/acme/api/UserController.java::com.acme.api.UserController external:UserRepository (label: CALLS class:src/com/acme/api/UserController.java::com.acme.api.UserController class:src/com/acme/repo/UserRepository.java::com.acme.repo.UserRepository)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "java/cross_file:relationships:unexpected:CALLS method:src/com/acme/api/UserController.java::com.acme.api.UserController.show(String) external:repository.find (label: CALLS method:src/com/acme/api/UserController.java::com.acme.api.UserController.show(String) method:src/com/acme/repo/UserRepository.java::com.acme.repo.UserRepository.find(String))",
+            "case": "java/cross_file",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:src/com/acme/api/UserController.java::com.acme.api.UserController.show(String) external:repository.find (label: CALLS method:src/com/acme/api/UserController.java::com.acme.api.UserController.show(String) method:src/com/acme/repo/UserRepository.java::com.acme.repo.UserRepository.find(String))",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "java/cross_file:relationships:unexpected:IMPORTS file:src/com/acme/api/UserController.java external:com.acme.repo.UserRepository (label: IMPORTS file:src/com/acme/api/UserController.java class:src/com/acme/repo/UserRepository.java::com.acme.repo.UserRepository)",
+            "case": "java/cross_file",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPORTS file:src/com/acme/api/UserController.java external:com.acme.repo.UserRepository (label: IMPORTS file:src/com/acme/api/UserController.java class:src/com/acme/repo/UserRepository.java::com.acme.repo.UserRepository)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "java/holdout_inventory:relationships:missed:CALLS method:src/com/acme/inventory/Stock.java::com.acme.inventory.Stock.receive(Shipment) method:src/com/acme/inventory/Shipment.java::com.acme.inventory.Shipment.quantity(String) (emitted as external:shipment.quantity)",
+            "case": "java/holdout_inventory",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:src/com/acme/inventory/Stock.java::com.acme.inventory.Stock.receive(Shipment) method:src/com/acme/inventory/Shipment.java::com.acme.inventory.Shipment.quantity(String) (emitted as external:shipment.quantity)",
+            "category": "cross-file limitation",
+            "fact_id": "java.holdout_inventory.receive_shipment_calls_quantity"
+          },
+          {
+            "id": "java/holdout_inventory:relationships:unexpected:CALLS method:src/com/acme/inventory/Stock.java::com.acme.inventory.Stock.receive(Shipment) external:shipment.quantity (label: CALLS method:src/com/acme/inventory/Stock.java::com.acme.inventory.Stock.receive(Shipment) method:src/com/acme/inventory/Shipment.java::com.acme.inventory.Shipment.quantity(String))",
+            "case": "java/holdout_inventory",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:src/com/acme/inventory/Stock.java::com.acme.inventory.Stock.receive(Shipment) external:shipment.quantity (label: CALLS method:src/com/acme/inventory/Stock.java::com.acme.inventory.Stock.receive(Shipment) method:src/com/acme/inventory/Shipment.java::com.acme.inventory.Shipment.quantity(String))",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "java/orders_service:relationships:missed:CALLS method:src/main/java/com/acme/orders/api/OrderController.java::com.acme.orders.api.OrderController.create(CreateOrder) method:src/main/java/com/acme/orders/service/OrderService.java::com.acme.orders.service.OrderService.place(String,String,int) (emitted as external:orders.place)",
+            "case": "java/orders_service",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:src/main/java/com/acme/orders/api/OrderController.java::com.acme.orders.api.OrderController.create(CreateOrder) method:src/main/java/com/acme/orders/service/OrderService.java::com.acme.orders.service.OrderService.place(String,String,int) (emitted as external:orders.place)",
+            "category": "cross-file limitation",
+            "fact_id": "java.orders_service.calls_com_acme_orders_api_ordercontroller_create_createorder"
+          },
+          {
+            "id": "java/orders_service:relationships:missed:CALLS method:src/main/java/com/acme/orders/api/OrderController.java::com.acme.orders.api.OrderController.lookup(String) method:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order.Order(String) (emitted as external:Order)",
+            "case": "java/orders_service",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:src/main/java/com/acme/orders/api/OrderController.java::com.acme.orders.api.OrderController.lookup(String) method:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order.Order(String) (emitted as external:Order)",
+            "category": "cross-file limitation",
+            "fact_id": "java.orders_service.calls_com_acme_orders_api_ordercontroller_lookup_string_com_"
+          },
+          {
+            "id": "java/orders_service:relationships:missed:CALLS method:src/main/java/com/acme/orders/api/OrderController.java::com.acme.orders.api.OrderController.total(String) method:src/main/java/com/acme/orders/service/OrderService.java::com.acme.orders.service.OrderService.total(Order) (emitted as external:orders.total)",
+            "case": "java/orders_service",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:src/main/java/com/acme/orders/api/OrderController.java::com.acme.orders.api.OrderController.total(String) method:src/main/java/com/acme/orders/service/OrderService.java::com.acme.orders.service.OrderService.total(Order) (emitted as external:orders.total)",
+            "category": "cross-file limitation",
+            "fact_id": "java.orders_service.calls_com_acme_orders_api_ordercontroller_total_string_com_a_2"
+          },
+          {
+            "id": "java/orders_service:relationships:missed:CALLS method:src/main/java/com/acme/orders/legacy/LegacyImporter.java::com.acme.orders.legacy.LegacyImporter.convert(String) method:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order.Order(String) (emitted as external:Order)",
+            "case": "java/orders_service",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:src/main/java/com/acme/orders/legacy/LegacyImporter.java::com.acme.orders.legacy.LegacyImporter.convert(String) method:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order.Order(String) (emitted as external:Order)",
+            "category": "cross-file limitation",
+            "fact_id": "java.orders_service.calls_com_acme_orders_legacy_legacyimporter_convert_string_c"
+          },
+          {
+            "id": "java/orders_service:relationships:missed:CALLS method:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order.add(String,int) method:src/main/java/com/acme/orders/model/LineItem.java::com.acme.orders.model.LineItem.LineItem(String,int) (emitted as external:LineItem)",
+            "case": "java/orders_service",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order.add(String,int) method:src/main/java/com/acme/orders/model/LineItem.java::com.acme.orders.model.LineItem.LineItem(String,int) (emitted as external:LineItem)",
+            "category": "cross-file limitation",
+            "fact_id": "java.orders_service.calls_com_acme_orders_model_order_add_string_int_com_acme_or_2"
+          },
+          {
+            "id": "java/orders_service:relationships:missed:CALLS method:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order.add(String,long) method:src/main/java/com/acme/orders/model/LineItem.java::com.acme.orders.model.LineItem.LineItem(String,int) (emitted as external:LineItem)",
+            "case": "java/orders_service",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order.add(String,long) method:src/main/java/com/acme/orders/model/LineItem.java::com.acme.orders.model.LineItem.LineItem(String,int) (emitted as external:LineItem)",
+            "category": "cross-file limitation",
+            "fact_id": "java.orders_service.calls_com_acme_orders_model_order_add_string_long_com_acme_o_2"
+          },
+          {
+            "id": "java/orders_service:relationships:missed:CALLS method:src/main/java/com/acme/orders/service/DiscountPricing.java::com.acme.orders.service.DiscountPricing.DiscountPricing(long) method:src/main/java/com/acme/orders/service/FlatPricing.java::com.acme.orders.service.FlatPricing.FlatPricing(long) (emitted as external:super)",
+            "case": "java/orders_service",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:src/main/java/com/acme/orders/service/DiscountPricing.java::com.acme.orders.service.DiscountPricing.DiscountPricing(long) method:src/main/java/com/acme/orders/service/FlatPricing.java::com.acme.orders.service.FlatPricing.FlatPricing(long) (emitted as external:super)",
+            "category": "cross-file limitation",
+            "fact_id": "java.orders_service.discountpricing_constructor_calls_super"
+          },
+          {
+            "id": "java/orders_service:relationships:missed:CALLS method:src/main/java/com/acme/orders/service/DiscountPricing.java::com.acme.orders.service.DiscountPricing.price(LineItem) method:src/main/java/com/acme/orders/service/FlatPricing.java::com.acme.orders.service.FlatPricing.price(LineItem) (emitted as external:super.price)",
+            "case": "java/orders_service",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:src/main/java/com/acme/orders/service/DiscountPricing.java::com.acme.orders.service.DiscountPricing.price(LineItem) method:src/main/java/com/acme/orders/service/FlatPricing.java::com.acme.orders.service.FlatPricing.price(LineItem) (emitted as external:super.price)",
+            "category": "cross-file limitation",
+            "fact_id": "java.orders_service.discountpricing_price_calls_super_price"
+          },
+          {
+            "id": "java/orders_service:relationships:missed:CALLS method:src/main/java/com/acme/orders/service/FlatPricing.java::com.acme.orders.service.FlatPricing.price(LineItem) method:src/main/java/com/acme/orders/model/LineItem.java::com.acme.orders.model.LineItem.subtotal(long) (emitted as external:item.subtotal)",
+            "case": "java/orders_service",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:src/main/java/com/acme/orders/service/FlatPricing.java::com.acme.orders.service.FlatPricing.price(LineItem) method:src/main/java/com/acme/orders/model/LineItem.java::com.acme.orders.model.LineItem.subtotal(long) (emitted as external:item.subtotal)",
+            "category": "cross-file limitation",
+            "fact_id": "java.orders_service.flatpricing_price_calls_subtotal"
+          },
+          {
+            "id": "java/orders_service:relationships:missed:CALLS method:src/main/java/com/acme/orders/service/OrderService.java::com.acme.orders.service.OrderService.place(String,String,int) method:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order.Order(String) (emitted as external:Order)",
+            "case": "java/orders_service",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:src/main/java/com/acme/orders/service/OrderService.java::com.acme.orders.service.OrderService.place(String,String,int) method:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order.Order(String) (emitted as external:Order)",
+            "category": "cross-file limitation",
+            "fact_id": "java.orders_service.calls_com_acme_orders_service_orderservice_place_string_stri"
+          },
+          {
+            "id": "java/orders_service:relationships:missed:CALLS method:src/main/java/com/acme/orders/service/OrderService.java::com.acme.orders.service.OrderService.place(String,String,int) method:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order.add(String,int) (emitted as external:order.add)",
+            "case": "java/orders_service",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:src/main/java/com/acme/orders/service/OrderService.java::com.acme.orders.service.OrderService.place(String,String,int) method:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order.add(String,int) (emitted as external:order.add)",
+            "category": "cross-file limitation",
+            "fact_id": "java.orders_service.calls_com_acme_orders_service_orderservice_place_string_stri_2"
+          },
+          {
+            "id": "java/orders_service:relationships:missed:CALLS method:src/main/java/com/acme/orders/service/OrderService.java::com.acme.orders.service.OrderService.total(Order) method:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order.items() (emitted as external:order.items)",
+            "case": "java/orders_service",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:src/main/java/com/acme/orders/service/OrderService.java::com.acme.orders.service.OrderService.total(Order) method:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order.items() (emitted as external:order.items)",
+            "category": "cross-file limitation",
+            "fact_id": "java.orders_service.calls_com_acme_orders_service_orderservice_total_order_com_a"
+          },
+          {
+            "id": "java/orders_service:relationships:missed:CALLS method:src/main/java/com/acme/orders/service/OrderService.java::com.acme.orders.service.OrderService.total(Order) method:src/main/java/com/acme/orders/service/PricingPolicy.java::com.acme.orders.service.PricingPolicy.price(LineItem) (emitted as external:pricing.price)",
+            "case": "java/orders_service",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:src/main/java/com/acme/orders/service/OrderService.java::com.acme.orders.service.OrderService.total(Order) method:src/main/java/com/acme/orders/service/PricingPolicy.java::com.acme.orders.service.PricingPolicy.price(LineItem) (emitted as external:pricing.price)",
+            "category": "cross-file limitation",
+            "fact_id": "java.orders_service.calls_com_acme_orders_service_orderservice_total_order_com_a_2"
+          },
+          {
+            "id": "java/orders_service:relationships:missed:EXTENDS class:src/main/java/com/acme/orders/service/DiscountPricing.java::com.acme.orders.service.DiscountPricing class:src/main/java/com/acme/orders/service/FlatPricing.java::com.acme.orders.service.FlatPricing (emitted as external:FlatPricing)",
+            "case": "java/orders_service",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "EXTENDS class:src/main/java/com/acme/orders/service/DiscountPricing.java::com.acme.orders.service.DiscountPricing class:src/main/java/com/acme/orders/service/FlatPricing.java::com.acme.orders.service.FlatPricing (emitted as external:FlatPricing)",
+            "category": "cross-file limitation",
+            "fact_id": "java.orders_service.discountpricing_extends_flatpricing"
+          },
+          {
+            "id": "java/orders_service:relationships:missed:IMPLEMENTS class:src/main/java/com/acme/orders/service/FlatPricing.java::com.acme.orders.service.FlatPricing interface:src/main/java/com/acme/orders/service/PricingPolicy.java::com.acme.orders.service.PricingPolicy (emitted as external:PricingPolicy)",
+            "case": "java/orders_service",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "IMPLEMENTS class:src/main/java/com/acme/orders/service/FlatPricing.java::com.acme.orders.service.FlatPricing interface:src/main/java/com/acme/orders/service/PricingPolicy.java::com.acme.orders.service.PricingPolicy (emitted as external:PricingPolicy)",
+            "category": "cross-file limitation",
+            "fact_id": "java.orders_service.flatpricing_implements_pricingpolicy"
+          },
+          {
+            "id": "java/orders_service:relationships:missed:IMPORTS file:src/main/java/com/acme/orders/api/OrderController.java class:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order (emitted as external:com.acme.orders.model.Order)",
+            "case": "java/orders_service",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "IMPORTS file:src/main/java/com/acme/orders/api/OrderController.java class:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order (emitted as external:com.acme.orders.model.Order)",
+            "category": "cross-file limitation",
+            "fact_id": "java.orders_service.ordercontroller_java_imports_order"
+          },
+          {
+            "id": "java/orders_service:relationships:missed:IMPORTS file:src/main/java/com/acme/orders/api/OrderController.java class:src/main/java/com/acme/orders/service/OrderService.java::com.acme.orders.service.OrderService (emitted as external:com.acme.orders.service.OrderService)",
+            "case": "java/orders_service",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "IMPORTS file:src/main/java/com/acme/orders/api/OrderController.java class:src/main/java/com/acme/orders/service/OrderService.java::com.acme.orders.service.OrderService (emitted as external:com.acme.orders.service.OrderService)",
+            "category": "cross-file limitation",
+            "fact_id": "java.orders_service.ordercontroller_java_imports_orderservice"
+          },
+          {
+            "id": "java/orders_service:relationships:missed:IMPORTS file:src/main/java/com/acme/orders/legacy/LegacyImporter.java class:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order (emitted as external:com.acme.orders.model.Order)",
+            "case": "java/orders_service",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "IMPORTS file:src/main/java/com/acme/orders/legacy/LegacyImporter.java class:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order (emitted as external:com.acme.orders.model.Order)",
+            "category": "cross-file limitation",
+            "fact_id": "java.orders_service.legacyimporter_java_imports_order"
+          },
+          {
+            "id": "java/orders_service:relationships:missed:IMPORTS file:src/main/java/com/acme/orders/service/DiscountPricing.java class:src/main/java/com/acme/orders/model/LineItem.java::com.acme.orders.model.LineItem (emitted as external:com.acme.orders.model.LineItem)",
+            "case": "java/orders_service",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "IMPORTS file:src/main/java/com/acme/orders/service/DiscountPricing.java class:src/main/java/com/acme/orders/model/LineItem.java::com.acme.orders.model.LineItem (emitted as external:com.acme.orders.model.LineItem)",
+            "category": "cross-file limitation",
+            "fact_id": "java.orders_service.discountpricing_imports_lineitem"
+          },
+          {
+            "id": "java/orders_service:relationships:missed:IMPORTS file:src/main/java/com/acme/orders/service/FlatPricing.java class:src/main/java/com/acme/orders/model/LineItem.java::com.acme.orders.model.LineItem (emitted as external:com.acme.orders.model.LineItem)",
+            "case": "java/orders_service",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "IMPORTS file:src/main/java/com/acme/orders/service/FlatPricing.java class:src/main/java/com/acme/orders/model/LineItem.java::com.acme.orders.model.LineItem (emitted as external:com.acme.orders.model.LineItem)",
+            "category": "cross-file limitation",
+            "fact_id": "java.orders_service.flatpricing_imports_lineitem"
+          },
+          {
+            "id": "java/orders_service:relationships:missed:IMPORTS file:src/main/java/com/acme/orders/service/OrderService.java class:src/main/java/com/acme/orders/model/LineItem.java::com.acme.orders.model.LineItem (emitted as external:com.acme.orders.model.LineItem)",
+            "case": "java/orders_service",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "IMPORTS file:src/main/java/com/acme/orders/service/OrderService.java class:src/main/java/com/acme/orders/model/LineItem.java::com.acme.orders.model.LineItem (emitted as external:com.acme.orders.model.LineItem)",
+            "category": "cross-file limitation",
+            "fact_id": "java.orders_service.orderservice_java_imports_lineitem"
+          },
+          {
+            "id": "java/orders_service:relationships:missed:IMPORTS file:src/main/java/com/acme/orders/service/OrderService.java class:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order (emitted as external:com.acme.orders.model.Order)",
+            "case": "java/orders_service",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "IMPORTS file:src/main/java/com/acme/orders/service/OrderService.java class:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order (emitted as external:com.acme.orders.model.Order)",
+            "category": "cross-file limitation",
+            "fact_id": "java.orders_service.orderservice_java_imports_order"
+          },
+          {
+            "id": "java/orders_service:relationships:missed:IMPORTS file:src/main/java/com/acme/orders/service/PricingPolicy.java class:src/main/java/com/acme/orders/model/LineItem.java::com.acme.orders.model.LineItem (emitted as external:com.acme.orders.model.LineItem)",
+            "case": "java/orders_service",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "IMPORTS file:src/main/java/com/acme/orders/service/PricingPolicy.java class:src/main/java/com/acme/orders/model/LineItem.java::com.acme.orders.model.LineItem (emitted as external:com.acme.orders.model.LineItem)",
+            "category": "cross-file limitation",
+            "fact_id": "java.orders_service.pricingpolicy_java_imports_lineitem"
+          },
+          {
+            "id": "java/orders_service:relationships:unexpected:CALLS method:src/main/java/com/acme/orders/api/OrderController.java::com.acme.orders.api.OrderController.create(CreateOrder) external:orders.place (label: CALLS method:src/main/java/com/acme/orders/api/OrderController.java::com.acme.orders.api.OrderController.create(CreateOrder) method:src/main/java/com/acme/orders/service/OrderService.java::com.acme.orders.service.OrderService.place(String,String,int))",
+            "case": "java/orders_service",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:src/main/java/com/acme/orders/api/OrderController.java::com.acme.orders.api.OrderController.create(CreateOrder) external:orders.place (label: CALLS method:src/main/java/com/acme/orders/api/OrderController.java::com.acme.orders.api.OrderController.create(CreateOrder) method:src/main/java/com/acme/orders/service/OrderService.java::com.acme.orders.service.OrderService.place(String,String,int))",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "java/orders_service:relationships:unexpected:CALLS method:src/main/java/com/acme/orders/api/OrderController.java::com.acme.orders.api.OrderController.lookup(String) external:Order (label: CALLS method:src/main/java/com/acme/orders/api/OrderController.java::com.acme.orders.api.OrderController.lookup(String) method:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order.Order(String))",
+            "case": "java/orders_service",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:src/main/java/com/acme/orders/api/OrderController.java::com.acme.orders.api.OrderController.lookup(String) external:Order (label: CALLS method:src/main/java/com/acme/orders/api/OrderController.java::com.acme.orders.api.OrderController.lookup(String) method:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order.Order(String))",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "java/orders_service:relationships:unexpected:CALLS method:src/main/java/com/acme/orders/api/OrderController.java::com.acme.orders.api.OrderController.total(String) external:orders.total (label: CALLS method:src/main/java/com/acme/orders/api/OrderController.java::com.acme.orders.api.OrderController.total(String) method:src/main/java/com/acme/orders/service/OrderService.java::com.acme.orders.service.OrderService.total(Order))",
+            "case": "java/orders_service",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:src/main/java/com/acme/orders/api/OrderController.java::com.acme.orders.api.OrderController.total(String) external:orders.total (label: CALLS method:src/main/java/com/acme/orders/api/OrderController.java::com.acme.orders.api.OrderController.total(String) method:src/main/java/com/acme/orders/service/OrderService.java::com.acme.orders.service.OrderService.total(Order))",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "java/orders_service:relationships:unexpected:CALLS method:src/main/java/com/acme/orders/legacy/LegacyImporter.java::com.acme.orders.legacy.LegacyImporter.convert(String) external:Order (label: CALLS method:src/main/java/com/acme/orders/legacy/LegacyImporter.java::com.acme.orders.legacy.LegacyImporter.convert(String) method:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order.Order(String))",
+            "case": "java/orders_service",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:src/main/java/com/acme/orders/legacy/LegacyImporter.java::com.acme.orders.legacy.LegacyImporter.convert(String) external:Order (label: CALLS method:src/main/java/com/acme/orders/legacy/LegacyImporter.java::com.acme.orders.legacy.LegacyImporter.convert(String) method:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order.Order(String))",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "java/orders_service:relationships:unexpected:CALLS method:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order.add(String,int) external:LineItem (label: CALLS method:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order.add(String,int) method:src/main/java/com/acme/orders/model/LineItem.java::com.acme.orders.model.LineItem.LineItem(String,int))",
+            "case": "java/orders_service",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order.add(String,int) external:LineItem (label: CALLS method:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order.add(String,int) method:src/main/java/com/acme/orders/model/LineItem.java::com.acme.orders.model.LineItem.LineItem(String,int))",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "java/orders_service:relationships:unexpected:CALLS method:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order.add(String,long) external:LineItem (label: CALLS method:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order.add(String,long) method:src/main/java/com/acme/orders/model/LineItem.java::com.acme.orders.model.LineItem.LineItem(String,int))",
+            "case": "java/orders_service",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order.add(String,long) external:LineItem (label: CALLS method:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order.add(String,long) method:src/main/java/com/acme/orders/model/LineItem.java::com.acme.orders.model.LineItem.LineItem(String,int))",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "java/orders_service:relationships:unexpected:CALLS method:src/main/java/com/acme/orders/service/DiscountPricing.java::com.acme.orders.service.DiscountPricing.DiscountPricing(long) external:super (label: CALLS method:src/main/java/com/acme/orders/service/DiscountPricing.java::com.acme.orders.service.DiscountPricing.DiscountPricing(long) method:src/main/java/com/acme/orders/service/FlatPricing.java::com.acme.orders.service.FlatPricing.FlatPricing(long))",
+            "case": "java/orders_service",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:src/main/java/com/acme/orders/service/DiscountPricing.java::com.acme.orders.service.DiscountPricing.DiscountPricing(long) external:super (label: CALLS method:src/main/java/com/acme/orders/service/DiscountPricing.java::com.acme.orders.service.DiscountPricing.DiscountPricing(long) method:src/main/java/com/acme/orders/service/FlatPricing.java::com.acme.orders.service.FlatPricing.FlatPricing(long))",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "java/orders_service:relationships:unexpected:CALLS method:src/main/java/com/acme/orders/service/DiscountPricing.java::com.acme.orders.service.DiscountPricing.price(LineItem) external:super.price (label: CALLS method:src/main/java/com/acme/orders/service/DiscountPricing.java::com.acme.orders.service.DiscountPricing.price(LineItem) method:src/main/java/com/acme/orders/service/FlatPricing.java::com.acme.orders.service.FlatPricing.price(LineItem))",
+            "case": "java/orders_service",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:src/main/java/com/acme/orders/service/DiscountPricing.java::com.acme.orders.service.DiscountPricing.price(LineItem) external:super.price (label: CALLS method:src/main/java/com/acme/orders/service/DiscountPricing.java::com.acme.orders.service.DiscountPricing.price(LineItem) method:src/main/java/com/acme/orders/service/FlatPricing.java::com.acme.orders.service.FlatPricing.price(LineItem))",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "java/orders_service:relationships:unexpected:CALLS method:src/main/java/com/acme/orders/service/FlatPricing.java::com.acme.orders.service.FlatPricing.price(LineItem) external:item.subtotal (label: CALLS method:src/main/java/com/acme/orders/service/FlatPricing.java::com.acme.orders.service.FlatPricing.price(LineItem) method:src/main/java/com/acme/orders/model/LineItem.java::com.acme.orders.model.LineItem.subtotal(long))",
+            "case": "java/orders_service",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:src/main/java/com/acme/orders/service/FlatPricing.java::com.acme.orders.service.FlatPricing.price(LineItem) external:item.subtotal (label: CALLS method:src/main/java/com/acme/orders/service/FlatPricing.java::com.acme.orders.service.FlatPricing.price(LineItem) method:src/main/java/com/acme/orders/model/LineItem.java::com.acme.orders.model.LineItem.subtotal(long))",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "java/orders_service:relationships:unexpected:CALLS method:src/main/java/com/acme/orders/service/OrderService.java::com.acme.orders.service.OrderService.place(String,String,int) external:Order (label: CALLS method:src/main/java/com/acme/orders/service/OrderService.java::com.acme.orders.service.OrderService.place(String,String,int) method:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order.Order(String))",
+            "case": "java/orders_service",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:src/main/java/com/acme/orders/service/OrderService.java::com.acme.orders.service.OrderService.place(String,String,int) external:Order (label: CALLS method:src/main/java/com/acme/orders/service/OrderService.java::com.acme.orders.service.OrderService.place(String,String,int) method:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order.Order(String))",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "java/orders_service:relationships:unexpected:CALLS method:src/main/java/com/acme/orders/service/OrderService.java::com.acme.orders.service.OrderService.place(String,String,int) external:order.add (label: CALLS method:src/main/java/com/acme/orders/service/OrderService.java::com.acme.orders.service.OrderService.place(String,String,int) method:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order.add(String,int))",
+            "case": "java/orders_service",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:src/main/java/com/acme/orders/service/OrderService.java::com.acme.orders.service.OrderService.place(String,String,int) external:order.add (label: CALLS method:src/main/java/com/acme/orders/service/OrderService.java::com.acme.orders.service.OrderService.place(String,String,int) method:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order.add(String,int))",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "java/orders_service:relationships:unexpected:CALLS method:src/main/java/com/acme/orders/service/OrderService.java::com.acme.orders.service.OrderService.total(Order) external:order.items (label: CALLS method:src/main/java/com/acme/orders/service/OrderService.java::com.acme.orders.service.OrderService.total(Order) method:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order.items())",
+            "case": "java/orders_service",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:src/main/java/com/acme/orders/service/OrderService.java::com.acme.orders.service.OrderService.total(Order) external:order.items (label: CALLS method:src/main/java/com/acme/orders/service/OrderService.java::com.acme.orders.service.OrderService.total(Order) method:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order.items())",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "java/orders_service:relationships:unexpected:CALLS method:src/main/java/com/acme/orders/service/OrderService.java::com.acme.orders.service.OrderService.total(Order) external:pricing.price (label: CALLS method:src/main/java/com/acme/orders/service/OrderService.java::com.acme.orders.service.OrderService.total(Order) method:src/main/java/com/acme/orders/service/PricingPolicy.java::com.acme.orders.service.PricingPolicy.price(LineItem))",
+            "case": "java/orders_service",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:src/main/java/com/acme/orders/service/OrderService.java::com.acme.orders.service.OrderService.total(Order) external:pricing.price (label: CALLS method:src/main/java/com/acme/orders/service/OrderService.java::com.acme.orders.service.OrderService.total(Order) method:src/main/java/com/acme/orders/service/PricingPolicy.java::com.acme.orders.service.PricingPolicy.price(LineItem))",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "java/orders_service:relationships:unexpected:EXTENDS class:src/main/java/com/acme/orders/service/DiscountPricing.java::com.acme.orders.service.DiscountPricing external:FlatPricing (label: EXTENDS class:src/main/java/com/acme/orders/service/DiscountPricing.java::com.acme.orders.service.DiscountPricing class:src/main/java/com/acme/orders/service/FlatPricing.java::com.acme.orders.service.FlatPricing)",
+            "case": "java/orders_service",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "EXTENDS class:src/main/java/com/acme/orders/service/DiscountPricing.java::com.acme.orders.service.DiscountPricing external:FlatPricing (label: EXTENDS class:src/main/java/com/acme/orders/service/DiscountPricing.java::com.acme.orders.service.DiscountPricing class:src/main/java/com/acme/orders/service/FlatPricing.java::com.acme.orders.service.FlatPricing)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "java/orders_service:relationships:unexpected:IMPLEMENTS class:src/main/java/com/acme/orders/service/FlatPricing.java::com.acme.orders.service.FlatPricing external:PricingPolicy (label: IMPLEMENTS class:src/main/java/com/acme/orders/service/FlatPricing.java::com.acme.orders.service.FlatPricing interface:src/main/java/com/acme/orders/service/PricingPolicy.java::com.acme.orders.service.PricingPolicy)",
+            "case": "java/orders_service",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPLEMENTS class:src/main/java/com/acme/orders/service/FlatPricing.java::com.acme.orders.service.FlatPricing external:PricingPolicy (label: IMPLEMENTS class:src/main/java/com/acme/orders/service/FlatPricing.java::com.acme.orders.service.FlatPricing interface:src/main/java/com/acme/orders/service/PricingPolicy.java::com.acme.orders.service.PricingPolicy)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "java/orders_service:relationships:unexpected:IMPORTS file:src/main/java/com/acme/orders/api/OrderController.java external:com.acme.orders.model.Order (label: IMPORTS file:src/main/java/com/acme/orders/api/OrderController.java class:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order)",
+            "case": "java/orders_service",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPORTS file:src/main/java/com/acme/orders/api/OrderController.java external:com.acme.orders.model.Order (label: IMPORTS file:src/main/java/com/acme/orders/api/OrderController.java class:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "java/orders_service:relationships:unexpected:IMPORTS file:src/main/java/com/acme/orders/api/OrderController.java external:com.acme.orders.service.OrderService (label: IMPORTS file:src/main/java/com/acme/orders/api/OrderController.java class:src/main/java/com/acme/orders/service/OrderService.java::com.acme.orders.service.OrderService)",
+            "case": "java/orders_service",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPORTS file:src/main/java/com/acme/orders/api/OrderController.java external:com.acme.orders.service.OrderService (label: IMPORTS file:src/main/java/com/acme/orders/api/OrderController.java class:src/main/java/com/acme/orders/service/OrderService.java::com.acme.orders.service.OrderService)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "java/orders_service:relationships:unexpected:IMPORTS file:src/main/java/com/acme/orders/legacy/LegacyImporter.java external:com.acme.orders.model.Order (label: IMPORTS file:src/main/java/com/acme/orders/legacy/LegacyImporter.java class:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order)",
+            "case": "java/orders_service",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPORTS file:src/main/java/com/acme/orders/legacy/LegacyImporter.java external:com.acme.orders.model.Order (label: IMPORTS file:src/main/java/com/acme/orders/legacy/LegacyImporter.java class:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "java/orders_service:relationships:unexpected:IMPORTS file:src/main/java/com/acme/orders/service/DiscountPricing.java external:com.acme.orders.model.LineItem (label: IMPORTS file:src/main/java/com/acme/orders/service/DiscountPricing.java class:src/main/java/com/acme/orders/model/LineItem.java::com.acme.orders.model.LineItem)",
+            "case": "java/orders_service",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPORTS file:src/main/java/com/acme/orders/service/DiscountPricing.java external:com.acme.orders.model.LineItem (label: IMPORTS file:src/main/java/com/acme/orders/service/DiscountPricing.java class:src/main/java/com/acme/orders/model/LineItem.java::com.acme.orders.model.LineItem)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "java/orders_service:relationships:unexpected:IMPORTS file:src/main/java/com/acme/orders/service/FlatPricing.java external:com.acme.orders.model.LineItem (label: IMPORTS file:src/main/java/com/acme/orders/service/FlatPricing.java class:src/main/java/com/acme/orders/model/LineItem.java::com.acme.orders.model.LineItem)",
+            "case": "java/orders_service",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPORTS file:src/main/java/com/acme/orders/service/FlatPricing.java external:com.acme.orders.model.LineItem (label: IMPORTS file:src/main/java/com/acme/orders/service/FlatPricing.java class:src/main/java/com/acme/orders/model/LineItem.java::com.acme.orders.model.LineItem)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "java/orders_service:relationships:unexpected:IMPORTS file:src/main/java/com/acme/orders/service/OrderService.java external:com.acme.orders.model.LineItem (label: IMPORTS file:src/main/java/com/acme/orders/service/OrderService.java class:src/main/java/com/acme/orders/model/LineItem.java::com.acme.orders.model.LineItem)",
+            "case": "java/orders_service",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPORTS file:src/main/java/com/acme/orders/service/OrderService.java external:com.acme.orders.model.LineItem (label: IMPORTS file:src/main/java/com/acme/orders/service/OrderService.java class:src/main/java/com/acme/orders/model/LineItem.java::com.acme.orders.model.LineItem)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "java/orders_service:relationships:unexpected:IMPORTS file:src/main/java/com/acme/orders/service/OrderService.java external:com.acme.orders.model.Order (label: IMPORTS file:src/main/java/com/acme/orders/service/OrderService.java class:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order)",
+            "case": "java/orders_service",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPORTS file:src/main/java/com/acme/orders/service/OrderService.java external:com.acme.orders.model.Order (label: IMPORTS file:src/main/java/com/acme/orders/service/OrderService.java class:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "java/orders_service:relationships:unexpected:IMPORTS file:src/main/java/com/acme/orders/service/PricingPolicy.java external:com.acme.orders.model.LineItem (label: IMPORTS file:src/main/java/com/acme/orders/service/PricingPolicy.java class:src/main/java/com/acme/orders/model/LineItem.java::com.acme.orders.model.LineItem)",
+            "case": "java/orders_service",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPORTS file:src/main/java/com/acme/orders/service/PricingPolicy.java external:com.acme.orders.model.LineItem (label: IMPORTS file:src/main/java/com/acme/orders/service/PricingPolicy.java class:src/main/java/com/acme/orders/model/LineItem.java::com.acme.orders.model.LineItem)",
+            "category": "cross-file limitation"
+          }
+        ]
+      }
+    },
+    "python": {
+      "cases": [
+        "python/basics",
+        "python/edge_cases",
+        "python/holdout_cache",
+        "python/malformed",
+        "python/package_imports",
+        "python/shop_app"
+      ],
+      "extractor_versions": {
+        "python": "stacksniffer-python/2+tree-sitter-python@0.25.0"
+      },
+      "entities": {
+        "overall": {
+          "tp": 73,
+          "fp": 0,
+          "fn": 1,
+          "precision": 1.0,
+          "recall": 0.9865,
+          "f1": 0.9932
+        },
+        "CLASS": {
+          "tp": 19,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "INTERFACE": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "FUNCTION": {
+          "tp": 19,
+          "fp": 0,
+          "fn": 1,
+          "precision": 1.0,
+          "recall": 0.95,
+          "f1": 0.9744
+        },
+        "METHOD": {
+          "tp": 35,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "relationships": {
+        "overall": {
+          "tp": 176,
+          "fp": 32,
+          "fn": 31,
+          "precision": 0.8462,
+          "recall": 0.8502,
+          "f1": 0.8482
+        },
+        "CONTAINS": {
+          "tp": 73,
+          "fp": 0,
+          "fn": 1,
+          "precision": 1.0,
+          "recall": 0.9865,
+          "f1": 0.9932
+        },
+        "IMPORTS": {
+          "tp": 20,
+          "fp": 14,
+          "fn": 12,
+          "precision": 0.5882,
+          "recall": 0.625,
+          "f1": 0.6061
+        },
+        "CALLS": {
+          "tp": 76,
+          "fp": 16,
+          "fn": 16,
+          "precision": 0.8261,
+          "recall": 0.8261,
+          "f1": 0.8261
+        },
+        "EXTENDS": {
+          "tp": 7,
+          "fp": 2,
+          "fn": 2,
+          "precision": 0.7778,
+          "recall": 0.7778,
+          "f1": 0.7778
+        },
+        "IMPLEMENTS": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "import_statements": {
+        "tp": 34,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "resolution": {
+        "CALLS": {
+          "same_file": {
+            "tp": 20,
+            "fp": 0,
+            "fn": 3,
+            "precision": 1.0,
+            "recall": 0.8696,
+            "f1": 0.9302
+          },
+          "cross_file": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 13,
+            "precision": 1.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "overall": {
+            "tp": 20,
+            "fp": 0,
+            "fn": 16,
+            "precision": 1.0,
+            "recall": 0.5556,
+            "f1": 0.7143
+          }
+        },
+        "EXTENDS": {
+          "same_file": {
+            "tp": 5,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "cross_file": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 2,
+            "precision": 1.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "overall": {
+            "tp": 5,
+            "fp": 0,
+            "fn": 2,
+            "precision": 1.0,
+            "recall": 0.7143,
+            "f1": 0.8333
+          }
+        },
+        "IMPLEMENTS": {
+          "same_file": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "cross_file": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "overall": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          }
+        },
+        "IMPORTS": {
+          "same_file": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "cross_file": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 12,
+            "precision": 1.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "overall": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 12,
+            "precision": 1.0,
+            "recall": 0.0,
+            "f1": 0.0
+          }
+        }
+      },
+      "resolved_edge_precision": {
+        "tp": 25,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "resolution_recall_by_expected_basis": {
+        "lexical_scope": {
+          "tp": 15,
+          "fp": 0,
+          "fn": 1,
+          "precision": 1.0,
+          "recall": 0.9375,
+          "f1": 0.9677
+        },
+        "enclosing_class": {
+          "tp": 8,
+          "fp": 0,
+          "fn": 2,
+          "precision": 1.0,
+          "recall": 0.8,
+          "f1": 0.8889
+        },
+        "base_class": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "declared_type": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 3,
+          "precision": 1.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        "constructed_instance": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "import_path": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 12,
+          "precision": 1.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        "import_binding": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 9,
+          "precision": 1.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        "inferred_type": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 3,
+          "precision": 1.0,
+          "recall": 0.0,
+          "f1": 0.0
+        }
+      },
+      "basis_accuracy": {
+        "valid": 25,
+        "total": 25,
+        "rate": 1.0
+      },
+      "certainty_accuracy": {
+        "valid": 25,
+        "total": 25,
+        "rate": 1.0
+      },
+      "by_origin": {
+        "entities": {
+          "first_party": {
+            "tp": 70,
+            "fp": 0,
+            "fn": 1,
+            "precision": 1.0,
+            "recall": 0.9859,
+            "f1": 0.9929
+          },
+          "generated": {
+            "tp": 2,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "vendored": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          }
+        },
+        "relationships": {
+          "first_party": {
+            "tp": 166,
+            "fp": 32,
+            "fn": 31,
+            "precision": 0.8384,
+            "recall": 0.8426,
+            "f1": 0.8405
+          },
+          "generated": {
+            "tp": 5,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "vendored": {
+            "tp": 5,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          }
+        },
+        "classification": {
+          "valid": 19,
+          "total": 19,
+          "rate": 1.0
+        }
+      },
+      "by_capability_level": {
+        "PARTIAL": {
+          "capabilities": [
+            "calls",
+            "inheritance"
+          ],
+          "tp": 83,
+          "fp": 18,
+          "fn": 18,
+          "precision": 0.8218,
+          "recall": 0.8218,
+          "f1": 0.8218
+        },
+        "SUPPORTED": {
+          "capabilities": [
+            "declarations",
+            "imports"
+          ],
+          "tp": 180,
+          "fp": 0,
+          "fn": 2,
+          "precision": 1.0,
+          "recall": 0.989,
+          "f1": 0.9945
+        }
+      },
+      "resolved_edge_precision_by_basis": {
+        "base_class": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "constructed_instance": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "enclosing_class": {
+          "tp": 8,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "lexical_scope": {
+          "tp": 15,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "unresolved_edges": {
+        "overall": {
+          "tp": 78,
+          "fp": 32,
+          "fn": 0,
+          "precision": 0.7091,
+          "recall": 1.0,
+          "f1": 0.8298
+        },
+        "ambiguous": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "external": {
+          "tp": 64,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "unresolvable": {
+          "tp": 13,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "evidence": {
+        "path_validity": {
+          "valid": 249,
+          "total": 249,
+          "rate": 1.0
+        },
+        "line_range_validity": {
+          "valid": 249,
+          "total": 249,
+          "rate": 1.0
+        },
+        "source_integrity": {
+          "valid": 262,
+          "total": 262,
+          "rate": 1.0
+        }
+      },
+      "decorators": {
+        "valid": 73,
+        "total": 73,
+        "rate": 1.0
+      },
+      "parse_status": {
+        "valid": 19,
+        "total": 19,
+        "rate": 1.0
+      },
+      "syntax_error_location": {
+        "valid": 1,
+        "total": 2,
+        "rate": 0.5
+      },
+      "malformed_isolation": {
+        "malformed_files": 2,
+        "isolated": 2,
+        "rate": 1.0,
+        "repository_failures": 0
+      },
+      "determinism": {
+        "identical_runs": {
+          "valid": 6,
+          "total": 6,
+          "rate": 1.0
+        },
+        "stable_keys": {
+          "valid": 194,
+          "total": 194,
+          "rate": 1.0
+        }
+      },
+      "unsupported_leakage": {
+        "count": 0,
+        "facts": []
+      },
+      "capabilities": {
+        "declared": {
+          "declarations": "SUPPORTED",
+          "imports": "SUPPORTED",
+          "calls": "PARTIAL",
+          "inheritance": "PARTIAL",
+          "interfaces": "UNSUPPORTED",
+          "dependencies": "UNSUPPORTED",
+          "decorators": "SUPPORTED"
+        },
+        "expected": {
+          "declarations": "SUPPORTED",
+          "imports": "SUPPORTED",
+          "calls": "PARTIAL",
+          "inheritance": "PARTIAL",
+          "interfaces": "UNSUPPORTED",
+          "dependencies": "UNSUPPORTED",
+          "decorators": "SUPPORTED"
+        },
+        "accuracy": 1.0,
+        "mismatched": [],
+        "consistency_issues": []
+      },
+      "splits": {
+        "development": {
+          "entities": {
+            "tp": 31,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "relationships": {
+            "tp": 70,
+            "fp": 6,
+            "fn": 4,
+            "precision": 0.9211,
+            "recall": 0.9459,
+            "f1": 0.9333
+          },
+          "calls_resolution": {
+            "tp": 9,
+            "fp": 0,
+            "fn": 2,
+            "precision": 1.0,
+            "recall": 0.8182,
+            "f1": 0.9
+          }
+        },
+        "holdout": {
+          "entities": {
+            "tp": 42,
+            "fp": 0,
+            "fn": 1,
+            "precision": 1.0,
+            "recall": 0.9767,
+            "f1": 0.9882
+          },
+          "relationships": {
+            "tp": 106,
+            "fp": 26,
+            "fn": 27,
+            "precision": 0.803,
+            "recall": 0.797,
+            "f1": 0.8
+          },
+          "calls_resolution": {
+            "tp": 11,
+            "fp": 0,
+            "fn": 14,
+            "precision": 1.0,
+            "recall": 0.44,
+            "f1": 0.6111
+          }
+        }
+      },
+      "gates": [
+        {
+          "gate": "declaration_precision",
+          "required": ">= 0.98",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "declaration_recall",
+          "required": ">= 0.95",
+          "actual": 0.9865,
+          "passed": true
+        },
+        {
+          "gate": "import_precision",
+          "required": ">= 0.95",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "import_recall",
+          "required": ">= 0.95",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "resolved_edge_precision",
+          "required": ">= 0.9",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "evidence_path_validity",
+          "required": ">= 1.0",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "evidence_line_range_validity",
+          "required": ">= 1.0",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "deterministic_stable_keys",
+          "required": ">= 1.0",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "unsupported_fact_leakage",
+          "required": "<= 0",
+          "actual": 0,
+          "passed": true
+        },
+        {
+          "gate": "repository_failures_from_malformed_files",
+          "required": "<= 0",
+          "actual": 0,
+          "passed": true
+        }
+      ],
+      "gates_passed": true,
+      "errors": {
+        "by_category": {
+          "parser query gap": 0,
+          "normalization error": 0,
+          "receiver-resolution error": 4,
+          "ambiguity": 0,
+          "cross-file limitation": 57,
+          "evidence-range error": 0,
+          "incorrect fixture label": 0,
+          "parser error recovery": 3,
+          "unsupported-fact leakage": 0
+        },
+        "items": [
+          {
+            "id": "python/package_imports:relationships:missed:CALLS function:pkg/service.py::create class:pkg/models.py::User (emitted as external:User)",
+            "case": "python/package_imports",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS function:pkg/service.py::create class:pkg/models.py::User (emitted as external:User)",
+            "category": "cross-file limitation",
+            "fact_id": "python.package_imports.calls_create_user"
+          },
+          {
+            "id": "python/package_imports:relationships:missed:CALLS function:pkg/service.py::create method:pkg/models.py::User.display (emitted as external:user.display)",
+            "case": "python/package_imports",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS function:pkg/service.py::create method:pkg/models.py::User.display (emitted as external:user.display)",
+            "category": "cross-file limitation",
+            "fact_id": "python.package_imports.calls_create_user_display"
+          },
+          {
+            "id": "python/package_imports:relationships:missed:IMPORTS file:pkg/__init__.py file:pkg/models.py (emitted as external:.models)",
+            "case": "python/package_imports",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "IMPORTS file:pkg/__init__.py file:pkg/models.py (emitted as external:.models)",
+            "category": "cross-file limitation",
+            "fact_id": "python.package_imports.imports_models_pkg_models_py"
+          },
+          {
+            "id": "python/package_imports:relationships:missed:IMPORTS file:pkg/service.py file:pkg/models.py (emitted as external:.)",
+            "case": "python/package_imports",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "IMPORTS file:pkg/service.py file:pkg/models.py (emitted as external:.)",
+            "category": "cross-file limitation",
+            "fact_id": "python.package_imports.imports_pkg_models_py"
+          },
+          {
+            "id": "python/package_imports:relationships:unexpected:CALLS function:pkg/service.py::create external:User (label: CALLS function:pkg/service.py::create class:pkg/models.py::User)",
+            "case": "python/package_imports",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS function:pkg/service.py::create external:User (label: CALLS function:pkg/service.py::create class:pkg/models.py::User)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "python/package_imports:relationships:unexpected:CALLS function:pkg/service.py::create external:models.User (label: CALLS function:pkg/service.py::create class:pkg/models.py::User)",
+            "case": "python/package_imports",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS function:pkg/service.py::create external:models.User (label: CALLS function:pkg/service.py::create class:pkg/models.py::User)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "python/package_imports:relationships:unexpected:CALLS function:pkg/service.py::create external:user.display (label: CALLS function:pkg/service.py::create method:pkg/models.py::User.display)",
+            "case": "python/package_imports",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS function:pkg/service.py::create external:user.display (label: CALLS function:pkg/service.py::create method:pkg/models.py::User.display)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "python/package_imports:relationships:unexpected:IMPORTS file:pkg/__init__.py external:.models (label: IMPORTS file:pkg/__init__.py file:pkg/models.py)",
+            "case": "python/package_imports",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPORTS file:pkg/__init__.py external:.models (label: IMPORTS file:pkg/__init__.py file:pkg/models.py)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "python/package_imports:relationships:unexpected:IMPORTS file:pkg/service.py external:. (label: IMPORTS file:pkg/service.py file:pkg/models.py)",
+            "case": "python/package_imports",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPORTS file:pkg/service.py external:. (label: IMPORTS file:pkg/service.py file:pkg/models.py)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "python/package_imports:relationships:unexpected:IMPORTS file:pkg/service.py external:.models (label: IMPORTS file:pkg/service.py file:pkg/models.py)",
+            "case": "python/package_imports",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPORTS file:pkg/service.py external:.models (label: IMPORTS file:pkg/service.py file:pkg/models.py)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "python/shop_app:entities:missed:function:app/legacy.py::after",
+            "case": "python/shop_app",
+            "area": "entities",
+            "outcome": "missed",
+            "detail": "function:app/legacy.py::after",
+            "category": "parser error recovery",
+            "fact_id": "python.shop_app.legacy_after"
+          },
+          {
+            "id": "python/shop_app:relationships:missed:CALLS file:app/controller.py class:app/service.py::OrderService (emitted as external:OrderService)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS file:app/controller.py class:app/service.py::OrderService (emitted as external:OrderService)",
+            "category": "cross-file limitation",
+            "fact_id": "python.shop_app.calls_file_app_controller_py_orderservice"
+          },
+          {
+            "id": "python/shop_app:relationships:missed:CALLS function:app/controller.py::create_order method:app/models.py::Order.add (emitted as external:order.add)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS function:app/controller.py::create_order method:app/models.py::Order.add (emitted as external:order.add)",
+            "category": "cross-file limitation",
+            "fact_id": "python.shop_app.calls_create_order_order_add"
+          },
+          {
+            "id": "python/shop_app:relationships:missed:CALLS function:app/controller.py::create_order method:app/service.py::OrderService.create (emitted as external:service.create)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS function:app/controller.py::create_order method:app/service.py::OrderService.create (emitted as external:service.create)",
+            "category": "cross-file limitation",
+            "fact_id": "python.shop_app.calls_create_order_orderservice_create"
+          },
+          {
+            "id": "python/shop_app:relationships:missed:CALLS function:app/controller.py::order_total method:app/models.py::Order.total (emitted as external:order.total)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS function:app/controller.py::order_total method:app/models.py::Order.total (emitted as external:order.total)",
+            "category": "cross-file limitation",
+            "fact_id": "python.shop_app.calls_order_total_order_total"
+          },
+          {
+            "id": "python/shop_app:relationships:missed:CALLS function:app/legacy.py::after function:app/legacy.py::migrate",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS function:app/legacy.py::after function:app/legacy.py::migrate",
+            "category": "parser error recovery",
+            "fact_id": "python.shop_app.calls_after_migrate"
+          },
+          {
+            "id": "python/shop_app:relationships:missed:CALLS function:app/legacy.py::migrate class:app/models.py::Order (emitted as external:Order)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS function:app/legacy.py::migrate class:app/models.py::Order (emitted as external:Order)",
+            "category": "cross-file limitation",
+            "fact_id": "python.shop_app.calls_migrate_order"
+          },
+          {
+            "id": "python/shop_app:relationships:missed:CALLS function:app/service.py::OrderService.summary.label function:app/util/text.py::truncate (emitted as external:truncate)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS function:app/service.py::OrderService.summary.label function:app/util/text.py::truncate (emitted as external:truncate)",
+            "category": "cross-file limitation",
+            "fact_id": "python.shop_app.calls_orderservice_summary_label_truncate"
+          },
+          {
+            "id": "python/shop_app:relationships:missed:CALLS method:app/admin.py::AdminOrder.approve method:app/models.py::AuditMixin.audit (emitted as external:self.audit)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:app/admin.py::AdminOrder.approve method:app/models.py::AuditMixin.audit (emitted as external:self.audit)",
+            "category": "cross-file limitation",
+            "fact_id": "python.shop_app.approve_calls_audit"
+          },
+          {
+            "id": "python/shop_app:relationships:missed:CALLS method:app/admin.py::AdminOrder.approve method:app/models.py::TimestampMixin.touch (emitted as external:self.touch)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:app/admin.py::AdminOrder.approve method:app/models.py::TimestampMixin.touch (emitted as external:self.touch)",
+            "category": "cross-file limitation",
+            "fact_id": "python.shop_app.approve_calls_touch"
+          },
+          {
+            "id": "python/shop_app:relationships:missed:CALLS method:app/models.py::Order.slug function:app/util/text.py::slugify (emitted as external:slugify)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:app/models.py::Order.slug function:app/util/text.py::slugify (emitted as external:slugify)",
+            "category": "cross-file limitation",
+            "fact_id": "python.shop_app.calls_order_slug_slugify"
+          },
+          {
+            "id": "python/shop_app:relationships:missed:CALLS method:app/pricing.py::Basket.add method:app/pricing.py::Price.with_tax (emitted as external:price.with_tax)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:app/pricing.py::Basket.add method:app/pricing.py::Price.with_tax (emitted as external:price.with_tax)",
+            "category": "receiver-resolution error",
+            "fact_id": "python.shop_app.basket_add_calls_with_tax"
+          },
+          {
+            "id": "python/shop_app:relationships:missed:CALLS method:app/pricing.py::Basket.merge method:app/pricing.py::Basket.clear (emitted as external:other.clear)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:app/pricing.py::Basket.merge method:app/pricing.py::Basket.clear (emitted as external:other.clear)",
+            "category": "receiver-resolution error",
+            "fact_id": "python.shop_app.basket_merge_calls_clear"
+          },
+          {
+            "id": "python/shop_app:relationships:missed:CALLS method:app/service.py::OrderService.create class:app/models.py::Order (emitted as external:OrderModel)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:app/service.py::OrderService.create class:app/models.py::Order (emitted as external:OrderModel)",
+            "category": "cross-file limitation",
+            "fact_id": "python.shop_app.calls_orderservice_create_order"
+          },
+          {
+            "id": "python/shop_app:relationships:missed:CALLS method:app/service.py::OrderService.create function:app/util/text.py::slugify (emitted as external:slugify)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:app/service.py::OrderService.create function:app/util/text.py::slugify (emitted as external:slugify)",
+            "category": "cross-file limitation",
+            "fact_id": "python.shop_app.calls_orderservice_create_slugify"
+          },
+          {
+            "id": "python/shop_app:relationships:missed:CONTAINS file:app/legacy.py function:app/legacy.py::after",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CONTAINS file:app/legacy.py function:app/legacy.py::after",
+            "category": "parser error recovery",
+            "fact_id": "python.shop_app.legacy_after.contained"
+          },
+          {
+            "id": "python/shop_app:relationships:missed:EXTENDS class:app/admin.py::AdminOrder class:app/models.py::Order (emitted as external:Order)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "EXTENDS class:app/admin.py::AdminOrder class:app/models.py::Order (emitted as external:Order)",
+            "category": "cross-file limitation",
+            "fact_id": "python.shop_app.adminorder_extends_order"
+          },
+          {
+            "id": "python/shop_app:relationships:missed:EXTENDS class:app/admin.py::Reviewer class:app/models.py::AuditMixin (emitted as external:AuditMixin)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "EXTENDS class:app/admin.py::Reviewer class:app/models.py::AuditMixin (emitted as external:AuditMixin)",
+            "category": "cross-file limitation",
+            "fact_id": "python.shop_app.reviewer_extends_auditmixin"
+          },
+          {
+            "id": "python/shop_app:relationships:missed:IMPORTS file:app/__init__.py file:app/service.py (emitted as external:.service)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "IMPORTS file:app/__init__.py file:app/service.py (emitted as external:.service)",
+            "category": "cross-file limitation",
+            "fact_id": "python.shop_app.init_py_imports_service"
+          },
+          {
+            "id": "python/shop_app:relationships:missed:IMPORTS file:app/admin.py file:app/models.py (emitted as external:app.models)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "IMPORTS file:app/admin.py file:app/models.py (emitted as external:app.models)",
+            "category": "cross-file limitation",
+            "fact_id": "python.shop_app.admin_py_imports_app_models"
+          },
+          {
+            "id": "python/shop_app:relationships:missed:IMPORTS file:app/controller.py file:app/models.py (emitted as external:app)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "IMPORTS file:app/controller.py file:app/models.py (emitted as external:app)",
+            "category": "cross-file limitation",
+            "fact_id": "python.shop_app.controller_py_imports_app"
+          },
+          {
+            "id": "python/shop_app:relationships:missed:IMPORTS file:app/controller.py file:app/service.py (emitted as external:app.service)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "IMPORTS file:app/controller.py file:app/service.py (emitted as external:app.service)",
+            "category": "cross-file limitation",
+            "fact_id": "python.shop_app.controller_py_imports_app_service"
+          },
+          {
+            "id": "python/shop_app:relationships:missed:IMPORTS file:app/legacy.py file:app/models.py (emitted as external:app.models)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "IMPORTS file:app/legacy.py file:app/models.py (emitted as external:app.models)",
+            "category": "cross-file limitation",
+            "fact_id": "python.shop_app.legacy_py_imports_app_models"
+          },
+          {
+            "id": "python/shop_app:relationships:missed:IMPORTS file:app/models.py file:app/util/text.py (emitted as external:app.util.text)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "IMPORTS file:app/models.py file:app/util/text.py (emitted as external:app.util.text)",
+            "category": "cross-file limitation",
+            "fact_id": "python.shop_app.models_py_imports_app_util_text"
+          },
+          {
+            "id": "python/shop_app:relationships:missed:IMPORTS file:app/service.py file:app/models.py (emitted as external:.)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "IMPORTS file:app/service.py file:app/models.py (emitted as external:.)",
+            "category": "cross-file limitation",
+            "fact_id": "python.shop_app.service_py_imports"
+          },
+          {
+            "id": "python/shop_app:relationships:missed:IMPORTS file:app/service.py file:app/util/__init__.py (emitted as external:.util)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "IMPORTS file:app/service.py file:app/util/__init__.py (emitted as external:.util)",
+            "category": "cross-file limitation",
+            "fact_id": "python.shop_app.service_py_imports_util"
+          },
+          {
+            "id": "python/shop_app:relationships:missed:IMPORTS file:app/service.py file:app/util/text.py (emitted as external:.util.text)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "IMPORTS file:app/service.py file:app/util/text.py (emitted as external:.util.text)",
+            "category": "cross-file limitation",
+            "fact_id": "python.shop_app.service_py_imports_util_text"
+          },
+          {
+            "id": "python/shop_app:relationships:missed:IMPORTS file:app/util/__init__.py file:app/util/text.py (emitted as external:.text)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "IMPORTS file:app/util/__init__.py file:app/util/text.py (emitted as external:.text)",
+            "category": "cross-file limitation",
+            "fact_id": "python.shop_app.init_py_imports_text"
+          },
+          {
+            "id": "python/shop_app:relationships:unexpected:CALLS file:app/controller.py external:OrderService (label: CALLS file:app/controller.py class:app/service.py::OrderService)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS file:app/controller.py external:OrderService (label: CALLS file:app/controller.py class:app/service.py::OrderService)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "python/shop_app:relationships:unexpected:CALLS function:app/controller.py::create_order external:order.add (label: CALLS function:app/controller.py::create_order method:app/models.py::Order.add)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS function:app/controller.py::create_order external:order.add (label: CALLS function:app/controller.py::create_order method:app/models.py::Order.add)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "python/shop_app:relationships:unexpected:CALLS function:app/controller.py::create_order external:service.create (label: CALLS function:app/controller.py::create_order method:app/service.py::OrderService.create)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS function:app/controller.py::create_order external:service.create (label: CALLS function:app/controller.py::create_order method:app/service.py::OrderService.create)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "python/shop_app:relationships:unexpected:CALLS function:app/controller.py::order_total external:order.total (label: CALLS function:app/controller.py::order_total method:app/models.py::Order.total)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS function:app/controller.py::order_total external:order.total (label: CALLS function:app/controller.py::order_total method:app/models.py::Order.total)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "python/shop_app:relationships:unexpected:CALLS function:app/legacy.py::migrate external:Order (label: CALLS function:app/legacy.py::migrate class:app/models.py::Order)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS function:app/legacy.py::migrate external:Order (label: CALLS function:app/legacy.py::migrate class:app/models.py::Order)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "python/shop_app:relationships:unexpected:CALLS function:app/service.py::OrderService.summary.label external:truncate (label: CALLS function:app/service.py::OrderService.summary.label function:app/util/text.py::truncate)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS function:app/service.py::OrderService.summary.label external:truncate (label: CALLS function:app/service.py::OrderService.summary.label function:app/util/text.py::truncate)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "python/shop_app:relationships:unexpected:CALLS method:app/admin.py::AdminOrder.approve external:self.audit (label: CALLS method:app/admin.py::AdminOrder.approve method:app/models.py::AuditMixin.audit)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:app/admin.py::AdminOrder.approve external:self.audit (label: CALLS method:app/admin.py::AdminOrder.approve method:app/models.py::AuditMixin.audit)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "python/shop_app:relationships:unexpected:CALLS method:app/admin.py::AdminOrder.approve external:self.touch (label: CALLS method:app/admin.py::AdminOrder.approve method:app/models.py::TimestampMixin.touch)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:app/admin.py::AdminOrder.approve external:self.touch (label: CALLS method:app/admin.py::AdminOrder.approve method:app/models.py::TimestampMixin.touch)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "python/shop_app:relationships:unexpected:CALLS method:app/models.py::Order.slug external:slugify (label: CALLS method:app/models.py::Order.slug function:app/util/text.py::slugify)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:app/models.py::Order.slug external:slugify (label: CALLS method:app/models.py::Order.slug function:app/util/text.py::slugify)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "python/shop_app:relationships:unexpected:CALLS method:app/pricing.py::Basket.add external:price.with_tax (label: CALLS method:app/pricing.py::Basket.add method:app/pricing.py::Price.with_tax)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:app/pricing.py::Basket.add external:price.with_tax (label: CALLS method:app/pricing.py::Basket.add method:app/pricing.py::Price.with_tax)",
+            "category": "receiver-resolution error"
+          },
+          {
+            "id": "python/shop_app:relationships:unexpected:CALLS method:app/pricing.py::Basket.merge external:other.clear (label: CALLS method:app/pricing.py::Basket.merge method:app/pricing.py::Basket.clear)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:app/pricing.py::Basket.merge external:other.clear (label: CALLS method:app/pricing.py::Basket.merge method:app/pricing.py::Basket.clear)",
+            "category": "receiver-resolution error"
+          },
+          {
+            "id": "python/shop_app:relationships:unexpected:CALLS method:app/service.py::OrderService.create external:OrderModel (label: CALLS method:app/service.py::OrderService.create class:app/models.py::Order)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:app/service.py::OrderService.create external:OrderModel (label: CALLS method:app/service.py::OrderService.create class:app/models.py::Order)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "python/shop_app:relationships:unexpected:CALLS method:app/service.py::OrderService.create external:slugify (label: CALLS method:app/service.py::OrderService.create function:app/util/text.py::slugify)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:app/service.py::OrderService.create external:slugify (label: CALLS method:app/service.py::OrderService.create function:app/util/text.py::slugify)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "python/shop_app:relationships:unexpected:EXTENDS class:app/admin.py::AdminOrder external:Order (label: EXTENDS class:app/admin.py::AdminOrder class:app/models.py::Order)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "EXTENDS class:app/admin.py::AdminOrder external:Order (label: EXTENDS class:app/admin.py::AdminOrder class:app/models.py::Order)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "python/shop_app:relationships:unexpected:EXTENDS class:app/admin.py::Reviewer external:AuditMixin (label: EXTENDS class:app/admin.py::Reviewer class:app/models.py::AuditMixin)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "EXTENDS class:app/admin.py::Reviewer external:AuditMixin (label: EXTENDS class:app/admin.py::Reviewer class:app/models.py::AuditMixin)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "python/shop_app:relationships:unexpected:IMPORTS file:app/__init__.py external:.service (label: IMPORTS file:app/__init__.py file:app/service.py)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPORTS file:app/__init__.py external:.service (label: IMPORTS file:app/__init__.py file:app/service.py)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "python/shop_app:relationships:unexpected:IMPORTS file:app/admin.py external:app.models (label: IMPORTS file:app/admin.py file:app/models.py)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPORTS file:app/admin.py external:app.models (label: IMPORTS file:app/admin.py file:app/models.py)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "python/shop_app:relationships:unexpected:IMPORTS file:app/controller.py external:app (label: IMPORTS file:app/controller.py file:app/models.py)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPORTS file:app/controller.py external:app (label: IMPORTS file:app/controller.py file:app/models.py)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "python/shop_app:relationships:unexpected:IMPORTS file:app/controller.py external:app.service (label: IMPORTS file:app/controller.py file:app/service.py)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPORTS file:app/controller.py external:app.service (label: IMPORTS file:app/controller.py file:app/service.py)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "python/shop_app:relationships:unexpected:IMPORTS file:app/legacy.py external:app.models (label: IMPORTS file:app/legacy.py file:app/models.py)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPORTS file:app/legacy.py external:app.models (label: IMPORTS file:app/legacy.py file:app/models.py)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "python/shop_app:relationships:unexpected:IMPORTS file:app/models.py external:app.util.text (label: IMPORTS file:app/models.py file:app/util/text.py)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPORTS file:app/models.py external:app.util.text (label: IMPORTS file:app/models.py file:app/util/text.py)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "python/shop_app:relationships:unexpected:IMPORTS file:app/service.py external:. (label: IMPORTS file:app/service.py file:app/models.py)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPORTS file:app/service.py external:. (label: IMPORTS file:app/service.py file:app/models.py)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "python/shop_app:relationships:unexpected:IMPORTS file:app/service.py external:.models (label: IMPORTS file:app/service.py file:app/models.py)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPORTS file:app/service.py external:.models (label: IMPORTS file:app/service.py file:app/models.py)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "python/shop_app:relationships:unexpected:IMPORTS file:app/service.py external:.util (label: IMPORTS file:app/service.py file:app/util/__init__.py)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPORTS file:app/service.py external:.util (label: IMPORTS file:app/service.py file:app/util/__init__.py)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "python/shop_app:relationships:unexpected:IMPORTS file:app/service.py external:.util.text (label: IMPORTS file:app/service.py file:app/util/text.py)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPORTS file:app/service.py external:.util.text (label: IMPORTS file:app/service.py file:app/util/text.py)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "python/shop_app:relationships:unexpected:IMPORTS file:app/util/__init__.py external:.text (label: IMPORTS file:app/util/__init__.py file:app/util/text.py)",
+            "case": "python/shop_app",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPORTS file:app/util/__init__.py external:.text (label: IMPORTS file:app/util/__init__.py file:app/util/text.py)",
+            "category": "cross-file limitation"
+          }
+        ]
+      }
+    },
+    "scala": {
+      "cases": [
+        "scala/basics",
+        "scala/broker",
+        "scala/holdout_coordinator",
+        "scala/holdout_streams",
+        "scala/malformed"
+      ],
+      "extractor_versions": {
+        "scala": "stacksniffer-scala/1+tree-sitter-scala@0.26.2"
+      },
+      "entities": {
+        "overall": {
+          "tp": 122,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "CLASS": {
+          "tp": 34,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "INTERFACE": {
+          "tp": 5,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "FUNCTION": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "METHOD": {
+          "tp": 79,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "relationships": {
+        "overall": {
+          "tp": 245,
+          "fp": 31,
+          "fn": 32,
+          "precision": 0.8877,
+          "recall": 0.8845,
+          "f1": 0.8861
+        },
+        "CONTAINS": {
+          "tp": 122,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "IMPORTS": {
+          "tp": 16,
+          "fp": 6,
+          "fn": 6,
+          "precision": 0.7273,
+          "recall": 0.7273,
+          "f1": 0.7273
+        },
+        "CALLS": {
+          "tp": 96,
+          "fp": 22,
+          "fn": 23,
+          "precision": 0.8136,
+          "recall": 0.8067,
+          "f1": 0.8101
+        },
+        "EXTENDS": {
+          "tp": 8,
+          "fp": 3,
+          "fn": 3,
+          "precision": 0.7273,
+          "recall": 0.7273,
+          "f1": 0.7273
+        },
+        "IMPLEMENTS": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "import_statements": {
+        "tp": 22,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "resolution": {
+        "CALLS": {
+          "same_file": {
+            "tp": 54,
+            "fp": 0,
+            "fn": 9,
+            "precision": 1.0,
+            "recall": 0.8571,
+            "f1": 0.9231
+          },
+          "cross_file": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 14,
+            "precision": 1.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "overall": {
+            "tp": 54,
+            "fp": 0,
+            "fn": 23,
+            "precision": 1.0,
+            "recall": 0.7013,
+            "f1": 0.8244
+          }
+        },
+        "EXTENDS": {
+          "same_file": {
+            "tp": 6,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "cross_file": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 3,
+            "precision": 1.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "overall": {
+            "tp": 6,
+            "fp": 0,
+            "fn": 3,
+            "precision": 1.0,
+            "recall": 0.6667,
+            "f1": 0.8
+          }
+        },
+        "IMPLEMENTS": {
+          "same_file": {
+            "tp": 2,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "cross_file": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "overall": {
+            "tp": 2,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          }
+        },
+        "IMPORTS": {
+          "same_file": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "cross_file": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 6,
+            "precision": 1.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "overall": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 6,
+            "precision": 1.0,
+            "recall": 0.0,
+            "f1": 0.0
+          }
+        }
+      },
+      "resolved_edge_precision": {
+        "tp": 62,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "resolution_recall_by_expected_basis": {
+        "lexical_scope": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "enclosing_class": {
+          "tp": 17,
+          "fp": 0,
+          "fn": 2,
+          "precision": 1.0,
+          "recall": 0.8947,
+          "f1": 0.9444
+        },
+        "base_class": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "type_name": {
+          "tp": 18,
+          "fp": 0,
+          "fn": 7,
+          "precision": 1.0,
+          "recall": 0.72,
+          "f1": 0.8372
+        },
+        "constructor": {
+          "tp": 15,
+          "fp": 0,
+          "fn": 3,
+          "precision": 1.0,
+          "recall": 0.8333,
+          "f1": 0.9091
+        },
+        "declared_type": {
+          "tp": 7,
+          "fp": 0,
+          "fn": 6,
+          "precision": 1.0,
+          "recall": 0.5385,
+          "f1": 0.7
+        },
+        "import_path": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 6,
+          "precision": 1.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        "inferred_type": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 8,
+          "precision": 1.0,
+          "recall": 0.0,
+          "f1": 0.0
+        }
+      },
+      "basis_accuracy": {
+        "valid": 62,
+        "total": 62,
+        "rate": 1.0
+      },
+      "certainty_accuracy": {
+        "valid": 62,
+        "total": 62,
+        "rate": 1.0
+      },
+      "by_origin": {
+        "entities": {
+          "first_party": {
+            "tp": 115,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "generated": {
+            "tp": 2,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "vendored": {
+            "tp": 5,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          }
+        },
+        "relationships": {
+          "first_party": {
+            "tp": 235,
+            "fp": 31,
+            "fn": 32,
+            "precision": 0.8835,
+            "recall": 0.8801,
+            "f1": 0.8818
+          },
+          "generated": {
+            "tp": 3,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "vendored": {
+            "tp": 7,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          }
+        },
+        "classification": {
+          "valid": 14,
+          "total": 14,
+          "rate": 1.0
+        }
+      },
+      "by_capability_level": {
+        "PARTIAL": {
+          "capabilities": [
+            "calls",
+            "inheritance",
+            "interfaces"
+          ],
+          "tp": 112,
+          "fp": 25,
+          "fn": 26,
+          "precision": 0.8175,
+          "recall": 0.8116,
+          "f1": 0.8145
+        },
+        "SUPPORTED": {
+          "capabilities": [
+            "declarations",
+            "imports"
+          ],
+          "tp": 261,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "resolved_edge_precision_by_basis": {
+        "base_class": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "constructor": {
+          "tp": 15,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "declared_type": {
+          "tp": 7,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "enclosing_class": {
+          "tp": 17,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "lexical_scope": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "type_name": {
+          "tp": 18,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "unresolved_edges": {
+        "overall": {
+          "tp": 61,
+          "fp": 31,
+          "fn": 0,
+          "precision": 0.663,
+          "recall": 1.0,
+          "f1": 0.7974
+        },
+        "external": {
+          "tp": 59,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "unresolvable": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "evidence": {
+        "path_validity": {
+          "valid": 367,
+          "total": 367,
+          "rate": 1.0
+        },
+        "line_range_validity": {
+          "valid": 367,
+          "total": 367,
+          "rate": 1.0
+        },
+        "source_integrity": {
+          "valid": 285,
+          "total": 285,
+          "rate": 1.0
+        }
+      },
+      "decorators": {
+        "valid": 122,
+        "total": 122,
+        "rate": 1.0
+      },
+      "parse_status": {
+        "valid": 14,
+        "total": 14,
+        "rate": 1.0
+      },
+      "syntax_error_location": {
+        "valid": 2,
+        "total": 2,
+        "rate": 1.0
+      },
+      "malformed_isolation": {
+        "malformed_files": 2,
+        "isolated": 2,
+        "rate": 1.0,
+        "repository_failures": 0
+      },
+      "determinism": {
+        "identical_runs": {
+          "valid": 5,
+          "total": 5,
+          "rate": 1.0
+        },
+        "stable_keys": {
+          "valid": 223,
+          "total": 223,
+          "rate": 1.0
+        }
+      },
+      "unsupported_leakage": {
+        "count": 0,
+        "facts": []
+      },
+      "capabilities": {
+        "declared": {
+          "declarations": "SUPPORTED",
+          "imports": "SUPPORTED",
+          "calls": "PARTIAL",
+          "inheritance": "PARTIAL",
+          "interfaces": "PARTIAL",
+          "dependencies": "UNSUPPORTED",
+          "decorators": "SUPPORTED"
+        },
+        "expected": {
+          "declarations": "SUPPORTED",
+          "imports": "SUPPORTED",
+          "calls": "PARTIAL",
+          "inheritance": "PARTIAL",
+          "interfaces": "PARTIAL",
+          "dependencies": "UNSUPPORTED",
+          "decorators": "SUPPORTED"
+        },
+        "accuracy": 1.0,
+        "mismatched": [],
+        "consistency_issues": []
+      },
+      "splits": {
+        "development": {
+          "entities": {
+            "tp": 98,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "relationships": {
+            "tp": 194,
+            "fp": 24,
+            "fn": 25,
+            "precision": 0.8899,
+            "recall": 0.8858,
+            "f1": 0.8879
+          },
+          "calls_resolution": {
+            "tp": 42,
+            "fp": 0,
+            "fn": 19,
+            "precision": 1.0,
+            "recall": 0.6885,
+            "f1": 0.8155
+          }
+        },
+        "holdout": {
+          "entities": {
+            "tp": 24,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "relationships": {
+            "tp": 51,
+            "fp": 7,
+            "fn": 7,
+            "precision": 0.8793,
+            "recall": 0.8793,
+            "f1": 0.8793
+          },
+          "calls_resolution": {
+            "tp": 12,
+            "fp": 0,
+            "fn": 4,
+            "precision": 1.0,
+            "recall": 0.75,
+            "f1": 0.8571
+          }
+        }
+      },
+      "gates": [
+        {
+          "gate": "declaration_precision",
+          "required": ">= 0.98",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "declaration_recall",
+          "required": ">= 0.95",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "import_precision",
+          "required": ">= 0.95",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "import_recall",
+          "required": ">= 0.95",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "resolved_edge_precision",
+          "required": ">= 0.9",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "evidence_path_validity",
+          "required": ">= 1.0",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "evidence_line_range_validity",
+          "required": ">= 1.0",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "deterministic_stable_keys",
+          "required": ">= 1.0",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "unsupported_fact_leakage",
+          "required": "<= 0",
+          "actual": 0,
+          "passed": true
+        },
+        {
+          "gate": "repository_failures_from_malformed_files",
+          "required": "<= 0",
+          "actual": 0,
+          "passed": true
+        }
+      ],
+      "gates_passed": true,
+      "errors": {
+        "by_category": {
+          "parser query gap": 0,
+          "normalization error": 0,
+          "receiver-resolution error": 14,
+          "ambiguity": 3,
+          "cross-file limitation": 46,
+          "evidence-range error": 0,
+          "incorrect fixture label": 0,
+          "parser error recovery": 0,
+          "unsupported-fact leakage": 0
+        },
+        "items": [
+          {
+            "id": "scala/basics:relationships:missed:CALLS method:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.price(Int) method:src/main/scala/acme/shop/Orders.scala::acme.shop.Item.price(Int) (emitted as external:<expression>.price)",
+            "case": "scala/basics",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.price(Int) method:src/main/scala/acme/shop/Orders.scala::acme.shop.Item.price(Int) (emitted as external:<expression>.price)",
+            "category": "receiver-resolution error",
+            "fact_id": "scala.basics.calls_acme_shop_cart_price_int_acme_shop_item_price_int_37"
+          },
+          {
+            "id": "scala/basics:relationships:missed:CALLS method:src/main/scala/acme/shop/Orders.scala::acme.shop.Checkout$.run(Cart,Tax) method:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.add(String,Int) (emitted as external:cart.add)",
+            "case": "scala/basics",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:src/main/scala/acme/shop/Orders.scala::acme.shop.Checkout$.run(Cart,Tax) method:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.add(String,Int) (emitted as external:cart.add)",
+            "category": "ambiguity",
+            "fact_id": "scala.basics.calls_acme_shop_checkout_object_run_cart_tax_acme_shop_cart_add_string_int_72"
+          },
+          {
+            "id": "scala/basics:relationships:missed:CALLS method:src/main/scala/acme/shop/Orders.scala::acme.shop.Checkout$.run(Cart,Tax) method:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.add(String,Long) (emitted as external:cart.add)",
+            "case": "scala/basics",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:src/main/scala/acme/shop/Orders.scala::acme.shop.Checkout$.run(Cart,Tax) method:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.add(String,Long) (emitted as external:cart.add)",
+            "category": "ambiguity",
+            "fact_id": "scala.basics.calls_acme_shop_checkout_object_run_cart_tax_acme_shop_cart_add_string_long_73"
+          },
+          {
+            "id": "scala/basics:relationships:missed:CALLS method:src/main/scala/acme/shop/Orders.scala::acme.shop.Inventory.release(String) method:src/main/scala/acme/shop/Orders.scala::acme.shop.Inventory.release(String).<anonymous>.run() (emitted as external:listener.run)",
+            "case": "scala/basics",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:src/main/scala/acme/shop/Orders.scala::acme.shop.Inventory.release(String) method:src/main/scala/acme/shop/Orders.scala::acme.shop.Inventory.release(String).<anonymous>.run() (emitted as external:listener.run)",
+            "category": "receiver-resolution error",
+            "fact_id": "scala.basics.calls_acme_shop_inventory_release_string_acme_shop_inventory_release_string_anonymous_run_50"
+          },
+          {
+            "id": "scala/basics:relationships:unexpected:CALLS method:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.price(Int) external:<expression>.price (label: CALLS method:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.price(Int) method:src/main/scala/acme/shop/Orders.scala::acme.shop.Item.price(Int))",
+            "case": "scala/basics",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.price(Int) external:<expression>.price (label: CALLS method:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.price(Int) method:src/main/scala/acme/shop/Orders.scala::acme.shop.Item.price(Int))",
+            "category": "receiver-resolution error"
+          },
+          {
+            "id": "scala/basics:relationships:unexpected:CALLS method:src/main/scala/acme/shop/Orders.scala::acme.shop.Checkout$.run(Cart,Tax) external:cart.add (label: CALLS method:src/main/scala/acme/shop/Orders.scala::acme.shop.Checkout$.run(Cart,Tax) method:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.add(String,Int))",
+            "case": "scala/basics",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:src/main/scala/acme/shop/Orders.scala::acme.shop.Checkout$.run(Cart,Tax) external:cart.add (label: CALLS method:src/main/scala/acme/shop/Orders.scala::acme.shop.Checkout$.run(Cart,Tax) method:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.add(String,Int))",
+            "category": "ambiguity"
+          },
+          {
+            "id": "scala/basics:relationships:unexpected:CALLS method:src/main/scala/acme/shop/Orders.scala::acme.shop.Inventory.release(String) external:listener.run (label: CALLS method:src/main/scala/acme/shop/Orders.scala::acme.shop.Inventory.release(String) method:src/main/scala/acme/shop/Orders.scala::acme.shop.Inventory.release(String).<anonymous>.run())",
+            "case": "scala/basics",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:src/main/scala/acme/shop/Orders.scala::acme.shop.Inventory.release(String) external:listener.run (label: CALLS method:src/main/scala/acme/shop/Orders.scala::acme.shop.Inventory.release(String) method:src/main/scala/acme/shop/Orders.scala::acme.shop.Inventory.release(String).<anonymous>.run())",
+            "category": "receiver-resolution error"
+          },
+          {
+            "id": "scala/broker:relationships:missed:CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String]) method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.LogSegment.write(Seq[String]) (emitted as external:segment.write)",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String]) method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.LogSegment.write(Seq[String]) (emitted as external:segment.write)",
+            "category": "receiver-resolution error",
+            "fact_id": "scala.broker.calls_kafka_log_unifiedlog_append_seq_string_kafka_log_logsegment_write_seq_string_12"
+          },
+          {
+            "id": "scala/broker:relationships:missed:CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String]) method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.CoreUtils$.inLock(Lock)(=>T) (emitted as external:CoreUtils.inLock)",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String]) method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.CoreUtils$.inLock(Lock)(=>T) (emitted as external:CoreUtils.inLock)",
+            "category": "cross-file limitation",
+            "fact_id": "scala.broker.calls_kafka_log_unifiedlog_append_seq_string_kafka_utils_coreutils_object_inlock_lock_t_10"
+          },
+          {
+            "id": "scala/broker:relationships:missed:CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String]) method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging.info(String) (emitted as external:info)",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String]) method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging.info(String) (emitted as external:info)",
+            "category": "cross-file limitation",
+            "fact_id": "scala.broker.calls_kafka_log_unifiedlog_append_seq_string_kafka_utils_logging_info_string_13"
+          },
+          {
+            "id": "scala/broker:relationships:missed:CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.close() method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.LogSegment.close() (emitted as external:<expression>.close)",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.close() method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.LogSegment.close() (emitted as external:<expression>.close)",
+            "category": "receiver-resolution error",
+            "fact_id": "scala.broker.calls_kafka_log_unifiedlog_close_kafka_log_logsegment_close_23"
+          },
+          {
+            "id": "scala/broker:relationships:missed:CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.close() method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.CoreUtils$.swallow(=>Unit) (emitted as external:CoreUtils.swallow)",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.close() method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.CoreUtils$.swallow(=>Unit) (emitted as external:CoreUtils.swallow)",
+            "category": "cross-file limitation",
+            "fact_id": "scala.broker.calls_kafka_log_unifiedlog_close_kafka_utils_coreutils_object_swallow_unit_23"
+          },
+          {
+            "id": "scala/broker:relationships:missed:CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.appendRecords(String,Seq[String]) method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String]) (emitted as external:log.append)",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.appendRecords(String,Seq[String]) method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String]) (emitted as external:log.append)",
+            "category": "cross-file limitation",
+            "fact_id": "scala.broker.calls_kafka_server_replicamanager_appendrecords_string_seq_string_kafka_log_unifiedlog_append_seq_string_14"
+          },
+          {
+            "id": "scala/broker:relationships:missed:CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.appendRecords(String,Seq[String]) method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging.info(String) (emitted as external:info)",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.appendRecords(String,Seq[String]) method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging.info(String) (emitted as external:info)",
+            "category": "cross-file limitation",
+            "fact_id": "scala.broker.calls_kafka_server_replicamanager_appendrecords_string_seq_string_kafka_utils_logging_info_string_15"
+          },
+          {
+            "id": "scala/broker:relationships:missed:CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.getOrCreateLog(String) class:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog (emitted as external:UnifiedLog)",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.getOrCreateLog(String) class:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog (emitted as external:UnifiedLog)",
+            "category": "cross-file limitation",
+            "fact_id": "scala.broker.calls_kafka_server_replicamanager_getorcreatelog_string_kafka_log_unifiedlog_10"
+          },
+          {
+            "id": "scala/broker:relationships:missed:CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.shutdown() method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.close() (emitted as external:log.close)",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.shutdown() method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.close() (emitted as external:log.close)",
+            "category": "cross-file limitation",
+            "fact_id": "scala.broker.calls_kafka_server_replicamanager_shutdown_kafka_log_unifiedlog_close_19"
+          },
+          {
+            "id": "scala/broker:relationships:missed:CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.shutdown() method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.CoreUtils$.swallow(=>Unit) (emitted as external:CoreUtils.swallow)",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.shutdown() method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.CoreUtils$.swallow(=>Unit) (emitted as external:CoreUtils.swallow)",
+            "category": "cross-file limitation",
+            "fact_id": "scala.broker.calls_kafka_server_replicamanager_shutdown_kafka_utils_coreutils_object_swallow_unit_19"
+          },
+          {
+            "id": "scala/broker:relationships:missed:EXTENDS class:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog interface:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging (emitted as external:Logging)",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "EXTENDS class:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog interface:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging (emitted as external:Logging)",
+            "category": "cross-file limitation",
+            "fact_id": "scala.broker.extends_kafka_log_unifiedlog_kafka_utils_logging_6"
+          },
+          {
+            "id": "scala/broker:relationships:missed:EXTENDS class:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager interface:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging (emitted as external:Logging)",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "EXTENDS class:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager interface:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging (emitted as external:Logging)",
+            "category": "cross-file limitation",
+            "fact_id": "scala.broker.extends_kafka_server_replicamanager_kafka_utils_logging_6"
+          },
+          {
+            "id": "scala/broker:relationships:missed:IMPORTS file:core/src/main/scala/kafka/log/UnifiedLog.scala class:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.CoreUtils$ (emitted as external:kafka.utils.CoreUtils)",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "IMPORTS file:core/src/main/scala/kafka/log/UnifiedLog.scala class:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.CoreUtils$ (emitted as external:kafka.utils.CoreUtils)",
+            "category": "cross-file limitation",
+            "fact_id": "scala.broker.imports_unifiedlog_scala_kafka_utils_coreutils_object_3"
+          },
+          {
+            "id": "scala/broker:relationships:missed:IMPORTS file:core/src/main/scala/kafka/log/UnifiedLog.scala interface:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging (emitted as external:kafka.utils.Logging)",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "IMPORTS file:core/src/main/scala/kafka/log/UnifiedLog.scala interface:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging (emitted as external:kafka.utils.Logging)",
+            "category": "cross-file limitation",
+            "fact_id": "scala.broker.imports_unifiedlog_scala_kafka_utils_logging_3"
+          },
+          {
+            "id": "scala/broker:relationships:missed:IMPORTS file:core/src/main/scala/kafka/server/ReplicaManager.scala class:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.LogConfig (emitted as external:kafka.log.LogConfig)",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "IMPORTS file:core/src/main/scala/kafka/server/ReplicaManager.scala class:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.LogConfig (emitted as external:kafka.log.LogConfig)",
+            "category": "cross-file limitation",
+            "fact_id": "scala.broker.imports_replicamanager_scala_kafka_log_logconfig_3"
+          },
+          {
+            "id": "scala/broker:relationships:missed:IMPORTS file:core/src/main/scala/kafka/server/ReplicaManager.scala class:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog (emitted as external:kafka.log.UnifiedLog)",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "IMPORTS file:core/src/main/scala/kafka/server/ReplicaManager.scala class:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog (emitted as external:kafka.log.UnifiedLog)",
+            "category": "cross-file limitation",
+            "fact_id": "scala.broker.imports_replicamanager_scala_kafka_log_unifiedlog_3"
+          },
+          {
+            "id": "scala/broker:relationships:unexpected:CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String]) external:CoreUtils.inLock (label: CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String]) method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.CoreUtils$.inLock(Lock)(=>T))",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String]) external:CoreUtils.inLock (label: CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String]) method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.CoreUtils$.inLock(Lock)(=>T))",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "scala/broker:relationships:unexpected:CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String]) external:info (label: CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String]) method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging.info(String))",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String]) external:info (label: CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String]) method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging.info(String))",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "scala/broker:relationships:unexpected:CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String]) external:segment.write (label: CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String]) method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.LogSegment.write(Seq[String]))",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String]) external:segment.write (label: CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String]) method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.LogSegment.write(Seq[String]))",
+            "category": "receiver-resolution error"
+          },
+          {
+            "id": "scala/broker:relationships:unexpected:CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.close() external:<expression>.close (label: CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.close() method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.LogSegment.close())",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.close() external:<expression>.close (label: CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.close() method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.LogSegment.close())",
+            "category": "receiver-resolution error"
+          },
+          {
+            "id": "scala/broker:relationships:unexpected:CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.close() external:CoreUtils.swallow (label: CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.close() method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.CoreUtils$.swallow(=>Unit))",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.close() external:CoreUtils.swallow (label: CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.close() method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.CoreUtils$.swallow(=>Unit))",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "scala/broker:relationships:unexpected:CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.appendRecords(String,Seq[String]) external:info (label: CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.appendRecords(String,Seq[String]) method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging.info(String))",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.appendRecords(String,Seq[String]) external:info (label: CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.appendRecords(String,Seq[String]) method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging.info(String))",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "scala/broker:relationships:unexpected:CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.appendRecords(String,Seq[String]) external:log.append (label: CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.appendRecords(String,Seq[String]) method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String]))",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.appendRecords(String,Seq[String]) external:log.append (label: CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.appendRecords(String,Seq[String]) method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String]))",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "scala/broker:relationships:unexpected:CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.getOrCreateLog(String) external:UnifiedLog (label: CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.getOrCreateLog(String) class:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog)",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.getOrCreateLog(String) external:UnifiedLog (label: CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.getOrCreateLog(String) class:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "scala/broker:relationships:unexpected:CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.shutdown() external:CoreUtils.swallow (label: CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.shutdown() method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.CoreUtils$.swallow(=>Unit))",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.shutdown() external:CoreUtils.swallow (label: CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.shutdown() method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.CoreUtils$.swallow(=>Unit))",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "scala/broker:relationships:unexpected:CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.shutdown() external:log.close (label: CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.shutdown() method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.close())",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.shutdown() external:log.close (label: CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.shutdown() method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.close())",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "scala/broker:relationships:unexpected:EXTENDS class:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog external:Logging (label: EXTENDS class:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog interface:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging)",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "EXTENDS class:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog external:Logging (label: EXTENDS class:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog interface:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "scala/broker:relationships:unexpected:EXTENDS class:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager external:Logging (label: EXTENDS class:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager interface:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging)",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "EXTENDS class:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager external:Logging (label: EXTENDS class:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager interface:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "scala/broker:relationships:unexpected:IMPORTS file:core/src/main/scala/kafka/log/UnifiedLog.scala external:kafka.utils.CoreUtils (label: IMPORTS file:core/src/main/scala/kafka/log/UnifiedLog.scala class:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.CoreUtils$)",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPORTS file:core/src/main/scala/kafka/log/UnifiedLog.scala external:kafka.utils.CoreUtils (label: IMPORTS file:core/src/main/scala/kafka/log/UnifiedLog.scala class:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.CoreUtils$)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "scala/broker:relationships:unexpected:IMPORTS file:core/src/main/scala/kafka/log/UnifiedLog.scala external:kafka.utils.Logging (label: IMPORTS file:core/src/main/scala/kafka/log/UnifiedLog.scala interface:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging)",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPORTS file:core/src/main/scala/kafka/log/UnifiedLog.scala external:kafka.utils.Logging (label: IMPORTS file:core/src/main/scala/kafka/log/UnifiedLog.scala interface:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "scala/broker:relationships:unexpected:IMPORTS file:core/src/main/scala/kafka/server/ReplicaManager.scala external:kafka.log.LogConfig (label: IMPORTS file:core/src/main/scala/kafka/server/ReplicaManager.scala class:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.LogConfig)",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPORTS file:core/src/main/scala/kafka/server/ReplicaManager.scala external:kafka.log.LogConfig (label: IMPORTS file:core/src/main/scala/kafka/server/ReplicaManager.scala class:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.LogConfig)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "scala/broker:relationships:unexpected:IMPORTS file:core/src/main/scala/kafka/server/ReplicaManager.scala external:kafka.log.UnifiedLog (label: IMPORTS file:core/src/main/scala/kafka/server/ReplicaManager.scala class:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog)",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPORTS file:core/src/main/scala/kafka/server/ReplicaManager.scala external:kafka.log.UnifiedLog (label: IMPORTS file:core/src/main/scala/kafka/server/ReplicaManager.scala class:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "scala/holdout_coordinator:relationships:missed:CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupCoordinator.doJoin(GroupMetadata,String) method:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata.add(String) (emitted as external:group.add)",
+            "case": "scala/holdout_coordinator",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupCoordinator.doJoin(GroupMetadata,String) method:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata.add(String) (emitted as external:group.add)",
+            "category": "cross-file limitation",
+            "fact_id": "scala.holdout_coordinator.calls_kafka_coordinator_groupcoordinator_dojoin_groupmetadata_string_kafka_coordinator_groupmetadata_add_string_26"
+          },
+          {
+            "id": "scala/holdout_coordinator:relationships:missed:CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupCoordinator.doJoin(GroupMetadata,String) method:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata.size() (emitted as external:group.size)",
+            "case": "scala/holdout_coordinator",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupCoordinator.doJoin(GroupMetadata,String) method:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata.size() (emitted as external:group.size)",
+            "category": "cross-file limitation",
+            "fact_id": "scala.holdout_coordinator.calls_kafka_coordinator_groupcoordinator_dojoin_groupmetadata_string_kafka_coordinator_groupmetadata_size_28"
+          },
+          {
+            "id": "scala/holdout_coordinator:relationships:missed:CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupCoordinator.doJoin(GroupMetadata,String) method:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata.transitionTo(GroupState) (emitted as external:group.transitionTo)",
+            "case": "scala/holdout_coordinator",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupCoordinator.doJoin(GroupMetadata,String) method:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata.transitionTo(GroupState) (emitted as external:group.transitionTo)",
+            "category": "cross-file limitation",
+            "fact_id": "scala.holdout_coordinator.calls_kafka_coordinator_groupcoordinator_dojoin_groupmetadata_string_kafka_coordinator_groupmetadata_transitionto_groupstate_27"
+          },
+          {
+            "id": "scala/holdout_coordinator:relationships:missed:CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupMetadataManager.getGroup(String) class:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata (emitted as external:GroupMetadata)",
+            "case": "scala/holdout_coordinator",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupMetadataManager.getGroup(String) class:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata (emitted as external:GroupMetadata)",
+            "category": "cross-file limitation",
+            "fact_id": "scala.holdout_coordinator.calls_kafka_coordinator_groupmetadatamanager_getgroup_string_kafka_coordinator_groupmetadata_43"
+          },
+          {
+            "id": "scala/holdout_coordinator:relationships:missed:CALLS method:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata.summary() method:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata.summary().<anonymous>.format(String) (emitted as external:helper.format)",
+            "case": "scala/holdout_coordinator",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata.summary() method:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata.summary().<anonymous>.format(String) (emitted as external:helper.format)",
+            "category": "receiver-resolution error",
+            "fact_id": "scala.holdout_coordinator.calls_kafka_coordinator_groupmetadata_summary_kafka_coordinator_groupmetadata_summary_anonymous_format_string_20"
+          },
+          {
+            "id": "scala/holdout_coordinator:relationships:unexpected:CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupCoordinator.doJoin(GroupMetadata,String) external:group.add (label: CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupCoordinator.doJoin(GroupMetadata,String) method:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata.add(String))",
+            "case": "scala/holdout_coordinator",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupCoordinator.doJoin(GroupMetadata,String) external:group.add (label: CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupCoordinator.doJoin(GroupMetadata,String) method:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata.add(String))",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "scala/holdout_coordinator:relationships:unexpected:CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupCoordinator.doJoin(GroupMetadata,String) external:group.size (label: CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupCoordinator.doJoin(GroupMetadata,String) method:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata.size())",
+            "case": "scala/holdout_coordinator",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupCoordinator.doJoin(GroupMetadata,String) external:group.size (label: CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupCoordinator.doJoin(GroupMetadata,String) method:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata.size())",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "scala/holdout_coordinator:relationships:unexpected:CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupCoordinator.doJoin(GroupMetadata,String) external:group.transitionTo (label: CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupCoordinator.doJoin(GroupMetadata,String) method:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata.transitionTo(GroupState))",
+            "case": "scala/holdout_coordinator",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupCoordinator.doJoin(GroupMetadata,String) external:group.transitionTo (label: CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupCoordinator.doJoin(GroupMetadata,String) method:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata.transitionTo(GroupState))",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "scala/holdout_coordinator:relationships:unexpected:CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupMetadataManager.getGroup(String) external:GroupMetadata (label: CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupMetadataManager.getGroup(String) class:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata)",
+            "case": "scala/holdout_coordinator",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupMetadataManager.getGroup(String) external:GroupMetadata (label: CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupMetadataManager.getGroup(String) class:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "scala/holdout_coordinator:relationships:unexpected:CALLS method:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata.summary() external:helper.format (label: CALLS method:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata.summary() method:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata.summary().<anonymous>.format(String))",
+            "case": "scala/holdout_coordinator",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata.summary() external:helper.format (label: CALLS method:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata.summary() method:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata.summary().<anonymous>.format(String))",
+            "category": "receiver-resolution error"
+          },
+          {
+            "id": "scala/holdout_streams:relationships:missed:CALLS class:src/streams/state/Stores.scala::streams.state.InMemoryStore class:src/streams/processor/Topology.scala::streams.processor.Node (emitted as external:Node)",
+            "case": "scala/holdout_streams",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS class:src/streams/state/Stores.scala::streams.state.InMemoryStore class:src/streams/processor/Topology.scala::streams.processor.Node (emitted as external:Node)",
+            "category": "cross-file limitation",
+            "fact_id": "scala.holdout_streams.calls_streams_state_inmemorystore_streams_processor_node_10"
+          },
+          {
+            "id": "scala/holdout_streams:relationships:missed:CALLS method:src/streams/processor/Topology.scala::streams.processor.SourceNode.process(String,String) method:src/streams/processor/Topology.scala::streams.processor.Node.process(String,String) (emitted as external:<expression>.process)",
+            "case": "scala/holdout_streams",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:src/streams/processor/Topology.scala::streams.processor.SourceNode.process(String,String) method:src/streams/processor/Topology.scala::streams.processor.Node.process(String,String) (emitted as external:<expression>.process)",
+            "category": "receiver-resolution error",
+            "fact_id": "scala.holdout_streams.calls_streams_processor_sourcenode_process_string_string_streams_processor_node_process_string_string_20"
+          },
+          {
+            "id": "scala/holdout_streams:relationships:missed:CALLS method:src/streams/processor/Topology.scala::streams.processor.Topology$.build(String) method:src/streams/processor/Topology.scala::streams.processor.SourceNode.addChild(Node) (emitted as external:source.addChild)",
+            "case": "scala/holdout_streams",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:src/streams/processor/Topology.scala::streams.processor.Topology$.build(String) method:src/streams/processor/Topology.scala::streams.processor.SourceNode.addChild(Node) (emitted as external:source.addChild)",
+            "category": "receiver-resolution error",
+            "fact_id": "scala.holdout_streams.calls_streams_processor_topology_object_build_string_streams_processor_sourcenode_addchild_node_38"
+          },
+          {
+            "id": "scala/holdout_streams:relationships:missed:CALLS method:src/streams/state/Stores.scala::streams.state.InMemoryStore.process(String,String) method:src/streams/processor/Topology.scala::streams.processor.Topology$.log(String,String) (emitted as external:Topology.log)",
+            "case": "scala/holdout_streams",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:src/streams/state/Stores.scala::streams.state.InMemoryStore.process(String,String) method:src/streams/processor/Topology.scala::streams.processor.Topology$.log(String,String) (emitted as external:Topology.log)",
+            "category": "cross-file limitation",
+            "fact_id": "scala.holdout_streams.calls_streams_state_inmemorystore_process_string_string_streams_processor_topology_object_log_string_string_17"
+          },
+          {
+            "id": "scala/holdout_streams:relationships:missed:EXTENDS class:src/streams/state/Stores.scala::streams.state.InMemoryStore class:src/streams/processor/Topology.scala::streams.processor.Node (emitted as external:Node)",
+            "case": "scala/holdout_streams",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "EXTENDS class:src/streams/state/Stores.scala::streams.state.InMemoryStore class:src/streams/processor/Topology.scala::streams.processor.Node (emitted as external:Node)",
+            "category": "cross-file limitation",
+            "fact_id": "scala.holdout_streams.extends_streams_state_inmemorystore_streams_processor_node_10"
+          },
+          {
+            "id": "scala/holdout_streams:relationships:missed:IMPORTS file:src/streams/state/Stores.scala class:src/streams/processor/Topology.scala::streams.processor.Node (emitted as external:streams.processor.Node)",
+            "case": "scala/holdout_streams",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "IMPORTS file:src/streams/state/Stores.scala class:src/streams/processor/Topology.scala::streams.processor.Node (emitted as external:streams.processor.Node)",
+            "category": "cross-file limitation",
+            "fact_id": "scala.holdout_streams.imports_stores_scala_streams_processor_node_3"
+          },
+          {
+            "id": "scala/holdout_streams:relationships:missed:IMPORTS file:src/streams/state/Stores.scala class:src/streams/processor/Topology.scala::streams.processor.Topology$ (emitted as external:streams.processor.Node)",
+            "case": "scala/holdout_streams",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "IMPORTS file:src/streams/state/Stores.scala class:src/streams/processor/Topology.scala::streams.processor.Topology$ (emitted as external:streams.processor.Node)",
+            "category": "cross-file limitation",
+            "fact_id": "scala.holdout_streams.imports_stores_scala_streams_processor_topology_object_3"
+          },
+          {
+            "id": "scala/holdout_streams:relationships:unexpected:CALLS class:src/streams/state/Stores.scala::streams.state.InMemoryStore external:Node (label: CALLS class:src/streams/state/Stores.scala::streams.state.InMemoryStore class:src/streams/processor/Topology.scala::streams.processor.Node)",
+            "case": "scala/holdout_streams",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS class:src/streams/state/Stores.scala::streams.state.InMemoryStore external:Node (label: CALLS class:src/streams/state/Stores.scala::streams.state.InMemoryStore class:src/streams/processor/Topology.scala::streams.processor.Node)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "scala/holdout_streams:relationships:unexpected:CALLS method:src/streams/processor/Topology.scala::streams.processor.SourceNode.process(String,String) external:<expression>.process (label: CALLS method:src/streams/processor/Topology.scala::streams.processor.SourceNode.process(String,String) method:src/streams/processor/Topology.scala::streams.processor.Node.process(String,String))",
+            "case": "scala/holdout_streams",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:src/streams/processor/Topology.scala::streams.processor.SourceNode.process(String,String) external:<expression>.process (label: CALLS method:src/streams/processor/Topology.scala::streams.processor.SourceNode.process(String,String) method:src/streams/processor/Topology.scala::streams.processor.Node.process(String,String))",
+            "category": "receiver-resolution error"
+          },
+          {
+            "id": "scala/holdout_streams:relationships:unexpected:CALLS method:src/streams/processor/Topology.scala::streams.processor.Topology$.build(String) external:source.addChild (label: CALLS method:src/streams/processor/Topology.scala::streams.processor.Topology$.build(String) method:src/streams/processor/Topology.scala::streams.processor.SourceNode.addChild(Node))",
+            "case": "scala/holdout_streams",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:src/streams/processor/Topology.scala::streams.processor.Topology$.build(String) external:source.addChild (label: CALLS method:src/streams/processor/Topology.scala::streams.processor.Topology$.build(String) method:src/streams/processor/Topology.scala::streams.processor.SourceNode.addChild(Node))",
+            "category": "receiver-resolution error"
+          },
+          {
+            "id": "scala/holdout_streams:relationships:unexpected:CALLS method:src/streams/state/Stores.scala::streams.state.InMemoryStore.process(String,String) external:Topology.log (label: CALLS method:src/streams/state/Stores.scala::streams.state.InMemoryStore.process(String,String) method:src/streams/processor/Topology.scala::streams.processor.Topology$.log(String,String))",
+            "case": "scala/holdout_streams",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:src/streams/state/Stores.scala::streams.state.InMemoryStore.process(String,String) external:Topology.log (label: CALLS method:src/streams/state/Stores.scala::streams.state.InMemoryStore.process(String,String) method:src/streams/processor/Topology.scala::streams.processor.Topology$.log(String,String))",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "scala/holdout_streams:relationships:unexpected:EXTENDS class:src/streams/state/Stores.scala::streams.state.InMemoryStore external:Node (label: EXTENDS class:src/streams/state/Stores.scala::streams.state.InMemoryStore class:src/streams/processor/Topology.scala::streams.processor.Node)",
+            "case": "scala/holdout_streams",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "EXTENDS class:src/streams/state/Stores.scala::streams.state.InMemoryStore external:Node (label: EXTENDS class:src/streams/state/Stores.scala::streams.state.InMemoryStore class:src/streams/processor/Topology.scala::streams.processor.Node)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "scala/holdout_streams:relationships:unexpected:IMPORTS file:src/streams/state/Stores.scala external:streams.processor.Node (label: IMPORTS file:src/streams/state/Stores.scala class:src/streams/processor/Topology.scala::streams.processor.Node)",
+            "case": "scala/holdout_streams",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPORTS file:src/streams/state/Stores.scala external:streams.processor.Node (label: IMPORTS file:src/streams/state/Stores.scala class:src/streams/processor/Topology.scala::streams.processor.Node)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "scala/holdout_streams:relationships:unexpected:IMPORTS file:src/streams/state/Stores.scala external:streams.processor.Topology (label: IMPORTS file:src/streams/state/Stores.scala class:src/streams/processor/Topology.scala::streams.processor.Node)",
+            "case": "scala/holdout_streams",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPORTS file:src/streams/state/Stores.scala external:streams.processor.Topology (label: IMPORTS file:src/streams/state/Stores.scala class:src/streams/processor/Topology.scala::streams.processor.Node)",
+            "category": "cross-file limitation"
+          }
+        ]
+      }
+    }
+  }
+}

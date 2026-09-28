@@ -6,10 +6,11 @@ from fastapi.testclient import TestClient
 
 import backend.main as app_module
 from backend.services import analysis_worker
-from backend.services.analysis_pipeline import (
-    PipelineNotImplemented,
-    run_analysis_pipeline,
-)
+from backend.services.analysis_pipeline import PipelineNotImplemented
+
+
+async def run_analysis_pipeline(analysis_id, attempt_id):
+    raise PipelineNotImplemented("repository ingestion is not implemented yet")
 
 
 class Result:
@@ -48,11 +49,6 @@ class RecordingConnection:
         pass
 
 
-def test_placeholder_pipeline_fails_explicitly():
-    with pytest.raises(PipelineNotImplemented):
-        asyncio.run(run_analysis_pipeline(uuid4(), uuid4()))
-
-
 # --- worker loop -----------------------------------------------------------------------------
 
 
@@ -62,7 +58,7 @@ def _run_one_claim(monkeypatch, process_attempt):
     stop = asyncio.Event()
     claims = iter([(analysis_id, attempt_id)])
 
-    def fake_claim(factory):
+    def fake_claim(factory, resumable_stages=()):
         claimed = next(claims, None)
         if claimed is None:
             stop.set()
@@ -152,14 +148,14 @@ def test_stale_attempt_is_failed_and_its_analysis_requeued():
     attempt_update = next(args for query, args in conn.calls if "UPDATE core.analysis_attempt" in query)
     assert attempt_update[:3] == ("FAILED", "EXTRACTING", "WORKER_LOST")
     assert any("SET status = %s" in s for s in statements)             # EXTRACTING -> FAILED
-    assert any("SET status = 'QUEUED'" in s for s in statements)       # FAILED -> QUEUED
+    assert any("ELSE 'QUEUED' END" in s for s in statements)           # FAILED -> QUEUED (or AWAITING_STAGE)
     assert any("SKIP LOCKED" in s for s in statements)
 
 
 def test_stale_attempt_on_last_allowed_try_leaves_analysis_failed():
     requeued, statements, _ = _recover([(uuid4(), uuid4(), 3, "INGESTING")], max_attempts=3)
     assert requeued == []
-    assert not any("SET status = 'QUEUED'" in s for s in statements)
+    assert not any("ELSE 'QUEUED' END" in s for s in statements)
 
 
 def test_stale_attempt_of_finished_analysis_only_closes_the_attempt():
@@ -171,6 +167,9 @@ def test_stale_attempt_of_finished_analysis_only_closes_the_attempt():
 # --- application startup ---------------------------------------------------------------------
 
 
+READY_ANALYZERS = {"required": ["java", "python", "scala"], "unavailable": {}}
+
+
 def test_app_starts_the_worker_and_reports_health(monkeypatch):
     conn = RecordingConnection()
     monkeypatch.setenv("DATABASE_URL", "postgresql://fake")
@@ -179,24 +178,67 @@ def test_app_starts_the_worker_and_reports_health(monkeypatch):
 
     with TestClient(app_module.app) as client:
         body = client.get("/api/health").json()
+        ready = client.get("/api/health/ready")
         task = app_module.app.state.worker_task
-        assert body == {"status": "ok", "database": "ok", "worker": "running"}
+        assert body == {"status": "ok", "database": "ok", "worker": "running", "analyzers": READY_ANALYZERS}
+        assert ready.status_code == 200 and ready.json()["failing"] == []
 
     assert task.done()  # stopped on shutdown
     assert any("status = 'QUEUED'" in query for query, _ in conn.calls)  # it polled the queue
 
 
-def test_worker_can_be_disabled(monkeypatch):
+def test_an_api_only_process_with_the_worker_switched_off_is_ready(monkeypatch):
     monkeypatch.setenv("DATABASE_URL", "postgresql://fake")
     monkeypatch.setenv("ANALYSIS_WORKER_ENABLED", "false")
     monkeypatch.setattr(app_module, "make_connection_factory", lambda: (lambda: RecordingConnection()))
 
     with TestClient(app_module.app) as client:
-        assert client.get("/api/health").json() == {"status": "degraded", "database": "ok", "worker": "disabled"}
+        assert client.get("/api/health").json() == {
+            "status": "ok", "database": "ok", "worker": "disabled", "analyzers": READY_ANALYZERS}
+        assert client.get("/api/health/ready").status_code == 200
 
 
 def test_health_without_database(monkeypatch):
     monkeypatch.delenv("DATABASE_URL", raising=False)
     with TestClient(app_module.app) as client:
         body = client.get("/api/health").json()
-    assert body == {"status": "degraded", "database": "unconfigured", "worker": "unconfigured"}
+        ready = client.get("/api/health/ready")
+        live = client.get("/api/health/live")
+    assert body == {"status": "degraded", "database": "unconfigured", "worker": "unconfigured",
+                    "analyzers": READY_ANALYZERS}
+    assert ready.status_code == 503 and set(ready.json()["failing"]) == {"database", "worker"}
+    assert live.status_code == 200 and live.json() == {"status": "ok"}
+
+
+def test_a_missing_required_grammar_fails_readiness_but_not_liveness(monkeypatch):
+    from backend.services.extraction.analyzers import JavaAnalyzer
+    from backend.services.extraction.tree_sitter_adapter import TreeSitterParserAdapter
+
+    monkeypatch.setenv("DATABASE_URL", "postgresql://fake")
+    monkeypatch.setenv("ANALYSIS_WORKER_ENABLED", "false")
+    monkeypatch.setattr(app_module, "make_connection_factory", lambda: (lambda: RecordingConnection()))
+    # Simulate a deploy without tree-sitter-java.
+    monkeypatch.setattr(JavaAnalyzer, "__init__", lambda self, adapter=None: setattr(
+        self, "adapter", TreeSitterParserAdapter("java", "tree_sitter_java_missing", "tree-sitter-java")))
+
+    with TestClient(app_module.app) as client:
+        ready = client.get("/api/health/ready")
+        live = client.get("/api/health/live")
+        summary = client.get("/api/health").json()
+
+    assert live.status_code == 200
+    assert ready.status_code == 503
+    body = ready.json()
+    assert body["failing"] == ["analyzers"]
+    assert list(body["analyzers"]["unavailable"]) == ["java"]
+    assert body["analyzers"]["unavailable"]["java"].startswith("grammar unavailable: ModuleNotFoundError")
+    assert summary["status"] == "degraded"
+
+
+def test_required_languages_are_configurable(monkeypatch):
+    monkeypatch.setenv("ANALYSIS_REQUIRED_LANGUAGES", "python, java, kotlin")
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    with TestClient(app_module.app) as client:
+        body = client.get("/api/health/ready").json()
+    assert body["analyzers"]["required"] == ["java", "kotlin", "python"]
+    assert body["analyzers"]["unavailable"] == {"kotlin": "no analyzer registered"}

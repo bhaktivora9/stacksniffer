@@ -1,0 +1,27 @@
+# Expected capability status per language, judged from the behaviour the fixtures demonstrate.
+gold_version: 1
+languages:
+  python:
+    declarations: SUPPORTED
+    imports: SUPPORTED
+    calls: PARTIAL
+    inheritance: PARTIAL
+    interfaces: UNSUPPORTED
+    dependencies: UNSUPPORTED
+    decorators: SUPPORTED
+  java:
+    declarations: SUPPORTED
+    imports: SUPPORTED
+    calls: PARTIAL
+    inheritance: PARTIAL
+    interfaces: PARTIAL
+    dependencies: UNSUPPORTED
+    decorators: SUPPORTED
+  scala:
+    declarations: SUPPORTED
+    imports: SUPPORTED
+    calls: PARTIAL
+    inheritance: PARTIAL
+    interfaces: PARTIAL
+    dependencies: UNSUPPORTED
+    decorators: SUPPORTED

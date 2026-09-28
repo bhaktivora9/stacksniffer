@@ -1,0 +1,166 @@
+# Gold labels for python/package_imports. Written from the fixture source, never from extractor output.
+# CONTAINS facts are derived from the entity structure below by the evaluator.
+gold_version: 2
+fixture: python/package_imports
+language: python
+split: development
+description: Relative imports and calls that cross module boundaries inside one package.
+labelled_from: source
+review:
+  status: pending_independent_review
+  reviewer: null
+files:
+  pkg/__init__.py:
+    parse_status: PARSED
+    origin: first_party
+  pkg/models.py:
+    parse_status: PARSED
+    origin: first_party
+  pkg/service.py:
+    parse_status: PARSED
+    origin: first_party
+facts:
+- id: python.package_imports.user
+  kind: entity
+  entity_type: CLASS
+  qualified_name: User
+  file: pkg/models.py
+  start_line: 1
+  end_line: 6
+- id: python.package_imports.user_init
+  kind: entity
+  entity_type: METHOD
+  qualified_name: User.__init__
+  file: pkg/models.py
+  start_line: 2
+  end_line: 3
+- id: python.package_imports.user_display
+  kind: entity
+  entity_type: METHOD
+  qualified_name: User.display
+  file: pkg/models.py
+  start_line: 5
+  end_line: 6
+- id: python.package_imports.create
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: create
+  file: pkg/service.py
+  start_line: 7
+  end_line: 11
+- id: python.package_imports.imports_models_pkg_models_py
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:pkg/__init__.py
+  target_key: file:pkg/models.py
+  resolution: cross_file
+  evidence:
+  - file: pkg/__init__.py
+    start_line: 1
+    end_line: 1
+  module: .models
+  basis: import_path
+- id: python.package_imports.imports_pkg_models_py
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:pkg/service.py
+  target_key: file:pkg/models.py
+  resolution: cross_file
+  evidence:
+  - file: pkg/service.py
+    start_line: 1
+    end_line: 1
+  module: .
+  basis: import_path
+- id: python.package_imports.imports_models_pkg_models_py_2
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:pkg/service.py
+  target_key: file:pkg/models.py
+  resolution: cross_file
+  evidence:
+  - file: pkg/service.py
+    start_line: 2
+    end_line: 2
+  module: .models
+  basis: import_path
+- id: python.package_imports.imports_file_pkg_service_py_shared
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:pkg/service.py
+  target_key: external:..shared
+  resolution: external
+  evidence:
+  - file: pkg/service.py
+    start_line: 3
+    end_line: 3
+  module: ..shared
+  note: above the repository root, so outside it
+- id: python.package_imports.imports_file_pkg_service_py_os
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:pkg/service.py
+  target_key: external:os
+  resolution: external
+  evidence:
+  - file: pkg/service.py
+    start_line: 4
+    end_line: 4
+  module: os
+- id: python.package_imports.calls_user_display_self_name_title
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:pkg/models.py::User.display
+  target_key: external:self.name.title
+  resolution: external
+  evidence:
+  - file: pkg/models.py
+    start_line: 6
+    end_line: 6
+- id: python.package_imports.calls_create_user
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:pkg/service.py::create
+  target_key: class:pkg/models.py::User
+  resolution: cross_file
+  evidence:
+  - file: pkg/service.py
+    start_line: 8
+    end_line: 8
+  - file: pkg/service.py
+    start_line: 9
+    end_line: 9
+  note: User(name) and models.User(name)
+  basis: import_binding
+- id: python.package_imports.calls_create_user_display
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:pkg/service.py::create
+  target_key: method:pkg/models.py::User.display
+  resolution: cross_file
+  evidence:
+  - file: pkg/service.py
+    start_line: 10
+    end_line: 10
+  note: user was assigned User(name) two lines earlier
+  basis: inferred_type
+- id: python.package_imports.calls_create_util_log
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:pkg/service.py::create
+  target_key: external:util.log
+  resolution: external
+  evidence:
+  - file: pkg/service.py
+    start_line: 10
+    end_line: 10
+- id: python.package_imports.calls_create_os_getenv
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:pkg/service.py::create
+  target_key: external:os.getenv
+  resolution: external
+  evidence:
+  - file: pkg/service.py
+    start_line: 11
+    end_line: 11

@@ -1,0 +1,332 @@
+# Gold labels for python/basics. Written from the fixture source, never from extractor output.
+# CONTAINS facts are derived from the entity structure below by the evaluator.
+gold_version: 2
+fixture: python/basics
+language: python
+split: development
+description: Classes, inheritance, self calls, decorators, nested and async functions in one module.
+labelled_from: source
+review:
+  status: pending_independent_review
+  reviewer: null
+files:
+  shapes.py:
+    parse_status: PARSED
+    origin: first_party
+facts:
+- id: python.basics.shape
+  kind: entity
+  entity_type: CLASS
+  qualified_name: Shape
+  file: shapes.py
+  start_line: 6
+  end_line: 14
+- id: python.basics.shape_area
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Shape.area
+  file: shapes.py
+  start_line: 7
+  end_line: 8
+- id: python.basics.shape_describe
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Shape.describe
+  file: shapes.py
+  start_line: 10
+  end_line: 11
+- id: python.basics.shape_name
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Shape.name
+  file: shapes.py
+  start_line: 13
+  end_line: 14
+- id: python.basics.circle
+  kind: entity
+  entity_type: CLASS
+  qualified_name: Circle
+  file: shapes.py
+  start_line: 17
+  end_line: 26
+  decorators:
+  - dataclass(frozen=True)
+- id: python.basics.circle_area
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Circle.area
+  file: shapes.py
+  start_line: 21
+  end_line: 22
+- id: python.basics.circle_unit
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Circle.unit
+  file: shapes.py
+  start_line: 24
+  end_line: 26
+  decorators:
+  - staticmethod
+- id: python.basics.square
+  kind: entity
+  entity_type: CLASS
+  qualified_name: Square
+  file: shapes.py
+  start_line: 29
+  end_line: 39
+- id: python.basics.square_init
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Square.__init__
+  file: shapes.py
+  start_line: 30
+  end_line: 32
+- id: python.basics.square_area
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Square.area
+  file: shapes.py
+  start_line: 34
+  end_line: 35
+- id: python.basics.square_diagonal
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Square.diagonal
+  file: shapes.py
+  start_line: 37
+  end_line: 39
+  decorators:
+  - property
+- id: python.basics.total_area
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: total_area
+  file: shapes.py
+  start_line: 42
+  end_line: 49
+  decorators:
+  - cache
+- id: python.basics.total_area_safe
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: total_area.safe
+  file: shapes.py
+  start_line: 44
+  end_line: 48
+- id: python.basics.render
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: render
+  file: shapes.py
+  start_line: 52
+  end_line: 55
+- id: python.basics.imports_file_shapes_py_math
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:shapes.py
+  target_key: external:math
+  resolution: external
+  evidence:
+  - file: shapes.py
+    start_line: 1
+    end_line: 1
+  module: math
+- id: python.basics.imports_file_shapes_py_dataclasses
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:shapes.py
+  target_key: external:dataclasses
+  resolution: external
+  evidence:
+  - file: shapes.py
+    start_line: 2
+    end_line: 2
+  module: dataclasses
+- id: python.basics.imports_file_shapes_py_functools
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:shapes.py
+  target_key: external:functools
+  resolution: external
+  evidence:
+  - file: shapes.py
+    start_line: 3
+    end_line: 3
+  module: functools
+- id: python.basics.extends_circle_shape
+  kind: relationship
+  relationship_type: EXTENDS
+  source_key: class:shapes.py::Circle
+  target_key: class:shapes.py::Shape
+  resolution: same_file
+  evidence:
+  - file: shapes.py
+    start_line: 18
+    end_line: 18
+  basis: lexical_scope
+- id: python.basics.extends_square_shape
+  kind: relationship
+  relationship_type: EXTENDS
+  source_key: class:shapes.py::Square
+  target_key: class:shapes.py::Shape
+  resolution: same_file
+  evidence:
+  - file: shapes.py
+    start_line: 29
+    end_line: 29
+  basis: lexical_scope
+- id: python.basics.calls_shape_describe_shape_name
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:shapes.py::Shape.describe
+  target_key: method:shapes.py::Shape.name
+  resolution: same_file
+  evidence:
+  - file: shapes.py
+    start_line: 11
+    end_line: 11
+  basis: enclosing_class
+- id: python.basics.calls_shape_describe_shape_area
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:shapes.py::Shape.describe
+  target_key: method:shapes.py::Shape.area
+  resolution: same_file
+  evidence:
+  - file: shapes.py
+    start_line: 11
+    end_line: 11
+  basis: enclosing_class
+- id: python.basics.calls_shape_name_type
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:shapes.py::Shape.name
+  target_key: external:type
+  resolution: external
+  evidence:
+  - file: shapes.py
+    start_line: 14
+    end_line: 14
+- id: python.basics.calls_file_shapes_py_dataclass
+  kind: relationship
+  relationship_type: CALLS
+  source_key: file:shapes.py
+  target_key: external:dataclass
+  resolution: external
+  evidence:
+  - file: shapes.py
+    start_line: 17
+    end_line: 17
+- id: python.basics.calls_circle_unit_circle
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:shapes.py::Circle.unit
+  target_key: class:shapes.py::Circle
+  resolution: same_file
+  evidence:
+  - file: shapes.py
+    start_line: 26
+    end_line: 26
+  basis: lexical_scope
+- id: python.basics.calls_square_init_super
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:shapes.py::Square.__init__
+  target_key: external:super
+  resolution: external
+  evidence:
+  - file: shapes.py
+    start_line: 31
+    end_line: 31
+- id: python.basics.calls_square_init_expression_init
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:shapes.py::Square.__init__
+  target_key: external:<expression>.__init__
+  resolution: external
+  evidence:
+  - file: shapes.py
+    start_line: 31
+    end_line: 31
+- id: python.basics.calls_square_diagonal_math_sqrt
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:shapes.py::Square.diagonal
+  target_key: external:math.sqrt
+  resolution: external
+  evidence:
+  - file: shapes.py
+    start_line: 39
+    end_line: 39
+- id: python.basics.calls_total_area_sum
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:shapes.py::total_area
+  target_key: external:sum
+  resolution: external
+  evidence:
+  - file: shapes.py
+    start_line: 49
+    end_line: 49
+- id: python.basics.calls_total_area_total_area_safe
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:shapes.py::total_area
+  target_key: function:shapes.py::total_area.safe
+  resolution: same_file
+  evidence:
+  - file: shapes.py
+    start_line: 49
+    end_line: 49
+  basis: lexical_scope
+- id: python.basics.calls_total_area_safe_shape_area
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:shapes.py::total_area.safe
+  target_key: external:shape.area
+  resolution: unresolvable
+  evidence:
+  - file: shapes.py
+    start_line: 46
+    end_line: 46
+- id: python.basics.calls_render_print
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:shapes.py::render
+  target_key: external:print
+  resolution: external
+  evidence:
+  - file: shapes.py
+    start_line: 54
+    end_line: 54
+- id: python.basics.calls_render_shape_describe
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:shapes.py::render
+  target_key: external:shape.describe
+  resolution: unresolvable
+  evidence:
+  - file: shapes.py
+    start_line: 54
+    end_line: 54
+- id: python.basics.calls_render_total_area
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:shapes.py::render
+  target_key: function:shapes.py::total_area
+  resolution: same_file
+  evidence:
+  - file: shapes.py
+    start_line: 55
+    end_line: 55
+  basis: lexical_scope
+- id: python.basics.calls_render_tuple
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:shapes.py::render
+  target_key: external:tuple
+  resolution: external
+  evidence:
+  - file: shapes.py
+    start_line: 55
+    end_line: 55

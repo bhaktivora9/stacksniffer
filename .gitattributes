@@ -1,0 +1,3 @@
+# Extraction fixtures are measured byte for byte (gold line ranges, malformed-file
+# recovery, content hashes): never convert their line endings on checkout.
+backend/tests/fixtures/** -text

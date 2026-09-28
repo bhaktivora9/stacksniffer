@@ -16,6 +16,8 @@ class AnalysisState(str, Enum):
     INDEXING = "INDEXING"
     PROJECTING = "PROJECTING"
     SUMMARIZING = "SUMMARIZING"
+    # Every available stage finished; waiting, non-terminal, for the next one to be deployed.
+    AWAITING_STAGE = "AWAITING_STAGE"
     READY = "READY"
     DEGRADED = "DEGRADED"
     FAILED = "FAILED"
@@ -34,6 +36,7 @@ ACTIVE_STATES = {
     AnalysisState.INDEXING,
     AnalysisState.PROJECTING,
     AnalysisState.SUMMARIZING,
+    AnalysisState.AWAITING_STAGE,
     AnalysisState.DEGRADED,
 }
 
@@ -45,9 +48,11 @@ TERMINAL_STATES = {
 VALID_TRANSITIONS = {
     AnalysisState.QUEUED: {AnalysisState.INGESTING},
     AnalysisState.INGESTING: {AnalysisState.EXTRACTING},
-    AnalysisState.EXTRACTING: {AnalysisState.INDEXING},
-    AnalysisState.INDEXING: {AnalysisState.READY, AnalysisState.PROJECTING},
-    AnalysisState.PROJECTING: {AnalysisState.SUMMARIZING},
+    AnalysisState.EXTRACTING: {AnalysisState.INDEXING, AnalysisState.AWAITING_STAGE},
+    AnalysisState.INDEXING: {AnalysisState.READY, AnalysisState.PROJECTING, AnalysisState.AWAITING_STAGE},
+    AnalysisState.PROJECTING: {AnalysisState.SUMMARIZING, AnalysisState.AWAITING_STAGE},
+    # Resuming moves straight to the awaited stage; nothing before it is repeated.
+    AnalysisState.AWAITING_STAGE: {AnalysisState.INDEXING, AnalysisState.PROJECTING, AnalysisState.SUMMARIZING},
     AnalysisState.SUMMARIZING: {AnalysisState.READY},
     AnalysisState.DEGRADED: {AnalysisState.READY, AnalysisState.FAILED},
 }
@@ -143,7 +148,10 @@ async def requeue_failed_analysis(
     requested_by: str | None = None,
     reason: str | None = None,
 ) -> None:
-    """Return a FAILED analysis to QUEUED so the worker starts a new attempt.
+    """Return a FAILED analysis to the worker for a new attempt.
+
+    An analysis that failed after a completed stage returns to AWAITING_STAGE, so the
+    retry resumes from its last completed stage; otherwise it starts over from QUEUED.
 
     The next attempt row is created by the worker when it claims the analysis;
     the retry request itself is recorded in the analysis metadata.
@@ -151,7 +159,8 @@ async def requeue_failed_analysis(
     result = conn.execute(
         """
         UPDATE core.analysis
-        SET status = 'QUEUED',
+        SET status = CASE WHEN last_completed_stage IS NOT NULL AND awaiting_stage IS NOT NULL
+                          THEN 'AWAITING_STAGE' ELSE 'QUEUED' END,
             completed_at = NULL,
             metadata = metadata || jsonb_build_object('last_retry', %s::jsonb)
         WHERE id = %s AND status = 'FAILED'
@@ -262,3 +271,53 @@ def plan_analysis_work(repository_version: Any, requested_profiles: Mapping[str,
         summarize=ReuseDecision.REUSE,
         evaluate=ReuseDecision.REUSE,
     )
+
+
+# --- stage progress --------------------------------------------------------------------------
+#
+# When the next stage is not deployed, an analysis rests in AWAITING_STAGE with
+# last_completed_stage / awaiting_stage recorded in their own columns.
+# FAILED keeps meaning failed. The worker resumes it with a new attempt once a pipeline
+# that can run awaiting_stage is deployed (analysis_queue.claim_resumable_analysis).
+
+# Attempt outcome: every registered stage ran; the analysis waits for the next one.
+AWAITING_STAGE = "AWAITING_STAGE"
+
+STAGE_ORDER = (
+    AnalysisState.INGESTING,
+    AnalysisState.EXTRACTING,
+    AnalysisState.INDEXING,
+    AnalysisState.PROJECTING,
+    AnalysisState.SUMMARIZING,
+)
+
+
+def next_stage(stage: AnalysisState) -> AnalysisState | None:
+    index = STAGE_ORDER.index(stage)
+    return STAGE_ORDER[index + 1] if index + 1 < len(STAGE_ORDER) else None
+
+
+async def park_awaiting_stage(conn: Any, analysis_id: UUID, completed: AnalysisState) -> AnalysisState:
+    """Move an analysis from the stage it just completed to AWAITING_STAGE; returns the awaited stage."""
+    awaiting = next_stage(completed) if completed in STAGE_ORDER else None
+    if awaiting is None or not transition_allowed(completed, AnalysisState.AWAITING_STAGE):
+        raise AnalysisTransitionError(f"cannot await a stage after {completed.value}")
+    result = conn.execute(
+        """
+        UPDATE core.analysis
+        SET status = 'AWAITING_STAGE', last_completed_stage = %s, awaiting_stage = %s, completed_at = NULL
+        WHERE id = %s AND status = %s
+        """,
+        completed.value,
+        awaiting.value,
+        str(analysis_id),
+        completed.value,
+    )
+    if getattr(result, "rowcount", result) == 0:
+        raise AnalysisTransitionError(f"analysis {analysis_id} is not in {completed.value}")
+    return awaiting
+
+
+def clear_awaiting_stage(conn: Any, analysis_id: UUID) -> None:
+    """A finished analysis awaits nothing; its last completed stage stays as history."""
+    conn.execute("UPDATE core.analysis SET awaiting_stage = NULL WHERE id = %s", str(analysis_id))

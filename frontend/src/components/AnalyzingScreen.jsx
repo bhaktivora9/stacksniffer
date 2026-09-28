@@ -50,14 +50,16 @@ export default function AnalyzingScreen({ health, currentStep, repoUrl, events =
   const repo = (repoUrl || "github.com/owner/repo").replace(/^https?:\/\//, "").replace(/\/$/, "");
   const complete = status === "complete";
   const failed = status === "failed";
+  const waiting = status === "waiting";
   const latest = events[events.length - 1];
   return <div className="analyzing-screen">
     <TopNavigation health={health} />
     <main className="an-screen-main">
-      <div className="an-titlerow"><div><h1>{failed ? "Analysis failed" : "Analyzing"}</h1><div className="an-repo">{repo.split("/").slice(0, -2).join("/") || "github.com"}/<b>{repo.split("/").slice(-2).join("/")}</b></div></div><div className="an-status"><span className={`an-pill ${complete || failed ? "" : "live"} ${failed ? "failed" : ""}`}><i />{failed ? "failed" : complete ? "complete" : "analyzing"}</span><button type="button" onClick={onCancel}>{failed ? "back" : "cancel"}</button></div></div>
+      <div className="an-titlerow"><div><h1>{failed ? "Analysis failed" : waiting ? "Structure extracted" : "Analyzing"}</h1><div className="an-repo">{repo.split("/").slice(0, -2).join("/") || "github.com"}/<b>{repo.split("/").slice(-2).join("/")}</b></div></div><div className="an-status"><span className={`an-pill ${complete || failed || waiting ? "" : "live"} ${failed ? "failed" : ""}`}><i />{failed ? "failed" : complete ? "complete" : waiting ? "waiting" : "analyzing"}</span><button type="button" onClick={onCancel}>{failed || waiting ? "back" : "cancel"}</button></div></div>
       <StageRail currentStep={currentStep} />
       <AnalysisConsole events={events} />
       {failed && <div className="an-error"><span>{error}</span><button type="button" onClick={onRetry}>retry analysis</button></div>}
+      {waiting && <div className="an-notice"><span>{latest?.message}</span></div>}
       <ProgressFooter event={latest} />
     </main>
   </div>;

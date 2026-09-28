@@ -1,0 +1,50 @@
+# Gold labels for java/malformed. Written from the fixture source, never from extractor output.
+# CONTAINS facts are derived from the entity structure below by the evaluator.
+gold_version: 2
+fixture: java/malformed
+language: java
+split: development
+description: A method with a syntax error between two valid methods.
+labelled_from: source
+review:
+  status: pending_independent_review
+  reviewer: null
+files:
+  src/com/acme/Broken.java:
+    parse_status: PARTIAL
+    syntax_error_lines:
+    - 8
+    origin: first_party
+facts:
+- id: java.malformed.com_acme_broken
+  kind: entity
+  entity_type: CLASS
+  qualified_name: com.acme.Broken
+  file: src/com/acme/Broken.java
+  start_line: 3
+  end_line: 12
+- id: java.malformed.com_acme_broken_ok
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.acme.Broken.ok()
+  file: src/com/acme/Broken.java
+  start_line: 4
+  end_line: 6
+- id: java.malformed.com_acme_broken_helper
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.acme.Broken.helper()
+  file: src/com/acme/Broken.java
+  start_line: 11
+  end_line: 11
+- id: java.malformed.calls_com_acme_broken_ok_com_acme_broken_helper
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/com/acme/Broken.java::com.acme.Broken.ok()
+  target_key: method:src/com/acme/Broken.java::com.acme.Broken.helper()
+  resolution: same_file
+  evidence:
+  - file: src/com/acme/Broken.java
+    start_line: 5
+    end_line: 5
+  basis: enclosing_class

@@ -145,8 +145,9 @@ def test_requeue_failed_analysis_returns_it_to_queued():
     conn = FakeConn(rowcount=1)
     asyncio.run(requeue_failed_analysis(conn, uuid4(), requested_by="tester"))
 
-    query, _ = conn.calls[0]
-    assert "SET status = 'QUEUED'" in query
+    query = " ".join(conn.calls[0][0].split())
+    # Back to QUEUED, unless a completed stage lets the retry resume from AWAITING_STAGE.
+    assert "THEN 'AWAITING_STAGE' ELSE 'QUEUED' END" in query
     assert "status = 'FAILED'" in query
 
 

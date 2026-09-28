@@ -1,0 +1,734 @@
+# Gold labels for scala/broker. Written from the fixture source, never from extractor output.
+# CONTAINS facts are derived from the entity structure below by the evaluator.
+gold_version: 2
+fixture: scala/broker
+language: scala
+split: development
+description: 'A Kafka-shaped sbt project: objects used through imports, a trait and its companion, inherited members from another file, curried
+  calls, typed and inferred receivers across files, a package wildcard import, generated (src_managed) and vendored (third_party) code, and an
+  sbt dependency.'
+labelled_from: source
+review:
+  status: pending_independent_review
+  reviewer: null
+files:
+  build.sbt:
+    parse_status: UNSUPPORTED
+    origin: first_party
+  core/src/main/scala/kafka/utils/CoreUtils.scala:
+    parse_status: PARSED
+    origin: first_party
+  core/src/main/scala/kafka/log/UnifiedLog.scala:
+    parse_status: PARSED
+    origin: first_party
+  core/src/main/scala/kafka/server/ReplicaManager.scala:
+    parse_status: PARSED
+    origin: first_party
+  core/target/scala-2.13/src_managed/main/kafka/BuildInfo.scala:
+    parse_status: PARSED
+    origin: generated
+  third_party/scopt/OptionParser.scala:
+    parse_status: PARSED
+    origin: vendored
+  core/src/main/scala/kafka/tools/DumpLog.scala:
+    parse_status: PARTIAL
+    syntax_error_lines:
+    - 8
+    origin: first_party
+facts:
+- id: scala.broker.kafka_utils_coreutils_object
+  kind: entity
+  entity_type: CLASS
+  qualified_name: kafka.utils.CoreUtils$
+  file: core/src/main/scala/kafka/utils/CoreUtils.scala
+  start_line: 5
+  end_line: 13
+- id: scala.broker.kafka_utils_coreutils_object_swallow_unit
+  kind: entity
+  entity_type: METHOD
+  qualified_name: kafka.utils.CoreUtils$.swallow(=>Unit)
+  file: core/src/main/scala/kafka/utils/CoreUtils.scala
+  start_line: 6
+  end_line: 7
+- id: scala.broker.kafka_utils_coreutils_object_inlock_lock_t
+  kind: entity
+  entity_type: METHOD
+  qualified_name: kafka.utils.CoreUtils$.inLock(Lock)(=>T)
+  file: core/src/main/scala/kafka/utils/CoreUtils.scala
+  start_line: 9
+  end_line: 12
+- id: scala.broker.kafka_utils_logging
+  kind: entity
+  entity_type: INTERFACE
+  qualified_name: kafka.utils.Logging
+  file: core/src/main/scala/kafka/utils/CoreUtils.scala
+  start_line: 15
+  end_line: 18
+- id: scala.broker.kafka_utils_logging_info_string
+  kind: entity
+  entity_type: METHOD
+  qualified_name: kafka.utils.Logging.info(String)
+  file: core/src/main/scala/kafka/utils/CoreUtils.scala
+  start_line: 16
+  end_line: 16
+- id: scala.broker.kafka_utils_logging_warn_string
+  kind: entity
+  entity_type: METHOD
+  qualified_name: kafka.utils.Logging.warn(String)
+  file: core/src/main/scala/kafka/utils/CoreUtils.scala
+  start_line: 17
+  end_line: 17
+- id: scala.broker.kafka_utils_logging_object
+  kind: entity
+  entity_type: CLASS
+  qualified_name: kafka.utils.Logging$
+  file: core/src/main/scala/kafka/utils/CoreUtils.scala
+  start_line: 20
+  end_line: 23
+- id: scala.broker.kafka_utils_logging_object_warn_string
+  kind: entity
+  entity_type: METHOD
+  qualified_name: kafka.utils.Logging$.warn(String)
+  file: core/src/main/scala/kafka/utils/CoreUtils.scala
+  start_line: 21
+  end_line: 21
+- id: scala.broker.kafka_utils_logging_object_write_string_string
+  kind: entity
+  entity_type: METHOD
+  qualified_name: kafka.utils.Logging$.write(String,String)
+  file: core/src/main/scala/kafka/utils/CoreUtils.scala
+  start_line: 22
+  end_line: 22
+- id: scala.broker.kafka_log_unifiedlog
+  kind: entity
+  entity_type: CLASS
+  qualified_name: kafka.log.UnifiedLog
+  file: core/src/main/scala/kafka/log/UnifiedLog.scala
+  start_line: 6
+  end_line: 24
+- id: scala.broker.kafka_log_unifiedlog_append_seq_string
+  kind: entity
+  entity_type: METHOD
+  qualified_name: kafka.log.UnifiedLog.append(Seq[String])
+  file: core/src/main/scala/kafka/log/UnifiedLog.scala
+  start_line: 10
+  end_line: 15
+- id: scala.broker.kafka_log_unifiedlog_roll
+  kind: entity
+  entity_type: METHOD
+  qualified_name: kafka.log.UnifiedLog.roll()
+  file: core/src/main/scala/kafka/log/UnifiedLog.scala
+  start_line: 17
+  end_line: 21
+- id: scala.broker.kafka_log_unifiedlog_close
+  kind: entity
+  entity_type: METHOD
+  qualified_name: kafka.log.UnifiedLog.close()
+  file: core/src/main/scala/kafka/log/UnifiedLog.scala
+  start_line: 23
+  end_line: 23
+- id: scala.broker.kafka_log_logconfig
+  kind: entity
+  entity_type: CLASS
+  qualified_name: kafka.log.LogConfig
+  file: core/src/main/scala/kafka/log/UnifiedLog.scala
+  start_line: 26
+  end_line: 26
+- id: scala.broker.kafka_log_logsegment
+  kind: entity
+  entity_type: CLASS
+  qualified_name: kafka.log.LogSegment
+  file: core/src/main/scala/kafka/log/UnifiedLog.scala
+  start_line: 28
+  end_line: 31
+- id: scala.broker.kafka_log_logsegment_write_seq_string
+  kind: entity
+  entity_type: METHOD
+  qualified_name: kafka.log.LogSegment.write(Seq[String])
+  file: core/src/main/scala/kafka/log/UnifiedLog.scala
+  start_line: 29
+  end_line: 29
+- id: scala.broker.kafka_log_logsegment_close
+  kind: entity
+  entity_type: METHOD
+  qualified_name: kafka.log.LogSegment.close()
+  file: core/src/main/scala/kafka/log/UnifiedLog.scala
+  start_line: 30
+  end_line: 30
+- id: scala.broker.kafka_log_logsegment_object
+  kind: entity
+  entity_type: CLASS
+  qualified_name: kafka.log.LogSegment$
+  file: core/src/main/scala/kafka/log/UnifiedLog.scala
+  start_line: 33
+  end_line: 35
+- id: scala.broker.kafka_log_logsegment_object_create_int
+  kind: entity
+  entity_type: METHOD
+  qualified_name: kafka.log.LogSegment$.create(Int)
+  file: core/src/main/scala/kafka/log/UnifiedLog.scala
+  start_line: 34
+  end_line: 34
+- id: scala.broker.kafka_server_replicamanager
+  kind: entity
+  entity_type: CLASS
+  qualified_name: kafka.server.ReplicaManager
+  file: core/src/main/scala/kafka/server/ReplicaManager.scala
+  start_line: 6
+  end_line: 20
+- id: scala.broker.kafka_server_replicamanager_getorcreatelog_string
+  kind: entity
+  entity_type: METHOD
+  qualified_name: kafka.server.ReplicaManager.getOrCreateLog(String)
+  file: core/src/main/scala/kafka/server/ReplicaManager.scala
+  start_line: 9
+  end_line: 10
+- id: scala.broker.kafka_server_replicamanager_appendrecords_string_seq_string
+  kind: entity
+  entity_type: METHOD
+  qualified_name: kafka.server.ReplicaManager.appendRecords(String,Seq[String])
+  file: core/src/main/scala/kafka/server/ReplicaManager.scala
+  start_line: 12
+  end_line: 17
+- id: scala.broker.kafka_server_replicamanager_shutdown
+  kind: entity
+  entity_type: METHOD
+  qualified_name: kafka.server.ReplicaManager.shutdown()
+  file: core/src/main/scala/kafka/server/ReplicaManager.scala
+  start_line: 19
+  end_line: 19
+- id: scala.broker.kafka_buildinfo_object
+  kind: entity
+  entity_type: CLASS
+  qualified_name: kafka.BuildInfo$
+  file: core/target/scala-2.13/src_managed/main/kafka/BuildInfo.scala
+  start_line: 4
+  end_line: 7
+  note: case object
+- id: scala.broker.kafka_buildinfo_object_tostring
+  kind: entity
+  entity_type: METHOD
+  qualified_name: kafka.BuildInfo$.toString
+  file: core/target/scala-2.13/src_managed/main/kafka/BuildInfo.scala
+  start_line: 6
+  end_line: 6
+- id: scala.broker.scopt_optionparser
+  kind: entity
+  entity_type: CLASS
+  qualified_name: scopt.OptionParser
+  file: third_party/scopt/OptionParser.scala
+  start_line: 3
+  end_line: 6
+- id: scala.broker.scopt_optionparser_opt_string
+  kind: entity
+  entity_type: METHOD
+  qualified_name: scopt.OptionParser.opt(String)
+  file: third_party/scopt/OptionParser.scala
+  start_line: 4
+  end_line: 4
+- id: scala.broker.scopt_optionparser_parse_seq_string_c
+  kind: entity
+  entity_type: METHOD
+  qualified_name: scopt.OptionParser.parse(Seq[String],C)
+  file: third_party/scopt/OptionParser.scala
+  start_line: 5
+  end_line: 5
+- id: scala.broker.scopt_optiondef
+  kind: entity
+  entity_type: CLASS
+  qualified_name: scopt.OptionDef
+  file: third_party/scopt/OptionParser.scala
+  start_line: 8
+  end_line: 10
+- id: scala.broker.scopt_optiondef_text_string
+  kind: entity
+  entity_type: METHOD
+  qualified_name: scopt.OptionDef.text(String)
+  file: third_party/scopt/OptionParser.scala
+  start_line: 9
+  end_line: 9
+- id: scala.broker.imports_coreutils_scala_external_java_util_concurrent_locks_lock_3
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:core/src/main/scala/kafka/utils/CoreUtils.scala
+  target_key: external:java.util.concurrent.locks.Lock
+  resolution: external
+  evidence:
+  - file: core/src/main/scala/kafka/utils/CoreUtils.scala
+    start_line: 3
+    end_line: 3
+  module: java.util.concurrent.locks.Lock
+- id: scala.broker.imports_unifiedlog_scala_kafka_utils_coreutils_object_3
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:core/src/main/scala/kafka/log/UnifiedLog.scala
+  target_key: class:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.CoreUtils$
+  resolution: cross_file
+  evidence:
+  - file: core/src/main/scala/kafka/log/UnifiedLog.scala
+    start_line: 3
+    end_line: 3
+  module: kafka.utils.CoreUtils
+  basis: import_path
+- id: scala.broker.imports_unifiedlog_scala_kafka_utils_logging_3
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:core/src/main/scala/kafka/log/UnifiedLog.scala
+  target_key: interface:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging
+  resolution: cross_file
+  evidence:
+  - file: core/src/main/scala/kafka/log/UnifiedLog.scala
+    start_line: 3
+    end_line: 3
+  module: kafka.utils.Logging
+  basis: import_path
+  note: imports the trait and its companion object; the type is the target
+- id: scala.broker.imports_unifiedlog_scala_external_java_util_concurrent_locks_reentrantlock_4
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:core/src/main/scala/kafka/log/UnifiedLog.scala
+  target_key: external:java.util.concurrent.locks.ReentrantLock
+  resolution: external
+  evidence:
+  - file: core/src/main/scala/kafka/log/UnifiedLog.scala
+    start_line: 4
+    end_line: 4
+  module: java.util.concurrent.locks.ReentrantLock
+- id: scala.broker.imports_replicamanager_scala_kafka_log_logconfig_3
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:core/src/main/scala/kafka/server/ReplicaManager.scala
+  target_key: class:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.LogConfig
+  resolution: cross_file
+  evidence:
+  - file: core/src/main/scala/kafka/server/ReplicaManager.scala
+    start_line: 3
+    end_line: 3
+  module: kafka.log.LogConfig
+  basis: import_path
+- id: scala.broker.imports_replicamanager_scala_kafka_log_unifiedlog_3
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:core/src/main/scala/kafka/server/ReplicaManager.scala
+  target_key: class:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog
+  resolution: cross_file
+  evidence:
+  - file: core/src/main/scala/kafka/server/ReplicaManager.scala
+    start_line: 3
+    end_line: 3
+  module: kafka.log.UnifiedLog
+  basis: import_path
+- id: scala.broker.imports_replicamanager_scala_external_kafka_utils_4
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:core/src/main/scala/kafka/server/ReplicaManager.scala
+  target_key: external:kafka.utils.*
+  resolution: unresolvable
+  evidence:
+  - file: core/src/main/scala/kafka/server/ReplicaManager.scala
+    start_line: 4
+    end_line: 4
+  module: kafka.utils.*
+  note: a package has no declaration to link to
+- id: scala.broker.extends_kafka_log_unifiedlog_kafka_utils_logging_6
+  kind: relationship
+  relationship_type: EXTENDS
+  source_key: class:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog
+  target_key: interface:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging
+  resolution: cross_file
+  evidence:
+  - file: core/src/main/scala/kafka/log/UnifiedLog.scala
+    start_line: 6
+    end_line: 6
+  basis: type_name
+- id: scala.broker.extends_kafka_server_replicamanager_kafka_utils_logging_6
+  kind: relationship
+  relationship_type: EXTENDS
+  source_key: class:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager
+  target_key: interface:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging
+  resolution: cross_file
+  evidence:
+  - file: core/src/main/scala/kafka/server/ReplicaManager.scala
+    start_line: 6
+    end_line: 6
+  basis: type_name
+  note: bound by the package wildcard import
+- id: scala.broker.calls_kafka_utils_coreutils_object_swallow_unit_kafka_utils_logging_object_warn_string_7
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.CoreUtils$.swallow(=>Unit)
+  target_key: method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging$.warn(String)
+  resolution: same_file
+  evidence:
+  - file: core/src/main/scala/kafka/utils/CoreUtils.scala
+    start_line: 7
+    end_line: 7
+  basis: type_name
+  note: the Logging object, not the trait
+- id: scala.broker.calls_kafka_utils_coreutils_object_inlock_lock_t_external_lock_lock_10
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.CoreUtils$.inLock(Lock)(=>T)
+  target_key: external:lock.lock
+  resolution: external
+  evidence:
+  - file: core/src/main/scala/kafka/utils/CoreUtils.scala
+    start_line: 10
+    end_line: 10
+- id: scala.broker.calls_kafka_utils_coreutils_object_inlock_lock_t_external_lock_unlock_11
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.CoreUtils$.inLock(Lock)(=>T)
+  target_key: external:lock.unlock
+  resolution: external
+  evidence:
+  - file: core/src/main/scala/kafka/utils/CoreUtils.scala
+    start_line: 11
+    end_line: 11
+- id: scala.broker.calls_kafka_utils_logging_info_string_kafka_utils_logging_object_write_string_string_16
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging.info(String)
+  target_key: method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging$.write(String,String)
+  resolution: same_file
+  evidence:
+  - file: core/src/main/scala/kafka/utils/CoreUtils.scala
+    start_line: 16
+    end_line: 16
+  basis: type_name
+- id: scala.broker.calls_kafka_utils_logging_warn_string_kafka_utils_logging_object_write_string_string_17
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging.warn(String)
+  target_key: method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging$.write(String,String)
+  resolution: same_file
+  evidence:
+  - file: core/src/main/scala/kafka/utils/CoreUtils.scala
+    start_line: 17
+    end_line: 17
+  basis: type_name
+- id: scala.broker.calls_kafka_utils_logging_object_warn_string_kafka_utils_logging_object_write_string_string_21
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging$.warn(String)
+  target_key: method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging$.write(String,String)
+  resolution: same_file
+  evidence:
+  - file: core/src/main/scala/kafka/utils/CoreUtils.scala
+    start_line: 21
+    end_line: 21
+  basis: enclosing_class
+- id: scala.broker.calls_kafka_utils_logging_object_write_string_string_external_system_err_println_22
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging$.write(String,String)
+  target_key: external:System.err.println
+  resolution: external
+  evidence:
+  - file: core/src/main/scala/kafka/utils/CoreUtils.scala
+    start_line: 22
+    end_line: 22
+- id: scala.broker.calls_kafka_log_unifiedlog_external_reentrantlock_7
+  kind: relationship
+  relationship_type: CALLS
+  source_key: class:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog
+  target_key: external:ReentrantLock
+  resolution: external
+  evidence:
+  - file: core/src/main/scala/kafka/log/UnifiedLog.scala
+    start_line: 7
+    end_line: 7
+- id: scala.broker.calls_kafka_log_unifiedlog_append_seq_string_kafka_utils_coreutils_object_inlock_lock_t_10
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String])
+  target_key: method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.CoreUtils$.inLock(Lock)(=>T)
+  resolution: cross_file
+  evidence:
+  - file: core/src/main/scala/kafka/log/UnifiedLog.scala
+    start_line: 10
+    end_line: 10
+  basis: type_name
+  note: curried; the block is the second list
+- id: scala.broker.calls_kafka_log_unifiedlog_append_seq_string_kafka_log_unifiedlog_roll_11
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String])
+  target_key: method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.roll()
+  resolution: same_file
+  evidence:
+  - file: core/src/main/scala/kafka/log/UnifiedLog.scala
+    start_line: 11
+    end_line: 11
+  basis: enclosing_class
+- id: scala.broker.calls_kafka_log_unifiedlog_append_seq_string_kafka_log_logsegment_write_seq_string_12
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String])
+  target_key: method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.LogSegment.write(Seq[String])
+  resolution: same_file
+  evidence:
+  - file: core/src/main/scala/kafka/log/UnifiedLog.scala
+    start_line: 12
+    end_line: 12
+  basis: inferred_type
+  note: segment is inferred from roll()
+- id: scala.broker.calls_kafka_log_unifiedlog_append_seq_string_kafka_utils_logging_info_string_13
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String])
+  target_key: method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging.info(String)
+  resolution: cross_file
+  evidence:
+  - file: core/src/main/scala/kafka/log/UnifiedLog.scala
+    start_line: 13
+    end_line: 13
+  basis: enclosing_class
+  note: inherited from Logging
+- id: scala.broker.calls_kafka_log_unifiedlog_roll_kafka_log_logsegment_object_create_int_18
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.roll()
+  target_key: method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.LogSegment$.create(Int)
+  resolution: same_file
+  evidence:
+  - file: core/src/main/scala/kafka/log/UnifiedLog.scala
+    start_line: 18
+    end_line: 18
+  basis: type_name
+- id: scala.broker.calls_kafka_log_unifiedlog_close_kafka_utils_coreutils_object_swallow_unit_23
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.close()
+  target_key: method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.CoreUtils$.swallow(=>Unit)
+  resolution: cross_file
+  evidence:
+  - file: core/src/main/scala/kafka/log/UnifiedLog.scala
+    start_line: 23
+    end_line: 23
+  basis: type_name
+- id: scala.broker.calls_kafka_log_unifiedlog_close_external_segments_foreach_23
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.close()
+  target_key: external:segments.foreach
+  resolution: external
+  evidence:
+  - file: core/src/main/scala/kafka/log/UnifiedLog.scala
+    start_line: 23
+    end_line: 23
+- id: scala.broker.calls_kafka_log_unifiedlog_close_kafka_log_logsegment_close_23
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.close()
+  target_key: method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.LogSegment.close()
+  resolution: same_file
+  evidence:
+  - file: core/src/main/scala/kafka/log/UnifiedLog.scala
+    start_line: 23
+    end_line: 23
+  basis: inferred_type
+  note: '`_` is a LogSegment'
+- id: scala.broker.calls_kafka_log_logsegment_write_seq_string_external_records_foreach_29
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.LogSegment.write(Seq[String])
+  target_key: external:records.foreach
+  resolution: external
+  evidence:
+  - file: core/src/main/scala/kafka/log/UnifiedLog.scala
+    start_line: 29
+    end_line: 29
+  note: println is passed, not called
+- id: scala.broker.calls_kafka_log_logsegment_object_create_int_kafka_log_logsegment_34
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.LogSegment$.create(Int)
+  target_key: class:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.LogSegment
+  resolution: same_file
+  evidence:
+  - file: core/src/main/scala/kafka/log/UnifiedLog.scala
+    start_line: 34
+    end_line: 34
+  basis: constructor
+- id: scala.broker.calls_kafka_server_replicamanager_external_scala_collection_mutable_map_7
+  kind: relationship
+  relationship_type: CALLS
+  source_key: class:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager
+  target_key: external:scala.collection.mutable.Map
+  resolution: external
+  evidence:
+  - file: core/src/main/scala/kafka/server/ReplicaManager.scala
+    start_line: 7
+    end_line: 7
+- id: scala.broker.calls_kafka_server_replicamanager_getorcreatelog_string_external_logs_getorelseupdate_10
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.getOrCreateLog(String)
+  target_key: external:logs.getOrElseUpdate
+  resolution: external
+  evidence:
+  - file: core/src/main/scala/kafka/server/ReplicaManager.scala
+    start_line: 10
+    end_line: 10
+- id: scala.broker.calls_kafka_server_replicamanager_getorcreatelog_string_kafka_log_unifiedlog_10
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.getOrCreateLog(String)
+  target_key: class:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog
+  resolution: cross_file
+  evidence:
+  - file: core/src/main/scala/kafka/server/ReplicaManager.scala
+    start_line: 10
+    end_line: 10
+  basis: constructor
+- id: scala.broker.calls_kafka_server_replicamanager_appendrecords_string_seq_string_kafka_server_replicamanager_getorcreatelog_string_13
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.appendRecords(String,Seq[String])
+  target_key: method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.getOrCreateLog(String)
+  resolution: same_file
+  evidence:
+  - file: core/src/main/scala/kafka/server/ReplicaManager.scala
+    start_line: 13
+    end_line: 13
+  basis: enclosing_class
+- id: scala.broker.calls_kafka_server_replicamanager_appendrecords_string_seq_string_kafka_log_unifiedlog_append_seq_string_14
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.appendRecords(String,Seq[String])
+  target_key: method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String])
+  resolution: cross_file
+  evidence:
+  - file: core/src/main/scala/kafka/server/ReplicaManager.scala
+    start_line: 14
+    end_line: 14
+  basis: declared_type
+  note: 'log: UnifiedLog'
+- id: scala.broker.calls_kafka_server_replicamanager_appendrecords_string_seq_string_kafka_utils_logging_info_string_15
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.appendRecords(String,Seq[String])
+  target_key: method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging.info(String)
+  resolution: cross_file
+  evidence:
+  - file: core/src/main/scala/kafka/server/ReplicaManager.scala
+    start_line: 15
+    end_line: 15
+  basis: enclosing_class
+  note: inherited from Logging
+- id: scala.broker.calls_kafka_server_replicamanager_shutdown_external_logs_values_foreach_19
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.shutdown()
+  target_key: external:logs.values.foreach
+  resolution: external
+  evidence:
+  - file: core/src/main/scala/kafka/server/ReplicaManager.scala
+    start_line: 19
+    end_line: 19
+- id: scala.broker.calls_kafka_server_replicamanager_shutdown_kafka_utils_coreutils_object_swallow_unit_19
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.shutdown()
+  target_key: method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.CoreUtils$.swallow(=>Unit)
+  resolution: cross_file
+  evidence:
+  - file: core/src/main/scala/kafka/server/ReplicaManager.scala
+    start_line: 19
+    end_line: 19
+  basis: type_name
+  note: through the wildcard import
+- id: scala.broker.calls_kafka_server_replicamanager_shutdown_kafka_log_unifiedlog_close_19
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.shutdown()
+  target_key: method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.close()
+  resolution: cross_file
+  evidence:
+  - file: core/src/main/scala/kafka/server/ReplicaManager.scala
+    start_line: 19
+    end_line: 19
+  basis: inferred_type
+  note: the lambda's log is a UnifiedLog
+- id: scala.broker.calls_kafka_buildinfo_object_tostring_external_expression_format_6
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:core/target/scala-2.13/src_managed/main/kafka/BuildInfo.scala::kafka.BuildInfo$.toString
+  target_key: external:<expression>.format
+  resolution: external
+  evidence:
+  - file: core/target/scala-2.13/src_managed/main/kafka/BuildInfo.scala
+    start_line: 6
+    end_line: 6
+  note: String.format on a literal
+- id: scala.broker.calls_scopt_optionparser_opt_string_scopt_optiondef_4
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:third_party/scopt/OptionParser.scala::scopt.OptionParser.opt(String)
+  target_key: class:third_party/scopt/OptionParser.scala::scopt.OptionDef
+  resolution: same_file
+  evidence:
+  - file: third_party/scopt/OptionParser.scala
+    start_line: 4
+    end_line: 4
+  basis: constructor
+- id: scala.broker.calls_scopt_optionparser_parse_seq_string_c_external_some_5
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:third_party/scopt/OptionParser.scala::scopt.OptionParser.parse(Seq[String],C)
+  target_key: external:Some
+  resolution: external
+  evidence:
+  - file: third_party/scopt/OptionParser.scala
+    start_line: 5
+    end_line: 5
+- id: scala.broker.kafka_tools_dumplog_object
+  kind: entity
+  entity_type: CLASS
+  qualified_name: kafka.tools.DumpLog$
+  file: core/src/main/scala/kafka/tools/DumpLog.scala
+  start_line: 3
+  end_line: 12
+- id: scala.broker.kafka_tools_dumplog_object_main_array_string
+  kind: entity
+  entity_type: METHOD
+  qualified_name: kafka.tools.DumpLog$.main(Array[String])
+  file: core/src/main/scala/kafka/tools/DumpLog.scala
+  start_line: 4
+  end_line: 6
+- id: scala.broker.kafka_tools_dumplog_object_dump_string
+  kind: entity
+  entity_type: METHOD
+  qualified_name: kafka.tools.DumpLog$.dump(String)
+  file: core/src/main/scala/kafka/tools/DumpLog.scala
+  start_line: 11
+  end_line: 11
+- id: scala.broker.calls_kafka_tools_dumplog_object_main_array_string_kafka_tools_dumplog_object_dump_string_5
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:core/src/main/scala/kafka/tools/DumpLog.scala::kafka.tools.DumpLog$.main(Array[String])
+  target_key: method:core/src/main/scala/kafka/tools/DumpLog.scala::kafka.tools.DumpLog$.dump(String)
+  resolution: same_file
+  evidence:
+  - file: core/src/main/scala/kafka/tools/DumpLog.scala
+    start_line: 5
+    end_line: 5
+  basis: enclosing_class
+- id: scala.broker.calls_kafka_tools_dumplog_object_dump_string_external_println_11
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:core/src/main/scala/kafka/tools/DumpLog.scala::kafka.tools.DumpLog$.dump(String)
+  target_key: external:println
+  resolution: external
+  evidence:
+  - file: core/src/main/scala/kafka/tools/DumpLog.scala
+    start_line: 11
+    end_line: 11
+- id: scala.broker.unsupported_kafka_clients
+  kind: unsupported
+  capability: dependencies
+  entity_type: DEPENDENCY
+  name: kafka-clients
+  file: build.sbt
+  note: declared sbt dependency; dependency extraction is UNSUPPORTED

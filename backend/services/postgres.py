@@ -30,6 +30,12 @@ class PostgresConnection:
             cursor.execute(query, args)
             return list(cursor.fetchall())
 
+    def fetch_all_named(self, query: str, params: dict[str, Any]) -> list[Any]:
+        """Like fetch_all, with %(name)s placeholders for statements that repeat a parameter."""
+        with self._connection.cursor() as cursor:
+            cursor.execute(query, params)
+            return list(cursor.fetchall())
+
     def fetch_scalar(self, query: str, *args: Any) -> Any:
         row = self.fetch_one(query, *args)
         return row[0] if row is not None else None

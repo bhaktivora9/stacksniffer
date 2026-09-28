@@ -146,8 +146,12 @@ export default function HomePage() {
     closeStreamRef.current = subscribeToAnalysisEvents(analysis.analysis_id, {
       onEvent: (event) => {
         setStreamEvents((current) => [...current, event]);
-        setCurrentStep({ INGESTING: 0, EXTRACTING: 1, INDEXING: 2, PROJECTING: 3, SUMMARIZING: 3, READY: 4 }[event.state] ?? 0);
-        if (["FAILED", "DEGRADED"].includes(event.state)) {
+        const steps = { INGESTING: 0, EXTRACTING: 1, INDEXING: 2, PROJECTING: 3, SUMMARIZING: 3, READY: 4 };
+        // A parked analysis has finished its last completed stage; show the rail up to the awaited one.
+        setCurrentStep(event.state === "AWAITING_STAGE" ? steps[event.awaiting_stage] ?? 0 : steps[event.state] ?? 0);
+        if (event.state === "AWAITING_STAGE") {
+          setStreamStatus("waiting");
+        } else if (["FAILED", "DEGRADED"].includes(event.state)) {
           setStreamStatus("failed");
           setError(event.message || "Analysis failed");
         } else if (event.state === "READY") {

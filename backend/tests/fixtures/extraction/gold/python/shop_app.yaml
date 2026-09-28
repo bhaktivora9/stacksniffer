@@ -1,0 +1,1087 @@
+# Gold labels for python/shop_app. Written from the fixture source, never from extractor output.
+# CONTAINS facts are derived from the entity structure below by the evaluator.
+gold_version: 2
+fixture: python/shop_app
+language: python
+split: holdout
+description: 'A small order application: package re-exports, absolute and relative imports, aliases, a conditional import, mixins, cross-module
+  calls, third-party calls and a malformed module.'
+labelled_from: source
+review:
+  status: pending_independent_review
+  reviewer: null
+files:
+  app/__init__.py:
+    parse_status: PARSED
+    origin: first_party
+  app/util/__init__.py:
+    parse_status: PARSED
+    origin: first_party
+  app/util/text.py:
+    parse_status: PARSED
+    origin: first_party
+  app/models.py:
+    parse_status: PARSED
+    origin: first_party
+  app/service.py:
+    parse_status: PARSED
+    origin: first_party
+  app/controller.py:
+    parse_status: PARSED
+    origin: first_party
+  app/legacy.py:
+    parse_status: PARTIAL
+    syntax_error_lines:
+    - 8
+    origin: first_party
+  requirements.txt:
+    parse_status: UNSUPPORTED
+    origin: first_party
+  app/admin.py:
+    parse_status: PARSED
+    origin: first_party
+  app/pricing.py:
+    parse_status: PARSED
+    origin: first_party
+  app/_vendor/retry.py:
+    parse_status: PARSED
+    origin: vendored
+  app/proto/order_pb2.py:
+    parse_status: PARSED
+    origin: generated
+facts:
+- id: python.shop_app.text_slugify
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: slugify
+  file: app/util/text.py
+  start_line: 5
+  end_line: 7
+- id: python.shop_app.text_truncate
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: truncate
+  file: app/util/text.py
+  start_line: 10
+  end_line: 11
+- id: python.shop_app.models_timestampmixin
+  kind: entity
+  entity_type: CLASS
+  qualified_name: TimestampMixin
+  file: app/models.py
+  start_line: 7
+  end_line: 9
+- id: python.shop_app.models_timestampmixin_touch
+  kind: entity
+  entity_type: METHOD
+  qualified_name: TimestampMixin.touch
+  file: app/models.py
+  start_line: 8
+  end_line: 9
+- id: python.shop_app.models_auditmixin
+  kind: entity
+  entity_type: CLASS
+  qualified_name: AuditMixin
+  file: app/models.py
+  start_line: 12
+  end_line: 14
+- id: python.shop_app.models_auditmixin_audit
+  kind: entity
+  entity_type: METHOD
+  qualified_name: AuditMixin.audit
+  file: app/models.py
+  start_line: 13
+  end_line: 14
+- id: python.shop_app.models_order
+  kind: entity
+  entity_type: CLASS
+  qualified_name: Order
+  file: app/models.py
+  start_line: 17
+  end_line: 32
+  decorators:
+  - dataclass
+- id: python.shop_app.models_order_slug
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Order.slug
+  file: app/models.py
+  start_line: 22
+  end_line: 24
+  decorators:
+  - property
+- id: python.shop_app.models_order_add
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Order.add
+  file: app/models.py
+  start_line: 26
+  end_line: 29
+- id: python.shop_app.models_order_total
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Order.total
+  file: app/models.py
+  start_line: 31
+  end_line: 32
+- id: python.shop_app.service_orderservice
+  kind: entity
+  entity_type: CLASS
+  qualified_name: OrderService
+  file: app/service.py
+  start_line: 18
+  end_line: 35
+- id: python.shop_app.service_orderservice_init
+  kind: entity
+  entity_type: METHOD
+  qualified_name: OrderService.__init__
+  file: app/service.py
+  start_line: 19
+  end_line: 20
+- id: python.shop_app.service_orderservice_create
+  kind: entity
+  entity_type: METHOD
+  qualified_name: OrderService.create
+  file: app/service.py
+  start_line: 22
+  end_line: 25
+- id: python.shop_app.service_orderservice_fetch_prices
+  kind: entity
+  entity_type: METHOD
+  qualified_name: OrderService.fetch_prices
+  file: app/service.py
+  start_line: 27
+  end_line: 30
+- id: python.shop_app.service_orderservice_summary
+  kind: entity
+  entity_type: METHOD
+  qualified_name: OrderService.summary
+  file: app/service.py
+  start_line: 32
+  end_line: 35
+- id: python.shop_app.service_orderservice_summary_label
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: OrderService.summary.label
+  file: app/service.py
+  start_line: 33
+  end_line: 34
+- id: python.shop_app.controller_create_order
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: create_order
+  file: app/controller.py
+  start_line: 7
+  end_line: 11
+- id: python.shop_app.controller_order_total
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: order_total
+  file: app/controller.py
+  start_line: 14
+  end_line: 15
+- id: python.shop_app.legacy_migrate
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: migrate
+  file: app/legacy.py
+  start_line: 4
+  end_line: 5
+- id: python.shop_app.legacy_after
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: after
+  file: app/legacy.py
+  start_line: 12
+  end_line: 13
+  note: declared after a syntax error; a recovering parser should keep it
+- id: python.shop_app.init_py_imports_service
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:app/__init__.py
+  target_key: file:app/service.py
+  resolution: cross_file
+  evidence:
+  - file: app/__init__.py
+    start_line: 2
+    end_line: 2
+  module: .service
+  basis: import_path
+- id: python.shop_app.init_py_imports_text
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:app/util/__init__.py
+  target_key: file:app/util/text.py
+  resolution: cross_file
+  evidence:
+  - file: app/util/__init__.py
+    start_line: 1
+    end_line: 1
+  module: .text
+  basis: import_path
+- id: python.shop_app.text_py_imports_re
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:app/util/text.py
+  target_key: external:re
+  resolution: external
+  evidence:
+  - file: app/util/text.py
+    start_line: 1
+    end_line: 1
+  module: re
+- id: python.shop_app.text_py_imports_unicodedata
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:app/util/text.py
+  target_key: external:unicodedata
+  resolution: external
+  evidence:
+  - file: app/util/text.py
+    start_line: 2
+    end_line: 2
+  module: unicodedata
+  note: aliased as ud
+- id: python.shop_app.models_py_imports_dataclasses
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:app/models.py
+  target_key: external:dataclasses
+  resolution: external
+  evidence:
+  - file: app/models.py
+    start_line: 1
+    end_line: 1
+  module: dataclasses
+- id: python.shop_app.models_py_imports_datetime
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:app/models.py
+  target_key: external:datetime
+  resolution: external
+  evidence:
+  - file: app/models.py
+    start_line: 2
+    end_line: 2
+  module: datetime
+- id: python.shop_app.models_py_imports_app_util_text
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:app/models.py
+  target_key: file:app/util/text.py
+  resolution: cross_file
+  evidence:
+  - file: app/models.py
+    start_line: 4
+    end_line: 4
+  module: app.util.text
+  note: absolute import of a repository module
+  basis: import_path
+- id: python.shop_app.service_py_imports_logging
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:app/service.py
+  target_key: external:logging
+  resolution: external
+  evidence:
+  - file: app/service.py
+    start_line: 1
+    end_line: 1
+  module: logging
+- id: python.shop_app.service_py_imports_requests
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:app/service.py
+  target_key: external:requests
+  resolution: external
+  evidence:
+  - file: app/service.py
+    start_line: 3
+    end_line: 3
+  module: requests
+  note: third-party
+- id: python.shop_app.service_py_imports_ujson
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:app/service.py
+  target_key: external:ujson
+  resolution: external
+  evidence:
+  - file: app/service.py
+    start_line: 6
+    end_line: 6
+  module: ujson
+  note: optional third-party, aliased as json
+- id: python.shop_app.service_py_imports_json
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:app/service.py
+  target_key: external:json
+  resolution: external
+  evidence:
+  - file: app/service.py
+    start_line: 8
+    end_line: 8
+  module: json
+  note: fallback bound to the same name as ujson
+- id: python.shop_app.service_py_imports
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:app/service.py
+  target_key: file:app/models.py
+  resolution: cross_file
+  evidence:
+  - file: app/service.py
+    start_line: 10
+    end_line: 10
+  module: .
+  note: from . import models
+  basis: import_path
+- id: python.shop_app.service_py_imports_models
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:app/service.py
+  target_key: file:app/models.py
+  resolution: cross_file
+  evidence:
+  - file: app/service.py
+    start_line: 11
+    end_line: 11
+  module: .models
+  note: Order aliased as OrderModel
+  basis: import_path
+- id: python.shop_app.service_py_imports_util
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:app/service.py
+  target_key: file:app/util/__init__.py
+  resolution: cross_file
+  evidence:
+  - file: app/service.py
+    start_line: 12
+    end_line: 12
+  module: .util
+  note: slugify is re-exported by the util package
+  basis: import_path
+- id: python.shop_app.service_py_imports_util_text
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:app/service.py
+  target_key: file:app/util/text.py
+  resolution: cross_file
+  evidence:
+  - file: app/service.py
+    start_line: 13
+    end_line: 13
+  module: .util.text
+  basis: import_path
+- id: python.shop_app.controller_py_imports_app_service
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:app/controller.py
+  target_key: file:app/service.py
+  resolution: cross_file
+  evidence:
+  - file: app/controller.py
+    start_line: 1
+    end_line: 1
+  module: app.service
+  basis: import_path
+- id: python.shop_app.controller_py_imports_app
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:app/controller.py
+  target_key: file:app/models.py
+  resolution: cross_file
+  evidence:
+  - file: app/controller.py
+    start_line: 2
+    end_line: 2
+  module: app
+  note: from app import models
+  basis: import_path
+- id: python.shop_app.legacy_py_imports_app_models
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:app/legacy.py
+  target_key: file:app/models.py
+  resolution: cross_file
+  evidence:
+  - file: app/legacy.py
+    start_line: 1
+    end_line: 1
+  module: app.models
+  basis: import_path
+- id: python.shop_app.extends_order_timestampmixin
+  kind: relationship
+  relationship_type: EXTENDS
+  source_key: class:app/models.py::Order
+  target_key: class:app/models.py::TimestampMixin
+  resolution: same_file
+  evidence:
+  - file: app/models.py
+    start_line: 18
+    end_line: 18
+  note: multiple inheritance
+  basis: lexical_scope
+- id: python.shop_app.extends_order_auditmixin
+  kind: relationship
+  relationship_type: EXTENDS
+  source_key: class:app/models.py::Order
+  target_key: class:app/models.py::AuditMixin
+  resolution: same_file
+  evidence:
+  - file: app/models.py
+    start_line: 18
+    end_line: 18
+  note: multiple inheritance
+  basis: lexical_scope
+- id: python.shop_app.calls_slugify_ud_normalize
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:app/util/text.py::slugify
+  target_key: external:ud.normalize
+  resolution: external
+  evidence:
+  - file: app/util/text.py
+    start_line: 6
+    end_line: 6
+- id: python.shop_app.calls_slugify_re_sub
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:app/util/text.py::slugify
+  target_key: external:re.sub
+  resolution: external
+  evidence:
+  - file: app/util/text.py
+    start_line: 7
+    end_line: 7
+- id: python.shop_app.calls_slugify_value_lower
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:app/util/text.py::slugify
+  target_key: external:value.lower
+  resolution: unresolvable
+  evidence:
+  - file: app/util/text.py
+    start_line: 7
+    end_line: 7
+- id: python.shop_app.calls_slugify_expression_strip
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:app/util/text.py::slugify
+  target_key: external:<expression>.strip
+  resolution: unresolvable
+  evidence:
+  - file: app/util/text.py
+    start_line: 7
+    end_line: 7
+- id: python.shop_app.calls_truncate_len
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:app/util/text.py::truncate
+  target_key: external:len
+  resolution: external
+  evidence:
+  - file: app/util/text.py
+    start_line: 11
+    end_line: 11
+- id: python.shop_app.calls_timestampmixin_touch_datetime_utcnow
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:app/models.py::TimestampMixin.touch
+  target_key: external:datetime.utcnow
+  resolution: external
+  evidence:
+  - file: app/models.py
+    start_line: 9
+    end_line: 9
+- id: python.shop_app.calls_auditmixin_audit_type
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:app/models.py::AuditMixin.audit
+  target_key: external:type
+  resolution: external
+  evidence:
+  - file: app/models.py
+    start_line: 14
+    end_line: 14
+- id: python.shop_app.calls_order_field
+  kind: relationship
+  relationship_type: CALLS
+  source_key: class:app/models.py::Order
+  target_key: external:field
+  resolution: external
+  evidence:
+  - file: app/models.py
+    start_line: 20
+    end_line: 20
+  note: class-body call
+- id: python.shop_app.calls_order_slug_slugify
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:app/models.py::Order.slug
+  target_key: function:app/util/text.py::slugify
+  resolution: cross_file
+  evidence:
+  - file: app/models.py
+    start_line: 24
+    end_line: 24
+  note: imported from app.util.text
+  basis: import_binding
+- id: python.shop_app.calls_order_add_self_items_append
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:app/models.py::Order.add
+  target_key: external:self.items.append
+  resolution: unresolvable
+  evidence:
+  - file: app/models.py
+    start_line: 27
+    end_line: 27
+- id: python.shop_app.calls_order_add_timestampmixin_touch
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:app/models.py::Order.add
+  target_key: method:app/models.py::TimestampMixin.touch
+  resolution: same_file
+  evidence:
+  - file: app/models.py
+    start_line: 28
+    end_line: 28
+  note: inherited from the first base
+  basis: enclosing_class
+- id: python.shop_app.calls_order_add_auditmixin_audit
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:app/models.py::Order.add
+  target_key: method:app/models.py::AuditMixin.audit
+  resolution: same_file
+  evidence:
+  - file: app/models.py
+    start_line: 29
+    end_line: 29
+  note: inherited from the second base
+  basis: enclosing_class
+- id: python.shop_app.calls_order_total_sum
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:app/models.py::Order.total
+  target_key: external:sum
+  resolution: external
+  evidence:
+  - file: app/models.py
+    start_line: 32
+    end_line: 32
+- id: python.shop_app.calls_file_app_service_py_logging_getlogger
+  kind: relationship
+  relationship_type: CALLS
+  source_key: file:app/service.py
+  target_key: external:logging.getLogger
+  resolution: external
+  evidence:
+  - file: app/service.py
+    start_line: 15
+    end_line: 15
+- id: python.shop_app.calls_orderservice_init_requests_session
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:app/service.py::OrderService.__init__
+  target_key: external:requests.Session
+  resolution: external
+  evidence:
+  - file: app/service.py
+    start_line: 20
+    end_line: 20
+- id: python.shop_app.calls_orderservice_create_order
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:app/service.py::OrderService.create
+  target_key: class:app/models.py::Order
+  resolution: cross_file
+  evidence:
+  - file: app/service.py
+    start_line: 23
+    end_line: 23
+  note: through the alias OrderModel
+  basis: import_binding
+- id: python.shop_app.calls_orderservice_create_log_info
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:app/service.py::OrderService.create
+  target_key: external:log.info
+  resolution: external
+  evidence:
+  - file: app/service.py
+    start_line: 24
+    end_line: 24
+- id: python.shop_app.calls_orderservice_create_slugify
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:app/service.py::OrderService.create
+  target_key: function:app/util/text.py::slugify
+  resolution: cross_file
+  evidence:
+  - file: app/service.py
+    start_line: 24
+    end_line: 24
+  note: via the app.util re-export
+  basis: import_binding
+- id: python.shop_app.calls_orderservice_fetch_prices_self_client_get
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:app/service.py::OrderService.fetch_prices
+  target_key: external:self.client.get
+  resolution: unresolvable
+  evidence:
+  - file: app/service.py
+    start_line: 28
+    end_line: 28
+- id: python.shop_app.calls_orderservice_fetch_prices_response_raise_for_status
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:app/service.py::OrderService.fetch_prices
+  target_key: external:response.raise_for_status
+  resolution: unresolvable
+  evidence:
+  - file: app/service.py
+    start_line: 29
+    end_line: 29
+- id: python.shop_app.calls_orderservice_fetch_prices_json_loads
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:app/service.py::OrderService.fetch_prices
+  target_key: external:json.loads
+  resolution: ambiguous
+  evidence:
+  - file: app/service.py
+    start_line: 30
+    end_line: 30
+  note: json is ujson or the standard library depending on the environment
+- id: python.shop_app.calls_orderservice_summary_label_truncate
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:app/service.py::OrderService.summary.label
+  target_key: function:app/util/text.py::truncate
+  resolution: cross_file
+  evidence:
+  - file: app/service.py
+    start_line: 34
+    end_line: 34
+  basis: import_binding
+- id: python.shop_app.calls_orderservice_summary_orderservice_summary_label
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:app/service.py::OrderService.summary
+  target_key: function:app/service.py::OrderService.summary.label
+  resolution: same_file
+  evidence:
+  - file: app/service.py
+    start_line: 35
+    end_line: 35
+  basis: lexical_scope
+- id: python.shop_app.calls_file_app_controller_py_orderservice
+  kind: relationship
+  relationship_type: CALLS
+  source_key: file:app/controller.py
+  target_key: class:app/service.py::OrderService
+  resolution: cross_file
+  evidence:
+  - file: app/controller.py
+    start_line: 4
+    end_line: 4
+  basis: import_binding
+- id: python.shop_app.calls_create_order_orderservice_create
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:app/controller.py::create_order
+  target_key: method:app/service.py::OrderService.create
+  resolution: cross_file
+  evidence:
+  - file: app/controller.py
+    start_line: 8
+    end_line: 8
+  note: service is the module-level OrderService instance
+  basis: inferred_type
+- id: python.shop_app.calls_create_order_order_add
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:app/controller.py::create_order
+  target_key: method:app/models.py::Order.add
+  resolution: cross_file
+  evidence:
+  - file: app/controller.py
+    start_line: 10
+    end_line: 10
+  note: create() returns an Order
+  basis: inferred_type
+- id: python.shop_app.calls_order_total_order_total
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:app/controller.py::order_total
+  target_key: method:app/models.py::Order.total
+  resolution: cross_file
+  evidence:
+  - file: app/controller.py
+    start_line: 15
+    end_line: 15
+  note: order is annotated models.Order
+  basis: declared_type
+- id: python.shop_app.calls_migrate_order
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:app/legacy.py::migrate
+  target_key: class:app/models.py::Order
+  resolution: cross_file
+  evidence:
+  - file: app/legacy.py
+    start_line: 5
+    end_line: 5
+  basis: import_binding
+- id: python.shop_app.calls_after_migrate
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:app/legacy.py::after
+  target_key: function:app/legacy.py::migrate
+  resolution: same_file
+  evidence:
+  - file: app/legacy.py
+    start_line: 13
+    end_line: 13
+  basis: lexical_scope
+- id: python.shop_app.unsupported_dependency_requests
+  kind: unsupported
+  capability: dependencies
+  entity_type: DEPENDENCY
+  name: requests
+  file: requirements.txt
+  note: declared dependency; dependency extraction is UNSUPPORTED
+- id: python.shop_app.unsupported_dependency_ujson
+  kind: unsupported
+  capability: dependencies
+  entity_type: DEPENDENCY
+  name: ujson
+  file: requirements.txt
+  note: declared dependency; dependency extraction is UNSUPPORTED
+- id: python.shop_app.admin.adminorder
+  kind: entity
+  entity_type: CLASS
+  qualified_name: AdminOrder
+  file: app/admin.py
+  start_line: 4
+  end_line: 7
+- id: python.shop_app.admin.adminorder_approve
+  kind: entity
+  entity_type: METHOD
+  qualified_name: AdminOrder.approve
+  file: app/admin.py
+  start_line: 5
+  end_line: 7
+- id: python.shop_app.admin.reviewer
+  kind: entity
+  entity_type: CLASS
+  qualified_name: Reviewer
+  file: app/admin.py
+  start_line: 10
+  end_line: 11
+- id: python.shop_app.admin_py_imports_app_models
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:app/admin.py
+  target_key: file:app/models.py
+  resolution: cross_file
+  evidence:
+  - file: app/admin.py
+    start_line: 1
+    end_line: 1
+  module: app.models
+  basis: import_path
+- id: python.shop_app.adminorder_extends_order
+  kind: relationship
+  relationship_type: EXTENDS
+  source_key: class:app/admin.py::AdminOrder
+  target_key: class:app/models.py::Order
+  resolution: cross_file
+  evidence:
+  - file: app/admin.py
+    start_line: 4
+    end_line: 4
+  basis: import_binding
+- id: python.shop_app.reviewer_extends_auditmixin
+  kind: relationship
+  relationship_type: EXTENDS
+  source_key: class:app/admin.py::Reviewer
+  target_key: class:app/models.py::AuditMixin
+  resolution: cross_file
+  evidence:
+  - file: app/admin.py
+    start_line: 10
+    end_line: 10
+  basis: import_binding
+- id: python.shop_app.approve_calls_touch
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:app/admin.py::AdminOrder.approve
+  target_key: method:app/models.py::TimestampMixin.touch
+  resolution: cross_file
+  evidence:
+  - file: app/admin.py
+    start_line: 6
+    end_line: 6
+  note: inherited through Order from TimestampMixin
+  basis: enclosing_class
+- id: python.shop_app.approve_calls_audit
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:app/admin.py::AdminOrder.approve
+  target_key: method:app/models.py::AuditMixin.audit
+  resolution: cross_file
+  evidence:
+  - file: app/admin.py
+    start_line: 7
+    end_line: 7
+  note: inherited through Order from AuditMixin
+  basis: enclosing_class
+- id: python.shop_app.pricing.price
+  kind: entity
+  entity_type: CLASS
+  qualified_name: Price
+  file: app/pricing.py
+  start_line: 4
+  end_line: 9
+  decorators:
+  - dataclass
+- id: python.shop_app.pricing.price_with_tax
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Price.with_tax
+  file: app/pricing.py
+  start_line: 8
+  end_line: 9
+- id: python.shop_app.pricing.total
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: total
+  file: app/pricing.py
+  start_line: 12
+  end_line: 13
+- id: python.shop_app.pricing.basket
+  kind: entity
+  entity_type: CLASS
+  qualified_name: Basket
+  file: app/pricing.py
+  start_line: 16
+  end_line: 30
+- id: python.shop_app.pricing.basket_init
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Basket.__init__
+  file: app/pricing.py
+  start_line: 17
+  end_line: 18
+- id: python.shop_app.pricing.basket_add
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Basket.add
+  file: app/pricing.py
+  start_line: 20
+  end_line: 22
+- id: python.shop_app.pricing.basket_merge
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Basket.merge
+  file: app/pricing.py
+  start_line: 24
+  end_line: 27
+- id: python.shop_app.pricing.basket_clear
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Basket.clear
+  file: app/pricing.py
+  start_line: 29
+  end_line: 30
+- id: python.shop_app.pricing_py_imports_dataclasses
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:app/pricing.py
+  target_key: external:dataclasses
+  resolution: external
+  evidence:
+  - file: app/pricing.py
+    start_line: 1
+    end_line: 1
+  module: dataclasses
+- id: python.shop_app.with_tax_calls_price
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:app/pricing.py::Price.with_tax
+  target_key: class:app/pricing.py::Price
+  resolution: same_file
+  evidence:
+  - file: app/pricing.py
+    start_line: 9
+    end_line: 9
+  basis: lexical_scope
+- id: python.shop_app.with_tax_calls_round
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:app/pricing.py::Price.with_tax
+  target_key: external:round
+  resolution: external
+  evidence:
+  - file: app/pricing.py
+    start_line: 9
+    end_line: 9
+- id: python.shop_app.total_calls_sum
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:app/pricing.py::total
+  target_key: external:sum
+  resolution: external
+  evidence:
+  - file: app/pricing.py
+    start_line: 13
+    end_line: 13
+- id: python.shop_app.basket_add_calls_append
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:app/pricing.py::Basket.add
+  target_key: external:self.items.append
+  resolution: unresolvable
+  evidence:
+  - file: app/pricing.py
+    start_line: 21
+    end_line: 21
+- id: python.shop_app.basket_add_calls_with_tax
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:app/pricing.py::Basket.add
+  target_key: method:app/pricing.py::Price.with_tax
+  resolution: same_file
+  evidence:
+  - file: app/pricing.py
+    start_line: 22
+    end_line: 22
+  basis: declared_type
+  note: price is annotated Price in the same file
+- id: python.shop_app.basket_merge_calls_add
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:app/pricing.py::Basket.merge
+  target_key: method:app/pricing.py::Basket.add
+  resolution: same_file
+  evidence:
+  - file: app/pricing.py
+    start_line: 26
+    end_line: 26
+  basis: enclosing_class
+- id: python.shop_app.basket_merge_calls_clear
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:app/pricing.py::Basket.merge
+  target_key: method:app/pricing.py::Basket.clear
+  resolution: same_file
+  evidence:
+  - file: app/pricing.py
+    start_line: 27
+    end_line: 27
+  basis: declared_type
+  note: other is annotated "Basket" (a forward-reference string) in the same file
+- id: python.shop_app.vendor_retry.retry
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: retry
+  file: app/_vendor/retry.py
+  start_line: 4
+  end_line: 10
+- id: python.shop_app.retry_py_imports_time
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:app/_vendor/retry.py
+  target_key: external:time
+  resolution: external
+  evidence:
+  - file: app/_vendor/retry.py
+    start_line: 1
+    end_line: 1
+  module: time
+- id: python.shop_app.retry_calls_range
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:app/_vendor/retry.py::retry
+  target_key: external:range
+  resolution: external
+  evidence:
+  - file: app/_vendor/retry.py
+    start_line: 5
+    end_line: 5
+  note: 'added in gold v2 review: the labeller missed range(attempts); the analyzer output was correct'
+- id: python.shop_app.retry_calls_func
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:app/_vendor/retry.py::retry
+  target_key: external:func
+  resolution: unresolvable
+  evidence:
+  - file: app/_vendor/retry.py
+    start_line: 7
+    end_line: 7
+  - file: app/_vendor/retry.py
+    start_line: 10
+    end_line: 10
+  note: calls its parameter
+- id: python.shop_app.retry_calls_sleep
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:app/_vendor/retry.py::retry
+  target_key: external:time.sleep
+  resolution: external
+  evidence:
+  - file: app/_vendor/retry.py
+    start_line: 9
+    end_line: 9
+- id: python.shop_app.order_pb2.ordermessage
+  kind: entity
+  entity_type: CLASS
+  qualified_name: OrderMessage
+  file: app/proto/order_pb2.py
+  start_line: 7
+  end_line: 9
+- id: python.shop_app.order_pb2.serialize
+  kind: entity
+  entity_type: METHOD
+  qualified_name: OrderMessage.SerializeToString
+  file: app/proto/order_pb2.py
+  start_line: 8
+  end_line: 9
+- id: python.shop_app.order_pb2_py_imports_protobuf
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:app/proto/order_pb2.py
+  target_key: external:google.protobuf
+  resolution: external
+  evidence:
+  - file: app/proto/order_pb2.py
+    start_line: 4
+    end_line: 4
+  module: google.protobuf
+- id: python.shop_app.serialize_calls_default
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:app/proto/order_pb2.py::OrderMessage.SerializeToString
+  target_key: external:descriptor_pool.Default
+  resolution: external
+  evidence:
+  - file: app/proto/order_pb2.py
+    start_line: 9
+    end_line: 9
+- id: python.shop_app.serialize_calls_find
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:app/proto/order_pb2.py::OrderMessage.SerializeToString
+  target_key: external:<expression>.FindMessageTypeByName
+  resolution: external
+  evidence:
+  - file: app/proto/order_pb2.py
+    start_line: 9
+    end_line: 9

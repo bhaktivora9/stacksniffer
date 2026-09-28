@@ -1,0 +1,199 @@
+# Gold labels for python/edge_cases. Written from the fixture source, never from extractor output.
+# CONTAINS facts are derived from the entity structure below by the evaluator.
+gold_version: 2
+fixture: python/edge_cases
+language: python
+split: development
+description: Protocols, generic bases, redefinitions, shadowing, local classes, lambdas and module-level calls.
+labelled_from: source
+review:
+  status: pending_independent_review
+  reviewer: null
+files:
+  edge_cases.py:
+    parse_status: PARSED
+    origin: first_party
+facts:
+- id: python.edge_cases.repository
+  kind: entity
+  entity_type: CLASS
+  qualified_name: Repository
+  file: edge_cases.py
+  start_line: 6
+  end_line: 7
+- id: python.edge_cases.repository_get
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Repository.get
+  file: edge_cases.py
+  start_line: 7
+  end_line: 7
+- id: python.edge_cases.box
+  kind: entity
+  entity_type: CLASS
+  qualified_name: Box
+  file: edge_cases.py
+  start_line: 10
+  end_line: 12
+- id: python.edge_cases.box_init
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Box.__init__
+  file: edge_cases.py
+  start_line: 11
+  end_line: 12
+- id: python.edge_cases.helper
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: helper
+  file: edge_cases.py
+  start_line: 15
+  end_line: 16
+- id: python.edge_cases.helper_2
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: helper#2
+  file: edge_cases.py
+  start_line: 19
+  end_line: 20
+- id: python.edge_cases.uses_shadowing
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: uses_shadowing
+  file: edge_cases.py
+  start_line: 23
+  end_line: 24
+- id: python.edge_cases.factory
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: factory
+  file: edge_cases.py
+  start_line: 27
+  end_line: 31
+- id: python.edge_cases.factory_local
+  kind: entity
+  entity_type: CLASS
+  qualified_name: factory.Local
+  file: edge_cases.py
+  start_line: 28
+  end_line: 30
+- id: python.edge_cases.factory_local_run
+  kind: entity
+  entity_type: METHOD
+  qualified_name: factory.Local.run
+  file: edge_cases.py
+  start_line: 29
+  end_line: 30
+- id: python.edge_cases.imports_file_edge_cases_py_typing
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:edge_cases.py
+  target_key: external:typing
+  resolution: external
+  evidence:
+  - file: edge_cases.py
+    start_line: 1
+    end_line: 1
+  module: typing
+- id: python.edge_cases.extends_repository_protocol
+  kind: relationship
+  relationship_type: EXTENDS
+  source_key: class:edge_cases.py::Repository
+  target_key: external:Protocol
+  resolution: external
+  evidence:
+  - file: edge_cases.py
+    start_line: 6
+    end_line: 6
+- id: python.edge_cases.extends_box_generic
+  kind: relationship
+  relationship_type: EXTENDS
+  source_key: class:edge_cases.py::Box
+  target_key: external:Generic
+  resolution: external
+  evidence:
+  - file: edge_cases.py
+    start_line: 10
+    end_line: 10
+- id: python.edge_cases.calls_file_edge_cases_py_typevar
+  kind: relationship
+  relationship_type: CALLS
+  source_key: file:edge_cases.py
+  target_key: external:TypeVar
+  resolution: external
+  evidence:
+  - file: edge_cases.py
+    start_line: 3
+    end_line: 3
+- id: python.edge_cases.calls_file_edge_cases_py_pow
+  kind: relationship
+  relationship_type: CALLS
+  source_key: file:edge_cases.py
+  target_key: external:pow
+  resolution: external
+  evidence:
+  - file: edge_cases.py
+    start_line: 34
+    end_line: 34
+- id: python.edge_cases.calls_file_edge_cases_py_dict
+  kind: relationship
+  relationship_type: CALLS
+  source_key: file:edge_cases.py
+  target_key: external:dict
+  resolution: external
+  evidence:
+  - file: edge_cases.py
+    start_line: 35
+    end_line: 35
+- id: python.edge_cases.calls_uses_shadowing_helper
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:edge_cases.py::uses_shadowing
+  target_key: external:helper
+  resolution: unresolvable
+  evidence:
+  - file: edge_cases.py
+    start_line: 24
+    end_line: 24
+  note: calls the parameter named helper, not either module function
+- id: python.edge_cases.calls_factory_local_run_helper_2
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:edge_cases.py::factory.Local.run
+  target_key: function:edge_cases.py::helper#2
+  resolution: same_file
+  evidence:
+  - file: edge_cases.py
+    start_line: 30
+    end_line: 30
+  note: the second definition is bound when run() executes
+  basis: lexical_scope
+- id: python.edge_cases.calls_factory_factory_local
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:edge_cases.py::factory
+  target_key: class:edge_cases.py::factory.Local
+  resolution: same_file
+  evidence:
+  - file: edge_cases.py
+    start_line: 31
+    end_line: 31
+  basis: lexical_scope
+- id: python.edge_cases.calls_factory_factory_local_run
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:edge_cases.py::factory
+  target_key: method:edge_cases.py::factory.Local.run
+  resolution: same_file
+  evidence:
+  - file: edge_cases.py
+    start_line: 31
+    end_line: 31
+  basis: constructed_instance
+- id: python.edge_cases.unsupported_protocol_interface
+  kind: unsupported
+  capability: interfaces
+  entity_type: INTERFACE
+  name: Repository
+  file: edge_cases.py
+  note: a typing.Protocol is an interface in intent; Python interfaces are UNSUPPORTED

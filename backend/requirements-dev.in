@@ -1,0 +1,8 @@
+# Development and test dependencies, on top of the runtime set (see requirements.in).
+-c requirements.lock.txt
+-r requirements.in
+pytest==9.1.1
+pytest-cov==7.1.0
+# Starlette's TestClient uses httpx2; with plain httpx it emits a deprecation warning.
+httpx2==2.13.1
+pip-tools==7.6.1

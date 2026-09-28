@@ -1,0 +1,234 @@
+# Moved from holdout to development in gold v2: labelling Rounding.round's basis led to the type_name
+# normalization fix; java/holdout_inventory replaces it as the Java holdout.
+# Gold labels for java/holdout_billing. Written from the fixture source, never from extractor output.
+# CONTAINS facts are derived from the entity structure below by the evaluator.
+gold_version: 2
+fixture: java/holdout_billing
+language: java
+split: development
+description: Held out. Constructor chaining, interface-typed fields, static nested calls through a type name, lambdas, varargs, generic parameter
+  types and default methods.
+labelled_from: source
+review:
+  status: pending_independent_review
+  reviewer: null
+files:
+  src/com/acme/billing/InvoiceService.java:
+    parse_status: PARSED
+    origin: first_party
+facts:
+- id: java.holdout_billing.com_acme_billing_invoiceservice
+  kind: entity
+  entity_type: CLASS
+  qualified_name: com.acme.billing.InvoiceService
+  file: src/com/acme/billing/InvoiceService.java
+  start_line: 6
+  end_line: 39
+- id: java.holdout_billing.com_acme_billing_invoiceservice_invoiceservice_taxpolicy
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.acme.billing.InvoiceService.InvoiceService(TaxPolicy)
+  file: src/com/acme/billing/InvoiceService.java
+  start_line: 9
+  end_line: 11
+- id: java.holdout_billing.com_acme_billing_invoiceservice_invoiceservice
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.acme.billing.InvoiceService.InvoiceService()
+  file: src/com/acme/billing/InvoiceService.java
+  start_line: 13
+  end_line: 15
+- id: java.holdout_billing.com_acme_billing_invoiceservice_total_list_long
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.acme.billing.InvoiceService.total(List<Long>)
+  file: src/com/acme/billing/InvoiceService.java
+  start_line: 17
+  end_line: 23
+- id: java.holdout_billing.com_acme_billing_invoiceservice_totalall_long
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.acme.billing.InvoiceService.totalAll(long...)
+  file: src/com/acme/billing/InvoiceService.java
+  start_line: 25
+  end_line: 32
+- id: java.holdout_billing.com_acme_billing_invoiceservice_rounding
+  kind: entity
+  entity_type: CLASS
+  qualified_name: com.acme.billing.InvoiceService.Rounding
+  file: src/com/acme/billing/InvoiceService.java
+  start_line: 34
+  end_line: 38
+- id: java.holdout_billing.com_acme_billing_invoiceservice_rounding_round_long
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.acme.billing.InvoiceService.Rounding.round(long)
+  file: src/com/acme/billing/InvoiceService.java
+  start_line: 35
+  end_line: 37
+- id: java.holdout_billing.com_acme_billing_taxpolicy
+  kind: entity
+  entity_type: INTERFACE
+  qualified_name: com.acme.billing.TaxPolicy
+  file: src/com/acme/billing/InvoiceService.java
+  start_line: 41
+  end_line: 47
+- id: java.holdout_billing.com_acme_billing_taxpolicy_apply_long
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.acme.billing.TaxPolicy.apply(long)
+  file: src/com/acme/billing/InvoiceService.java
+  start_line: 42
+  end_line: 42
+- id: java.holdout_billing.com_acme_billing_taxpolicy_twice
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.acme.billing.TaxPolicy.twice()
+  file: src/com/acme/billing/InvoiceService.java
+  start_line: 44
+  end_line: 46
+- id: java.holdout_billing.com_acme_billing_flattax
+  kind: entity
+  entity_type: CLASS
+  qualified_name: com.acme.billing.FlatTax
+  file: src/com/acme/billing/InvoiceService.java
+  start_line: 49
+  end_line: 60
+- id: java.holdout_billing.com_acme_billing_flattax_flattax_double
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.acme.billing.FlatTax.FlatTax(double)
+  file: src/com/acme/billing/InvoiceService.java
+  start_line: 52
+  end_line: 54
+- id: java.holdout_billing.com_acme_billing_flattax_apply_long
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.acme.billing.FlatTax.apply(long)
+  file: src/com/acme/billing/InvoiceService.java
+  start_line: 56
+  end_line: 59
+  decorators:
+  - Override
+- id: java.holdout_billing.imports_file_src_com_acme_billing_invoiceservice_java_java_u
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:src/com/acme/billing/InvoiceService.java
+  target_key: external:java.util.List
+  resolution: external
+  evidence:
+  - file: src/com/acme/billing/InvoiceService.java
+    start_line: 3
+    end_line: 3
+  module: java.util.List
+- id: java.holdout_billing.imports_file_src_com_acme_billing_invoiceservice_java_java_u_2
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:src/com/acme/billing/InvoiceService.java
+  target_key: external:java.util.function.Function
+  resolution: external
+  evidence:
+  - file: src/com/acme/billing/InvoiceService.java
+    start_line: 4
+    end_line: 4
+  module: java.util.function.Function
+- id: java.holdout_billing.implements_com_acme_billing_flattax_com_acme_billing_taxpoli
+  kind: relationship
+  relationship_type: IMPLEMENTS
+  source_key: class:src/com/acme/billing/InvoiceService.java::com.acme.billing.FlatTax
+  target_key: interface:src/com/acme/billing/InvoiceService.java::com.acme.billing.TaxPolicy
+  resolution: same_file
+  evidence:
+  - file: src/com/acme/billing/InvoiceService.java
+    start_line: 49
+    end_line: 49
+  basis: type_name
+- id: java.holdout_billing.calls_com_acme_billing_invoiceservice_invoiceservice_com_acm
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/com/acme/billing/InvoiceService.java::com.acme.billing.InvoiceService.InvoiceService()
+  target_key: method:src/com/acme/billing/InvoiceService.java::com.acme.billing.InvoiceService.InvoiceService(TaxPolicy)
+  resolution: same_file
+  evidence:
+  - file: src/com/acme/billing/InvoiceService.java
+    start_line: 14
+    end_line: 14
+  note: this(...) with one argument
+  basis: constructor
+- id: java.holdout_billing.calls_com_acme_billing_invoiceservice_invoiceservice_com_acm_2
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/com/acme/billing/InvoiceService.java::com.acme.billing.InvoiceService.InvoiceService()
+  target_key: method:src/com/acme/billing/InvoiceService.java::com.acme.billing.FlatTax.FlatTax(double)
+  resolution: same_file
+  evidence:
+  - file: src/com/acme/billing/InvoiceService.java
+    start_line: 14
+    end_line: 14
+  basis: constructor
+- id: java.holdout_billing.calls_com_acme_billing_invoiceservice_total_list_long_com_ac
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/com/acme/billing/InvoiceService.java::com.acme.billing.InvoiceService.total(List<Long>)
+  target_key: method:src/com/acme/billing/InvoiceService.java::com.acme.billing.TaxPolicy.apply(long)
+  resolution: same_file
+  evidence:
+  - file: src/com/acme/billing/InvoiceService.java
+    start_line: 20
+    end_line: 20
+  note: policy is a TaxPolicy field
+  basis: declared_type
+- id: java.holdout_billing.calls_com_acme_billing_invoiceservice_total_list_long_com_ac_2
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/com/acme/billing/InvoiceService.java::com.acme.billing.InvoiceService.total(List<Long>)
+  target_key: method:src/com/acme/billing/InvoiceService.java::com.acme.billing.InvoiceService.Rounding.round(long)
+  resolution: same_file
+  evidence:
+  - file: src/com/acme/billing/InvoiceService.java
+    start_line: 22
+    end_line: 22
+  basis: type_name
+- id: java.holdout_billing.calls_com_acme_billing_invoiceservice_totalall_long_com_acme
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/com/acme/billing/InvoiceService.java::com.acme.billing.InvoiceService.totalAll(long...)
+  target_key: method:src/com/acme/billing/InvoiceService.java::com.acme.billing.TaxPolicy.apply(long)
+  resolution: same_file
+  evidence:
+  - file: src/com/acme/billing/InvoiceService.java
+    start_line: 26
+    end_line: 26
+  note: inside the lambda
+  basis: declared_type
+- id: java.holdout_billing.calls_com_acme_billing_invoiceservice_totalall_long_taxed_ap
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/com/acme/billing/InvoiceService.java::com.acme.billing.InvoiceService.totalAll(long...)
+  target_key: external:taxed.apply
+  resolution: external
+  evidence:
+  - file: src/com/acme/billing/InvoiceService.java
+    start_line: 29
+    end_line: 29
+- id: java.holdout_billing.calls_com_acme_billing_invoiceservice_rounding_round_long_ma
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/com/acme/billing/InvoiceService.java::com.acme.billing.InvoiceService.Rounding.round(long)
+  target_key: external:Math.round
+  resolution: external
+  evidence:
+  - file: src/com/acme/billing/InvoiceService.java
+    start_line: 36
+    end_line: 36
+- id: java.holdout_billing.calls_com_acme_billing_taxpolicy_twice_com_acme_billing_taxp
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/com/acme/billing/InvoiceService.java::com.acme.billing.TaxPolicy.twice()
+  target_key: method:src/com/acme/billing/InvoiceService.java::com.acme.billing.TaxPolicy.apply(long)
+  resolution: same_file
+  evidence:
+  - file: src/com/acme/billing/InvoiceService.java
+    start_line: 45
+    end_line: 45
+  basis: enclosing_class

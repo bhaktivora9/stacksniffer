@@ -235,3 +235,37 @@ def test_server_errors_and_malformed_payloads_raise_github_unavailable():
         _resolve(_github(commits={"main": "not-a-sha"}))
     with pytest.raises(GitHubUnavailable, match="malformed"):
         _resolve(lambda request: httpx.Response(200, text="<html>"))
+
+
+# --- reported size (pre-acquisition gate) ----------------------------------------------------
+
+
+def _reported_size(payload, status=200):
+    from backend.services.repository_resolver import github_reported_size_bytes
+
+    paths = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        paths.append(request.url.raw_path.decode())
+        return httpx.Response(status, json=payload)
+
+    async def run():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+            return await github_reported_size_bytes("github:OpenAI/Example", client=client)
+
+    return asyncio.run(run()), paths
+
+
+def test_reported_size_converts_github_kilobytes_to_bytes():
+    size, paths = _reported_size({"size": 2048})
+    assert size == 2048 * 1024
+    assert paths == ["/repos/openai/example"]
+
+
+def test_reported_size_is_unknown_when_github_omits_it():
+    assert _reported_size({})[0] is None
+
+
+def test_reported_size_raises_typed_errors():
+    with pytest.raises(RepositoryNotFound):
+        _reported_size({"message": "Not Found"}, status=404)
