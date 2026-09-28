@@ -163,6 +163,9 @@ export default function ResultsPage() {
           setHardRefreshing(false);
           showToast("Analysis refreshed", "success");
           navigate(`/results/${encodeURIComponent(analysis.analysis_id)}`, { replace: true });
+        } else if (event.state === "AWAITING_STAGE") {
+          setHardRefreshing(false);
+          showToast(event.message || "Structure refreshed; waiting for the next stage", "success");
         } else if (event.state === "FAILED" || event.state === "DEGRADED") {
           setHardRefreshing(false);
           showToast(event.message || "Hard refresh failed", "error");

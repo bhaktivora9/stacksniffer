@@ -21,7 +21,11 @@ Create a Neon PostgreSQL 18 project named `stacksniffer-r1` in **AWS US West 2 (
 4. `004_graphrag_runtime.sql`
 5. `005_evaluation_and_ml.sql`
 6. `006_optional_ann_indexes.sql`
-7. `007_schema_smoke_test.sql`
+7. `007_schema_smoke_test.sql` (optional, transactional; run last)
+
+These files are the canonical schema for a fresh database. Until R1 is released, schema
+corrections are made in these files directly and the database is recreated; there is no
+migration framework.
 
 Run migrations with stop-on-error enabled:
 

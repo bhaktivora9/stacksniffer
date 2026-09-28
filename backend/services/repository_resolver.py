@@ -281,6 +281,31 @@ async def _resolve(client: httpx.AsyncClient, url: str, reference: str | None) -
     )
 
 
+async def _reported_size_bytes(client: httpx.AsyncClient, canonical_repository_key: str) -> int | None:
+    owner, repository = canonicalize_repository_url(canonical_repository_key).removeprefix(f"{PROVIDER}:").split("/")
+    response = await _get(client, f"/repos/{owner}/{repository}")
+    if response.status_code in (404, 451):
+        raise RepositoryNotFound(f"repository github.com/{owner}/{repository} was not found")
+    if response.is_error:
+        raise GitHubUnavailable(f"unable to inspect repository (GitHub {response.status_code})")
+    size_kb = _json_object(response).get("size")
+    return size_kb * 1024 if isinstance(size_kb, int) and size_kb >= 0 else None
+
+
+async def github_reported_size_bytes(
+    canonical_repository_key: str, *, client: httpx.AsyncClient | None = None
+) -> int | None:
+    """Return GitHub's reported repository size in bytes, or None when it reports none.
+
+    GitHub measures the whole repository (all history, approximately), so this
+    is an upper-bound gate for a shallow fetch, not an exact download size.
+    """
+    if client is not None:
+        return await _reported_size_bytes(client, canonical_repository_key)
+    async with httpx.AsyncClient(timeout=GITHUB_TIMEOUT) as owned_client:
+        return await _reported_size_bytes(owned_client, canonical_repository_key)
+
+
 async def resolve_repository_reference(
     url: str,
     reference: str | None = None,

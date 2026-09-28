@@ -1,7 +1,8 @@
 import { API_BASE, fetchApi } from "../config/api";
 
 // The backend stops streaming once an analysis reaches one of these states.
-export const FINISHED_STATES = ["READY", "DEGRADED", "FAILED"];
+// AWAITING_STAGE: every deployed stage finished; the analysis resumes when the next one ships.
+export const FINISHED_STATES = ["READY", "DEGRADED", "FAILED", "AWAITING_STAGE"];
 
 function errorDetail(body, fallback) {
   const detail = body?.detail;

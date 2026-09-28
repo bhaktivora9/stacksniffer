@@ -10,24 +10,40 @@ from uuid import UUID
 
 try:
     from services.analysis_lifecycle import (
+        AWAITING_STAGE,
         FINISHED_STATES,
         AnalysisState,
         AnalysisTransitionError,
+        clear_awaiting_stage,
+        park_awaiting_stage,
         requeue_failed_analysis,
         transition_allowed,
         transition_analysis,
     )
-    from services.analysis_queue import claim_queued_analysis, finish_attempt
+    from services.analysis_queue import (
+        AttemptOwnershipLost,
+        claim_queued_analysis,
+        claim_resumable_analysis,
+        finish_attempt,
+    )
 except ModuleNotFoundError:
     from backend.services.analysis_lifecycle import (
+        AWAITING_STAGE,
         FINISHED_STATES,
         AnalysisState,
         AnalysisTransitionError,
+        clear_awaiting_stage,
+        park_awaiting_stage,
         requeue_failed_analysis,
         transition_allowed,
         transition_analysis,
     )
-    from backend.services.analysis_queue import claim_queued_analysis, finish_attempt
+    from backend.services.analysis_queue import (
+        AttemptOwnershipLost,
+        claim_queued_analysis,
+        claim_resumable_analysis,
+        finish_attempt,
+    )
 
 logger = logging.getLogger(__name__)
 
@@ -45,11 +61,16 @@ _OUTCOME_STATES = {
 }
 
 
-def claim_analysis_transactionally(connection_factory: Callable[[], Any]) -> tuple[UUID, UUID] | None:
-    """Claim one QUEUED analysis and commit the claim before returning it."""
+def claim_analysis_transactionally(
+    connection_factory: Callable[[], Any], resumable_stages: tuple[str, ...] = ()
+) -> tuple[UUID, UUID] | None:
+    """Claim one QUEUED analysis, else one AWAITING_STAGE analysis this pipeline can resume.
+
+    The claim is committed before it is returned.
+    """
     conn = connection_factory()
     try:
-        claimed = claim_queued_analysis(conn)
+        claimed = claim_queued_analysis(conn) or claim_resumable_analysis(conn, resumable_stages)
         conn.commit()
         return claimed
     except Exception:
@@ -68,9 +89,14 @@ async def complete_attempt(
     failure_code: str | None = None,
     failure_detail: dict[str, Any] | None = None,
 ) -> None:
-    """Finish an attempt and move its analysis from wherever the pipeline left it."""
+    """Finish an attempt and move its analysis from wherever the pipeline left it.
+
+    ``AWAITING_STAGE`` leaves the analysis in its current stage status, closes the
+    attempt as SUCCEEDED and records the progress, so it is neither reported as
+    failed nor finished, and can be resumed once the stage exists.
+    """
     target_state = _OUTCOME_STATES.get(outcome)
-    if target_state is None:
+    if target_state is None and outcome != AWAITING_STAGE:
         raise ValueError(f"invalid terminal attempt outcome: {outcome}")
 
     conn = connection_factory()
@@ -82,6 +108,12 @@ async def complete_attempt(
         if current is None:
             raise AnalysisTransitionError(f"analysis {analysis_id} does not exist")
         current_state = AnalysisState(current)
+        if outcome == AWAITING_STAGE:
+            # The pipeline completed current_state and has nothing to run next.
+            await park_awaiting_stage(conn, analysis_id, current_state)
+            finish_attempt(conn, attempt_id, "SUCCEEDED")
+            conn.commit()
+            return
         if not transition_allowed(current_state, target_state):
             raise AnalysisTransitionError(
                 f"attempt outcome {outcome} is not reachable from {current_state.value}"
@@ -96,6 +128,8 @@ async def complete_attempt(
             failure_detail=failure_detail,
         )
         await transition_analysis(conn, analysis_id, current_state, target_state)
+        if target_state is not AnalysisState.FAILED:
+            clear_awaiting_stage(conn, analysis_id)  # a failed retry must still know where to resume
         conn.commit()
     except Exception:
         conn.rollback()
@@ -166,6 +200,13 @@ async def recover_stale_attempts(
         conn.close()
 
 
+def _failure_of(exc: Exception) -> tuple[str, dict[str, Any]]:
+    """Typed errors carry their own failure_code/failure_detail; others fall back to the class name."""
+    code = getattr(exc, "failure_code", None) or type(exc).__name__
+    detail = getattr(exc, "failure_detail", None) or {"message": str(exc)}
+    return code, {**detail, "error_type": type(exc).__name__}
+
+
 async def _wait(stop_event: asyncio.Event | None, seconds: float) -> None:
     if stop_event is None:
         await asyncio.sleep(seconds)
@@ -205,7 +246,8 @@ async def run_worker_loop(
             )
             last_recovery = time.monotonic()
 
-        claimed = await asyncio.to_thread(claim_analysis_transactionally, connection_factory)
+        resumable = tuple(getattr(process_attempt, "resumable_stages", ()))
+        claimed = await asyncio.to_thread(claim_analysis_transactionally, connection_factory, resumable)
         if claimed is None:
             await _wait(stop_event, poll_seconds)
             continue
@@ -221,16 +263,20 @@ async def run_worker_loop(
                 outcome=outcome,
             )
             logger.info("Analysis %s attempt %s finished: %s", analysis_id, attempt_id, outcome)
+        except AttemptOwnershipLost as exc:
+            # Whoever took the attempt away already recorded its outcome.
+            logger.warning("Analysis %s attempt %s abandoned: %s", analysis_id, attempt_id, exc)
         except Exception as exc:
-            logger.warning("Analysis %s attempt %s failed: %s: %s", analysis_id, attempt_id, type(exc).__name__, exc)
+            failure_code, failure_detail = _failure_of(exc)
+            logger.warning("Analysis %s attempt %s failed: %s: %s", analysis_id, attempt_id, failure_code, exc)
             try:
                 await complete_attempt(
                     connection_factory,
                     analysis_id=analysis_id,
                     attempt_id=attempt_id,
                     outcome="FAILED",
-                    failure_code=type(exc).__name__,
-                    failure_detail={"message": str(exc)},
+                    failure_code=failure_code,
+                    failure_detail=failure_detail,
                 )
             except Exception as completion_error:
                 raise AnalysisWorkerError(

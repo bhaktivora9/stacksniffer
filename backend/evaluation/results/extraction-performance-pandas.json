@@ -1,0 +1,197 @@
+{
+  "repository": "github:pandas-dev/pandas",
+  "reference": "v2.2.2",
+  "commit_sha": "d9cdd2ee5a58015ef6f4d15c7226110c9aab8140",
+  "environment": {
+    "python": "3.13.7",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "extractor_versions": {
+      "python": "stacksniffer-python/2+tree-sitter-python@0.25.0"
+    },
+    "batch_size_files": 100,
+    "database": "local PostgreSQL 16 + pgvector (Docker)"
+  },
+  "snapshot": {
+    "files": 2205,
+    "checkout_bytes": 32239990,
+    "excluded": {
+      "binary": 363,
+      "too_large": 2
+    }
+  },
+  "seconds": {
+    "resolve": 0.857,
+    "acquisition": 8.901,
+    "discovery": 0.012,
+    "parse": 59.643,
+    "persistence": 44.767,
+    "persistence_payload": 2.955,
+    "persistence_database": 41.813,
+    "extraction_total": 104.41,
+    "total": 114.821
+  },
+  "peak_memory_mb": 194.2,
+  "throughput": {
+    "files_per_second": 21.1,
+    "entities_per_second": 481.7,
+    "edges_per_second": 1703.0
+  },
+  "counts": {
+    "files": 2205,
+    "files_by_language": {
+      "python": 1552,
+      "unknown": 414,
+      "html": 113,
+      "yaml": 49,
+      "markdown": 28,
+      "c": 24,
+      "json": 8,
+      "shell": 5,
+      "css": 4,
+      "dockerfile": 3,
+      "xml": 3,
+      "toml": 2
+    },
+    "files_by_status": {
+      "UNSUPPORTED": 653,
+      "PARSED": 1552
+    },
+    "files_by_origin": {
+      "first_party": 2191,
+      "generated": 2,
+      "vendored": 12
+    },
+    "entities_by_origin": {
+      "first_party": 95128,
+      "generated": 100,
+      "vendored": 12
+    },
+    "stored": {
+      "source_file": 2205,
+      "entity": 50298,
+      "evidence": 274312,
+      "repository_edge": 177811
+    },
+    "errors": 0
+  },
+  "batches": {
+    "count": 23,
+    "files_per_batch": {
+      "min": 5.0,
+      "median": 100.0,
+      "p95": 100.0,
+      "max": 100.0,
+      "total": 2205.0
+    },
+    "rows_per_batch": {
+      "entities": {
+        "min": 100.0,
+        "median": 2616.0,
+        "p95": 4944.0,
+        "max": 7091.0,
+        "total": 60288.0
+      },
+      "edges": {
+        "min": 0.0,
+        "median": 8144.0,
+        "p95": 14656.0,
+        "max": 19543.0,
+        "total": 177811.0
+      },
+      "evidence": {
+        "min": 100.0,
+        "median": 14017.0,
+        "p95": 24041.0,
+        "max": 28117.0,
+        "total": 274312.0
+      },
+      "edge_links": {
+        "min": 0.0,
+        "median": 13425.0,
+        "p95": 23363.0,
+        "max": 27164.0,
+        "total": 260836.0
+      }
+    },
+    "database_seconds_per_batch": {
+      "min": 0.2568,
+      "median": 2.0126,
+      "p95": 3.2896,
+      "max": 4.1762,
+      "total": 41.8128
+    },
+    "database_seconds_by_statement": {
+      "source_files": {
+        "min": 0.0033,
+        "median": 0.0519,
+        "p95": 0.0544,
+        "max": 0.0616,
+        "total": 1.1479
+      },
+      "evidence": {
+        "min": 0.0094,
+        "median": 0.4927,
+        "p95": 0.8678,
+        "max": 1.0548,
+        "total": 10.0595
+      },
+      "entities": {
+        "min": 0.0178,
+        "median": 0.1237,
+        "p95": 0.2,
+        "max": 0.273,
+        "total": 2.7916
+      },
+      "parents": {
+        "min": 0.0,
+        "median": 0.076,
+        "p95": 0.1138,
+        "max": 0.1653,
+        "total": 1.6903
+      },
+      "entity_links": {
+        "min": 0.0262,
+        "median": 0.3028,
+        "p95": 0.4715,
+        "max": 0.6388,
+        "total": 6.033
+      },
+      "edges": {
+        "min": 0.0,
+        "median": 0.3047,
+        "p95": 0.5727,
+        "max": 0.765,
+        "total": 6.9595
+      },
+      "edge_links": {
+        "min": 0.0,
+        "median": 0.3093,
+        "p95": 0.5129,
+        "max": 0.6197,
+        "total": 6.1638
+      }
+    },
+    "slowest_batch": {
+      "files": 100,
+      "database_seconds": 4.176,
+      "rows": {
+        "source_files": 100,
+        "evidence": 28117,
+        "entities": 4944,
+        "parents": 2727,
+        "entity_links": 26712,
+        "edges": 19543,
+        "edge_links": 27164
+      },
+      "statement_seconds": {
+        "source_files": 0.053,
+        "evidence": 1.055,
+        "entities": 0.228,
+        "parents": 0.124,
+        "entity_links": 0.639,
+        "edges": 0.756,
+        "edge_links": 0.62
+      }
+    }
+  }
+}

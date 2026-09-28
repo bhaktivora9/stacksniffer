@@ -72,10 +72,14 @@ class AnalysisStateResponse(BaseModel):
     completed_at: datetime | None = None
     failure_stage: str | None = None
     failure_code: str | None = None
+    # The stage to resume at (set while AWAITING_STAGE, and kept if a resumed attempt fails).
+    awaiting_stage: str | None = None
+    last_completed_stage: str | None = None
 
 
 # Terminal from the client's point of view: the worker has finished with it.
-_STREAM_END_STATES = {"READY", "DEGRADED", "FAILED"}
+# AWAITING_STAGE will not move until a new stage is deployed, so the stream ends there too.
+_STREAM_END_STATES = {"READY", "DEGRADED", "FAILED", "AWAITING_STAGE"}
 
 _STATE_MESSAGES = {
     "QUEUED": "Analysis queued",
@@ -84,6 +88,7 @@ _STATE_MESSAGES = {
     "INDEXING": "Indexing content",
     "PROJECTING": "Building graph projection",
     "SUMMARIZING": "Summarizing",
+    "AWAITING_STAGE": "Waiting for the next analysis stage",
     "READY": "Analysis complete",
     "DEGRADED": "Analysis completed with degraded results",
     "FAILED": "Analysis failed",
@@ -98,7 +103,8 @@ def _get_analysis(conn: Any, analysis_id: UUID) -> AnalysisStateResponse | None:
     row = conn.fetch_one(
         """
         SELECT a.id, a.status, a.created_at, a.completed_at,
-               aa.id AS attempt_id, aa.failure_stage, aa.failure_code
+               aa.id AS attempt_id, aa.failure_stage, aa.failure_code,
+               a.awaiting_stage, a.last_completed_stage
         FROM core.analysis AS a
         LEFT JOIN LATERAL (
             SELECT id, failure_stage, failure_code
@@ -122,6 +128,8 @@ def _get_analysis(conn: Any, analysis_id: UUID) -> AnalysisStateResponse | None:
         completed_at=_row_value(row, "completed_at", 3),
         failure_stage=_row_value(row, "failure_stage", 5),
         failure_code=_row_value(row, "failure_code", 6),
+        awaiting_stage=_row_value(row, "awaiting_stage", 7),
+        last_completed_stage=_row_value(row, "last_completed_stage", 8),
     )
 
 
@@ -129,12 +137,17 @@ def _state_event(state: AnalysisStateResponse, sequence: int) -> dict[str, Any]:
     message = _STATE_MESSAGES.get(state.status, state.status)
     if state.status == "FAILED" and state.failure_stage:
         message = f"Analysis failed during {state.failure_stage.lower()}"
+    if state.status == "AWAITING_STAGE" and state.awaiting_stage:
+        done = (state.last_completed_stage or "").lower()
+        message = f"Completed through {done}; waiting for the {state.awaiting_stage.lower()} stage"
     return {
         "analysis_id": str(state.analysis_id),
         "attempt_id": str(state.attempt_id) if state.attempt_id else None,
         "sequence": sequence,
         "state": state.status,
         "message": message,
+        "awaiting_stage": state.awaiting_stage,
+        "last_completed_stage": state.last_completed_stage,
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
@@ -180,7 +193,7 @@ async def create_analysis(request: CreateAnalysisRequest) -> CreateAnalysisRespo
     except RepositoryResolutionError as exc:
         raise HTTPException(status_code=exc.status_code, detail=str(exc)) from exc
 
-    requested_reference = resolved["reference"]
+    requested_reference = resolved.requested_reference
     structural_version = os.getenv("STRUCTURAL_PIPELINE_VERSION", "structural-v1")
     factory = _connection_factory_or_raise()
 
@@ -193,12 +206,11 @@ async def create_analysis(request: CreateAnalysisRequest) -> CreateAnalysisRespo
                 canonical_repository_key=canonical_key,
                 owner_name=owner_name,
                 repository_name=repository_name,
-                clone_url=f"{resolved['url']}.git",
+                clone_url=resolved.clone_url,
                 requested_reference=requested_reference,
-                resolved_commit_sha=resolved["commit"],
+                resolved_commit_sha=resolved.commit_sha,
                 structural_pipeline_version=structural_version,
-                # The resolver falls back to the default branch when no reference is given.
-                default_branch=requested_reference if request.reference is None else None,
+                default_branch=resolved.default_branch,
                 client_request_id=request.client_request_id,
             ),
         )
