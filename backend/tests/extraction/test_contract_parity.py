@@ -13,7 +13,7 @@ from uuid import uuid4
 import pytest
 
 from backend.evaluation import extraction_metrics as metrics
-from backend.services.extraction.analyzers import JavaAnalyzer, PythonAnalyzer, ScalaAnalyzer
+from backend.services.extraction.analyzers import GoAnalyzer, JavaAnalyzer, PythonAnalyzer, ScalaAnalyzer
 from backend.services.extraction.builder import FileFactsBuilder
 from backend.services.extraction.contracts import (
     AnalyzerCapabilities, CanonicalEntity, CanonicalRelationship, CancellationToken, Capability, CapabilityLevel,
@@ -26,14 +26,15 @@ from extraction_benchmark_support import LANGUAGES, requires_grammars
 pytestmark = requires_grammars
 
 # A multi-file fixture with a malformed file, per language.
-FIXTURE = {"python": "python/shop_app", "java": "java/orders_service", "scala": "scala/broker"}
-ANALYZER = {"python": PythonAnalyzer, "java": JavaAnalyzer, "scala": ScalaAnalyzer}
+FIXTURE = {"python": "python/shop_app", "java": "java/orders_service", "scala": "scala/broker", "go": "go/service"}
+ANALYZER = {"python": PythonAnalyzer, "java": JavaAnalyzer, "scala": ScalaAnalyzer, "go": GoAnalyzer}
 DUPLICATES = {
     "python": ("dup.py", b"def handler():\n    return 1\n\n\ndef handler():\n    return 2\n", "function", "handler"),
     "java": ("Dup.java", b"class Dup {\n  void go() {\n    new Runnable() { public void run() {} };\n"
                          b"    new Runnable() { public void run() {} };\n  }\n}\n", "method", "run"),
     "scala": ("Dup.scala", b"class Dup {\n  def go(): Unit = {\n    new Runnable { def run(): Unit = () }\n"
                            b"    new Runnable { def run(): Unit = () }\n  }\n}\n", "method", "run"),
+    "go": ("dup.go", b"package dup\n\nfunc init() {}\n\nfunc init() {}\n", "function", "init"),
 }
 
 
@@ -213,6 +214,34 @@ def test_scala_companion_objects_and_their_classes_stay_distinct():
             f"method:{utils}::kafka.utils.Logging$.warn(String)"} <= keys
 
 
+def test_go_implicit_interfaces_need_the_whole_method_set():
+    source = b"""package p
+
+type Shape interface {
+	Area() float64
+	Name() string
+}
+
+type Square struct{}
+
+func (s Square) Area() float64 { return 1 }
+func (s Square) Name() string  { return "square" }
+
+type Half struct{}
+
+func (h *Half) Area() float64 { return 0.5 }
+"""
+    edges = [r for r in analyze("go", "p.go", source).relationships if r.relationship_type.value == "IMPLEMENTS"]
+    assert [(r.source_key, r.target_key) for r in edges] == [("class:p.go::p.Square", "interface:p.go::p.Shape")]
+    assert edges[0].certainty.value == "LOW" and dict(edges[0].metadata)["resolution_basis"] == "method_set"
+
+
+def test_go_methods_of_a_type_declared_elsewhere_belong_to_their_file():
+    legacy = "internal/server/legacy.go"
+    method = next(e for f in extract("go") for e in f.entities if e.stable_key.endswith("::server.Server.logStart"))
+    assert method.path == legacy and method.parent_key == f"file:{legacy}"
+
+
 @pytest.mark.parametrize("language", LANGUAGES)
 def test_one_malformed_file_does_not_fail_the_repository(language):
     case = next(c for c in metrics.load_gold() if c.fixture == FIXTURE[language])
@@ -350,6 +379,50 @@ class Repo {
         "this.add": ("method:Repo.scala::Repo.add(Int)", "enclosing_class", "MEDIUM"),
         "other.add": ("method:Repo.scala::Repo.add(Int)", "declared_type", "LOW"),
     }),
+    "go": ("repo.go", b"""package repo
+
+import "strings"
+
+type Repo struct {
+	b strings.Builder
+}
+
+func (r *Repo) Add(x int) {}
+
+func (r *Repo) ViaExternalField() {
+	r.b.WriteString("x")
+}
+
+func (r *Repo) ViaInferredLocal() {
+	local := &Repo{}
+	local.Add(2)
+}
+
+func (r *Repo) ViaRange(items []*Repo) {
+	for _, x := range items {
+		x.Add(3)
+	}
+}
+
+func (r *Repo) ViaFunction() {
+	helper(4)
+}
+
+func (r *Repo) ViaReceiver() {
+	r.Add(5)
+}
+
+func (r *Repo) ViaTypedParameter(other *Repo) {
+	other.Add(6)
+}
+
+func helper(x int) {}
+""", {
+        "r.b.WriteString": None, "local.Add": None, "x.Add": None,
+        "helper": ("function:repo.go::repo.helper", "lexical_scope", "MEDIUM"),
+        "r.Add": ("method:repo.go::repo.Repo.Add", "enclosing_class", "MEDIUM"),
+        "other.Add": ("method:repo.go::repo.Repo.Add", "declared_type", "LOW"),
+    }),
 }
 
 
@@ -405,9 +478,12 @@ def test_an_edge_is_as_certain_as_its_strongest_site_regardless_of_order(languag
         "java": ("A.java", b"class A {\n  void m() {}\n  void run(A other) {\n    other.m();\n    m();\n  }\n}\n"),
         "scala": ("A.scala", b"class A {\n  def m(): Unit = {}\n  def run(other: A): Unit = {\n    other.m()\n"
                              b"    m()\n  }\n}\n"),
+        "go": ("a.go", b"package a\n\ntype A struct{}\n\nfunc (a *A) M() {}\n\nfunc (a *A) Run(other *A) {\n"
+                       b"\tother.M()\n\ta.M()\n}\n"),
     }[language]
     edge = next(r for r in analyze(language, path, source).relationships
-                if r.relationship_type.value == "CALLS" and "run" in r.source_key and not r.target_key.startswith("ext"))
+                if r.relationship_type.value == "CALLS" and "run" in r.source_key.lower()
+                and not r.target_key.startswith("ext"))
     assert edge.certainty.value == "MEDIUM"  # the LOW receiver site comes first in the source
     assert len(edge.evidence) == 2
     assert dict(edge.metadata)["resolution_basis"] == "enclosing_class"

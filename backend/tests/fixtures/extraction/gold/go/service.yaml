@@ -1,0 +1,507 @@
+# Gold labels for go/service. Written from the fixture source, never from extractor output.
+# CONTAINS facts are derived from the entity structure below by the evaluator.
+gold_version: 2
+fixture: go/service
+language: go
+split: development
+description: 'A module with internal packages: a struct field typed by another package, calls through package qualifiers into a generated and
+  a vendored package, a method declared in a different file from its type, implicit interface satisfaction, a conversion, a malformed file and
+  a go.mod dependency.'
+labelled_from: source
+review:
+  status: pending_independent_review
+  reviewer: null
+files:
+  go.mod:
+    parse_status: UNSUPPORTED
+    origin: first_party
+  internal/store/store.go:
+    parse_status: PARSED
+    origin: first_party
+  internal/server/server.go:
+    parse_status: PARSED
+    origin: first_party
+  internal/server/legacy.go:
+    parse_status: PARTIAL
+    syntax_error_lines:
+    - 9
+    origin: first_party
+  api/api.pb.go:
+    parse_status: PARSED
+    origin: generated
+  vendor/github.com/acme/retry/retry.go:
+    parse_status: PARSED
+    origin: vendored
+facts:
+- id: go.service.class_store_store_store
+  kind: entity
+  entity_type: CLASS
+  qualified_name: store.Store
+  file: internal/store/store.go
+  start_line: 10
+  end_line: 13
+- id: go.service.function_store_store_new
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: store.New
+  file: internal/store/store.go
+  start_line: 15
+  end_line: 17
+- id: go.service.method_store_store_store_get
+  kind: entity
+  entity_type: METHOD
+  qualified_name: store.Store.Get
+  file: internal/store/store.go
+  start_line: 19
+  end_line: 27
+- id: go.service.method_store_store_store_put
+  kind: entity
+  entity_type: METHOD
+  qualified_name: store.Store.Put
+  file: internal/store/store.go
+  start_line: 29
+  end_line: 33
+- id: go.service.interface_server_server_handler
+  kind: entity
+  entity_type: INTERFACE
+  qualified_name: server.Handler
+  file: internal/server/server.go
+  start_line: 13
+  end_line: 15
+- id: go.service.method_server_server_handler_handle
+  kind: entity
+  entity_type: METHOD
+  qualified_name: server.Handler.Handle
+  file: internal/server/server.go
+  start_line: 14
+  end_line: 14
+- id: go.service.class_server_server_server
+  kind: entity
+  entity_type: CLASS
+  qualified_name: server.Server
+  file: internal/server/server.go
+  start_line: 17
+  end_line: 21
+- id: go.service.function_server_server_new
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: server.New
+  file: internal/server/server.go
+  start_line: 23
+  end_line: 27
+- id: go.service.method_server_server_server_handle
+  kind: entity
+  entity_type: METHOD
+  qualified_name: server.Server.Handle
+  file: internal/server/server.go
+  start_line: 29
+  end_line: 36
+- id: go.service.method_server_server_server_start
+  kind: entity
+  entity_type: METHOD
+  qualified_name: server.Server.Start
+  file: internal/server/server.go
+  start_line: 38
+  end_line: 42
+- id: go.service.method_server_server_server_mux
+  kind: entity
+  entity_type: METHOD
+  qualified_name: server.Server.mux
+  file: internal/server/server.go
+  start_line: 44
+  end_line: 49
+- id: go.service.method_legacy_server_server_logstart
+  kind: entity
+  entity_type: METHOD
+  qualified_name: server.Server.logStart
+  file: internal/server/legacy.go
+  start_line: 5
+  end_line: 7
+  note: its type is declared in server.go
+- id: go.service.function_legacy_server_after
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: server.after
+  file: internal/server/legacy.go
+  start_line: 13
+  end_line: 13
+- id: go.service.function_api_api_render
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: api.Render
+  file: api/api.pb.go
+  start_line: 7
+  end_line: 7
+- id: go.service.function_retry_retry_do
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: retry.Do
+  file: vendor/github.com/acme/retry/retry.go
+  start_line: 3
+  end_line: 11
+- id: go.service.imports_store_go_external_errors_4
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:internal/store/store.go
+  target_key: external:errors
+  resolution: external
+  evidence:
+  - file: internal/store/store.go
+    start_line: 4
+    end_line: 4
+  module: errors
+- id: go.service.imports_store_go_external_sync_5
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:internal/store/store.go
+  target_key: external:sync
+  resolution: external
+  evidence:
+  - file: internal/store/store.go
+    start_line: 5
+    end_line: 5
+  module: sync
+- id: go.service.imports_server_go_external_fmt_4
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:internal/server/server.go
+  target_key: external:fmt
+  resolution: external
+  evidence:
+  - file: internal/server/server.go
+    start_line: 4
+    end_line: 4
+  module: fmt
+- id: go.service.imports_server_go_http_5
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:internal/server/server.go
+  target_key: external:net/http
+  resolution: external
+  evidence:
+  - file: internal/server/server.go
+    start_line: 5
+    end_line: 5
+  module: net/http
+- id: go.service.imports_server_go_external_time_6
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:internal/server/server.go
+  target_key: external:time
+  resolution: external
+  evidence:
+  - file: internal/server/server.go
+    start_line: 6
+    end_line: 6
+  module: time
+- id: go.service.imports_server_go_api_8
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:internal/server/server.go
+  target_key: external:example.com/service/api
+  resolution: unresolvable
+  evidence:
+  - file: internal/server/server.go
+    start_line: 8
+    end_line: 8
+  module: example.com/service/api
+  note: a package has no declaration to link to
+- id: go.service.imports_server_go_store_9
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:internal/server/server.go
+  target_key: external:example.com/service/internal/store
+  resolution: unresolvable
+  evidence:
+  - file: internal/server/server.go
+    start_line: 9
+    end_line: 9
+  module: example.com/service/internal/store
+  note: a package has no declaration to link to
+- id: go.service.imports_server_go_retry_10
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:internal/server/server.go
+  target_key: external:github.com/acme/retry
+  resolution: unresolvable
+  evidence:
+  - file: internal/server/server.go
+    start_line: 10
+    end_line: 10
+  module: github.com/acme/retry
+  note: vendored package in the repository
+- id: go.service.imports_legacy_go_external_log_3
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:internal/server/legacy.go
+  target_key: external:log
+  resolution: external
+  evidence:
+  - file: internal/server/legacy.go
+    start_line: 3
+    end_line: 3
+  module: log
+- id: go.service.imports_api_pb_go_external_strings_5
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:api/api.pb.go
+  target_key: external:strings
+  resolution: external
+  evidence:
+  - file: api/api.pb.go
+    start_line: 5
+    end_line: 5
+  module: strings
+- id: go.service.implements_server_server_server_handler_17
+  kind: relationship
+  relationship_type: IMPLEMENTS
+  source_key: class:internal/server/server.go::server.Server
+  target_key: interface:internal/server/server.go::server.Handler
+  resolution: same_file
+  evidence:
+  - file: internal/server/server.go
+    start_line: 17
+    end_line: 17
+  basis: method_set
+- id: go.service.calls_store_go_external_errors_new_8
+  kind: relationship
+  relationship_type: CALLS
+  source_key: file:internal/store/store.go
+  target_key: external:errors.New
+  resolution: external
+  evidence:
+  - file: internal/store/store.go
+    start_line: 8
+    end_line: 8
+  note: package-level variable initializer
+- id: go.service.calls_store_new_external_make_16
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:internal/store/store.go::store.New
+  target_key: external:make
+  resolution: external
+  evidence:
+  - file: internal/store/store.go
+    start_line: 16
+    end_line: 16
+  note: builtin
+- id: go.service.calls_store_store_get_external_s_mu_rlock_20
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:internal/store/store.go::store.Store.Get
+  target_key: external:s.mu.RLock
+  resolution: external
+  evidence:
+  - file: internal/store/store.go
+    start_line: 20
+    end_line: 20
+- id: go.service.calls_store_store_get_external_s_mu_runlock_21
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:internal/store/store.go::store.Store.Get
+  target_key: external:s.mu.RUnlock
+  resolution: external
+  evidence:
+  - file: internal/store/store.go
+    start_line: 21
+    end_line: 21
+- id: go.service.calls_store_store_put_external_s_mu_lock_30
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:internal/store/store.go::store.Store.Put
+  target_key: external:s.mu.Lock
+  resolution: external
+  evidence:
+  - file: internal/store/store.go
+    start_line: 30
+    end_line: 30
+- id: go.service.calls_store_store_put_external_s_mu_unlock_31
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:internal/store/store.go::store.Store.Put
+  target_key: external:s.mu.Unlock
+  resolution: external
+  evidence:
+  - file: internal/store/store.go
+    start_line: 31
+    end_line: 31
+- id: go.service.calls_server_server_handle_store_store_get_30
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:internal/server/server.go::server.Server.Handle
+  target_key: method:internal/store/store.go::store.Store.Get
+  resolution: cross_file
+  evidence:
+  - file: internal/server/server.go
+    start_line: 30
+    end_line: 30
+  basis: declared_type
+  note: s.store is a *store.Store field
+- id: go.service.calls_server_server_handle_external_r_url_query_30
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:internal/server/server.go::server.Server.Handle
+  target_key: external:r.URL.Query
+  resolution: external
+  evidence:
+  - file: internal/server/server.go
+    start_line: 30
+    end_line: 30
+- id: go.service.calls_server_server_handle_external_expression_get_30
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:internal/server/server.go::server.Server.Handle
+  target_key: external:<expression>.Get
+  resolution: external
+  evidence:
+  - file: internal/server/server.go
+    start_line: 30
+    end_line: 30
+  note: url.Values.Get
+- id: go.service.calls_server_server_handle_external_http_error_32
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:internal/server/server.go::server.Server.Handle
+  target_key: external:http.Error
+  resolution: external
+  evidence:
+  - file: internal/server/server.go
+    start_line: 32
+    end_line: 32
+- id: go.service.calls_server_server_handle_external_err_error_32
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:internal/server/server.go::server.Server.Handle
+  target_key: external:err.Error
+  resolution: external
+  evidence:
+  - file: internal/server/server.go
+    start_line: 32
+    end_line: 32
+- id: go.service.calls_server_server_handle_external_fmt_fprintln_35
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:internal/server/server.go::server.Server.Handle
+  target_key: external:fmt.Fprintln
+  resolution: external
+  evidence:
+  - file: internal/server/server.go
+    start_line: 35
+    end_line: 35
+- id: go.service.calls_server_server_handle_api_render_35
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:internal/server/server.go::server.Server.Handle
+  target_key: function:api/api.pb.go::api.Render
+  resolution: cross_file
+  evidence:
+  - file: internal/server/server.go
+    start_line: 35
+    end_line: 35
+  basis: import_binding
+  note: generated package
+- id: go.service.calls_server_server_start_retry_do_39
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:internal/server/server.go::server.Server.Start
+  target_key: function:vendor/github.com/acme/retry/retry.go::retry.Do
+  resolution: cross_file
+  evidence:
+  - file: internal/server/server.go
+    start_line: 39
+    end_line: 41
+  basis: import_binding
+  note: vendored package
+- id: go.service.calls_server_server_start_external_http_listenandserve_40
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:internal/server/server.go::server.Server.Start
+  target_key: external:http.ListenAndServe
+  resolution: external
+  evidence:
+  - file: internal/server/server.go
+    start_line: 40
+    end_line: 40
+- id: go.service.calls_server_server_start_server_server_mux_40
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:internal/server/server.go::server.Server.Start
+  target_key: method:internal/server/server.go::server.Server.mux
+  resolution: same_file
+  evidence:
+  - file: internal/server/server.go
+    start_line: 40
+    end_line: 40
+  basis: enclosing_class
+  note: inside a closure
+- id: go.service.calls_server_server_mux_external_http_newservemux_45
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:internal/server/server.go::server.Server.mux
+  target_key: external:http.NewServeMux
+  resolution: external
+  evidence:
+  - file: internal/server/server.go
+    start_line: 45
+    end_line: 45
+- id: go.service.calls_server_server_mux_external_m_handlefunc_46
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:internal/server/server.go::server.Server.mux
+  target_key: external:m.HandleFunc
+  resolution: external
+  evidence:
+  - file: internal/server/server.go
+    start_line: 46
+    end_line: 46
+  note: s.handler.Handle is a method value, not a call
+- id: go.service.calls_server_server_mux_server_server_logstart_47
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:internal/server/server.go::server.Server.mux
+  target_key: method:internal/server/legacy.go::server.Server.logStart
+  resolution: cross_file
+  evidence:
+  - file: internal/server/server.go
+    start_line: 47
+    end_line: 47
+  basis: enclosing_class
+  note: declared in legacy.go
+- id: go.service.calls_server_server_logstart_external_log_println_6
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:internal/server/legacy.go::server.Server.logStart
+  target_key: external:log.Println
+  resolution: external
+  evidence:
+  - file: internal/server/legacy.go
+    start_line: 6
+    end_line: 6
+- id: go.service.calls_api_render_external_strings_trimspace_7
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:api/api.pb.go::api.Render
+  target_key: external:strings.TrimSpace
+  resolution: external
+  evidence:
+  - file: api/api.pb.go
+    start_line: 7
+    end_line: 7
+- id: go.service.calls_retry_do_external_fn_6
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:vendor/github.com/acme/retry/retry.go::retry.Do
+  target_key: external:fn
+  resolution: unresolvable
+  evidence:
+  - file: vendor/github.com/acme/retry/retry.go
+    start_line: 6
+    end_line: 6
+  note: calls a function-typed parameter
+- id: go.service.unsupported_github_com_acme_retry
+  kind: unsupported
+  capability: dependencies
+  entity_type: DEPENDENCY
+  name: github.com/acme/retry
+  file: go.mod
+  note: declared module requirement; dependency extraction is UNSUPPORTED

@@ -106,7 +106,7 @@ def counts(conn, analysis_id):
 
 def test_extraction_persists_facts_with_evidence(conn, tmp_path):
     analysis_id = create_analysis(conn)
-    extract_into(conn, tmp_path, analysis_id, {"svc.py": PYTHON, "Repo.java": JAVA, "main.go": b"package main\n"},
+    extract_into(conn, tmp_path, analysis_id, {"svc.py": PYTHON, "Repo.java": JAVA, "main.rs": b"fn main() {}\n"},
                  batch_size=1)
     a = str(analysis_id)
 
@@ -145,7 +145,7 @@ def test_extraction_persists_facts_with_evidence(conn, tmp_path):
     """, a)
     assert parent == "class:svc.py::Service"
     assert conn.fetch_scalar(
-        "SELECT parse_status FROM core.source_file WHERE analysis_id = %s AND path = 'main.go'", a) == "UNSUPPORTED"
+        "SELECT parse_status FROM core.source_file WHERE analysis_id = %s AND path = 'main.rs'", a) == "UNSUPPORTED"
     # Two identical call sites on different lines: one edge, two pieces of evidence.
     assert conn.fetch_scalar("""
         SELECT count(*) FROM core.repository_edge r

@@ -1,4 +1,4 @@
-"""Language analyzers: Python, Java and Scala over Tree-sitter, plus the file-level fallback.
+"""Language analyzers: Python, Java, Scala and Go over Tree-sitter, plus the file-level fallback.
 
 Resolution is deliberately local to one file. A reference is linked to an
 entity only when the file's own declarations determine it: lexical scopes and
@@ -59,6 +59,9 @@ RESOLUTION_BASIS = {
     "super_constructor": ("constructor", Certainty.MEDIUM),
     "receiver": ("declared_type", Certainty.LOW),
     "instance": ("constructed_instance", Certainty.LOW),
+    # Go: a type implements an interface implicitly when its method set covers the interface's.
+    # Matched by method name and parameter count, not full signatures.
+    "method_set": ("method_set", Certainty.LOW),
 }
 _MAX_NAME = 200
 _WHITESPACE = re.compile(r"\s+")
@@ -209,6 +212,7 @@ class TreeSitterAnalyzer:
                     metadata["ambiguous_candidates"] = len(candidates)
             builder.relationship(ref.relationship_type, ref.source_key, target, ref.span,
                                  certainty=certainty, metadata=metadata)
+        self.finish(state, builder)
         return errors
 
     def visit(self, node: Any, scope: _Scope, state: _FileState, builder: FileFactsBuilder) -> _Scope | None:
@@ -216,6 +220,9 @@ class TreeSitterAnalyzer:
 
     def prepare(self, state: _FileState) -> None:
         """Hook run after the walk, before references are resolved."""
+
+    def finish(self, state: _FileState, builder: FileFactsBuilder) -> None:
+        """Hook run after references are resolved, for facts no reference site states."""
 
     def candidates(self, ref: _Reference, state: _FileState) -> list[str]:
         raise NotImplementedError
@@ -1339,3 +1346,460 @@ class ScalaAnalyzer(TreeSitterAnalyzer):
                 state.superclass[class_key] = key
             else:
                 del state.superclass[class_key]
+
+
+# --- Go --------------------------------------------------------------------------------------
+
+# Names that make `name(x)` a conversion rather than a call.
+_GO_PREDECLARED_TYPES = frozenset({
+    "bool", "byte", "rune", "string", "error", "any", "uintptr", "int", "int8", "int16", "int32", "int64",
+    "uint", "uint8", "uint16", "uint32", "uint64", "float32", "float64", "complex64", "complex128",
+})
+# Method sets of standard-library interfaces commonly embedded in repository interfaces, so an
+# implicit implementation can still be decided: (import path, name) -> [(method, parameters)].
+_GO_KNOWN_INTERFACES = {
+    ("", "error"): [("Error", 0)],
+    ("fmt", "Stringer"): [("String", 0)],
+    ("io", "Reader"): [("Read", 1)],
+    ("io", "Writer"): [("Write", 1)],
+    ("io", "Closer"): [("Close", 0)],
+    ("sort", "Interface"): [("Len", 0), ("Less", 2), ("Swap", 2)],
+}
+_GO_VERSION_SUFFIX = re.compile(r"^v\d+$")
+
+
+def _go_type_name(node: Any) -> str | None:
+    """A named type without pointers or type arguments (`pkg.T` when qualified); None otherwise."""
+    while node is not None and node.type in ("pointer_type", "generic_type", "parenthesized_type"):
+        node = node.child_by_field_name("type") if node.type == "generic_type" else \
+            next((c for c in node.named_children), None)
+    if node is None or node.type not in ("type_identifier", "qualified_type"):
+        return None
+    return _name(text_of(node))
+
+
+def _go_parameters(parameter_list: Any) -> tuple[list[tuple[str, str | None]], tuple[float, float]]:
+    """(name, type name) for every declared parameter, and the arity range."""
+    bindings, count, variadic = [], 0, False
+    for declaration in parameter_list.named_children if parameter_list is not None else []:
+        if declaration.type not in ("parameter_declaration", "variadic_parameter_declaration"):
+            continue
+        type_name = _go_type_name(declaration.child_by_field_name("type"))
+        names = declaration.children_by_field_name("name")
+        if declaration.type == "variadic_parameter_declaration":
+            variadic = True
+        else:
+            count += max(1, len(names))
+        bindings.extend((text_of(n), type_name) for n in names)
+    return bindings, (count, math.inf if variadic else count)
+
+
+def _go_import_name(path: str) -> str:
+    parts = [p for p in path.split("/") if p]
+    if len(parts) > 1 and _GO_VERSION_SUFFIX.match(parts[-1]):
+        parts.pop()  # example.com/lib/v2 is package lib
+    return parts[-1] if parts else path
+
+
+def _go_chain_is_simple(node: Any) -> bool:
+    while node.type == "selector_expression":
+        node = node.child_by_field_name("operand")
+    return node.type == "identifier"
+
+
+class GoAnalyzer(TreeSitterAnalyzer):
+    """Go packages: named types, interfaces, functions and methods; embedding as EXTENDS; implicit
+    interface satisfaction as IMPLEMENTS (same file, by method name and parameter count).
+
+    A method belongs to its receiver type, which may be declared in another file of the package;
+    its parent is then the file. Conversions (`T(x)`) and composite literals are not calls.
+    """
+
+    language = "go"
+    extractor = "tree-sitter-go"
+    analyzer_version = "stacksniffer-go/1"
+    capabilities = AnalyzerCapabilities({
+        Capability.DECLARATIONS: S,
+        Capability.IMPORTS: S,
+        Capability.CALLS: P,
+        Capability.INHERITANCE: P,  # embedding
+        Capability.INTERFACES: P,  # implicit, same file
+        Capability.DEPENDENCIES: U,  # go.mod is not interpreted
+        Capability.DECORATORS: U,  # Go has none
+    })
+
+    def __init__(self, adapter: TreeSitterParserAdapter | None = None):
+        super().__init__(adapter or TreeSitterParserAdapter("go", "tree_sitter_go", "tree-sitter-go"))
+
+    def visit(self, node, scope, state, builder):
+        kind = node.type
+        if kind == "source_file":
+            self._index_types(node, state, builder)
+            return scope
+        if kind == "ERROR" and node.parent is not None:
+            return None
+        if kind == "package_clause":
+            name = next((c for c in node.named_children if c.type == "package_identifier"), None)
+            state.package = text_of(name) or None
+            return None
+        if kind == "import_declaration":
+            for spec in (s for s in walk(node) if s.type == "import_spec"):
+                self._import(spec, builder, state)
+            return None
+        if kind == "type_spec":
+            return self._type(node, scope, state, builder)
+        if kind == "type_alias":
+            return None  # another name for an existing type, not a declaration
+        if kind in ("function_declaration", "method_declaration"):
+            return self._function(node, scope, state, builder)
+        if kind == "func_literal":
+            # Closures are not declarations: their calls belong to the enclosing function.
+            parameters, _ = _go_parameters(node.child_by_field_name("parameters"))
+            self._bind(state, scope.namespace, parameters)
+        elif kind in ("var_spec", "const_spec"):
+            type_name = _go_type_name(node.child_by_field_name("type"))
+            self._bind(state, scope.namespace, [(text_of(n), type_name) for n in node.children_by_field_name("name")])
+        elif kind in ("short_var_declaration", "range_clause", "receive_statement"):
+            left = node.child_by_field_name("left")
+            names = [text_of(n) for n in walk(left) if n.type == "identifier"] if left is not None else []
+            self._bind(state, scope.namespace, [(n, None) for n in names])  # inferred types
+        elif kind == "call_expression":
+            self._call(node, scope, state)
+        elif kind == "type_conversion_expression":
+            self._generic_call(node, scope, state)
+        return scope
+
+    # -- declarations -----------------------------------------------------------------------
+
+    def _index_types(self, root, state, builder):
+        """Record the file's top-level types first: methods may precede their receiver type."""
+        state.go_interfaces = {}  # interface key -> (own [(method, arity)], embedded type names)
+        state.go_fields = defaultdict(dict)  # type key -> field -> type name
+        state.go_type_nodes = {}  # type key -> name node (evidence for implicit IMPLEMENTS)
+        state.go_imports = {}  # package name in this file -> import path
+        state.go_receivers = {}  # method key -> (receiver name, receiver type key)
+        for declaration in root.named_children:
+            if declaration.type != "type_declaration":
+                continue
+            for spec in declaration.named_children:
+                if spec.type != "type_spec" or _scala_header_broken(spec):
+                    continue
+                name = text_of(spec.child_by_field_name("name"))
+                definition = spec.child_by_field_name("type")
+                interface = definition is not None and definition.type == "interface_type"
+                entity = EntityType.INTERFACE if interface else EntityType.CLASS
+                key = f"{entity.value.lower()}:{builder.path}::{self._qualify_top(state, root, name)}"
+                state.types[name].append(key)
+                state.classes.add(key)
+                if interface:
+                    state.traits.add(key)
+
+    @staticmethod
+    def _qualify_top(state, root, name) -> str:
+        if state.package is None:
+            clause = next((c for c in root.named_children if c.type == "package_clause"), None)
+            package = next((c for c in clause.named_children if c.type == "package_identifier"), None) \
+                if clause is not None else None
+            state.package = text_of(package) or None
+        return f"{state.package}.{name}" if state.package else name
+
+    def _import(self, spec, builder, state):
+        path_node = spec.child_by_field_name("path")
+        path = text_of(path_node).strip('"`')
+        if not path:
+            return
+        alias_node = spec.child_by_field_name("name")
+        alias = text_of(alias_node) if alias_node is not None else None
+        metadata = {"module": path, "resolution": "unresolved"}
+        if alias:
+            metadata["alias"] = alias
+        if alias not in ("_", "."):
+            state.go_imports[alias or _go_import_name(path)] = path
+        target = builder.external("import", path, span_of(path_node))
+        builder.relationship(RelationshipType.IMPORTS, builder.file_key, target, span_of(spec),
+                             certainty=Certainty.EXACT, metadata=metadata)
+
+    def _type(self, node, scope, state, builder):
+        if _scala_header_broken(node):
+            return None
+        name = text_of(node.child_by_field_name("name"))
+        definition = node.child_by_field_name("type")
+        interface = definition is not None and definition.type == "interface_type"
+        declaration = node.parent
+        # A lone `type T ...` spans the keyword; a spec inside `type ( ... )` spans itself.
+        span_node = declaration if declaration is not None and declaration.type == "type_declaration" \
+            and len([c for c in declaration.named_children if c.type in ("type_spec", "type_alias")]) == 1 else node
+        if scope.kind == "callable":
+            qualified = f"{scope.qualified_name}.<local>.{name}"
+        else:
+            qualified = f"{state.package}.{name}" if state.package else name
+        kind = "interface" if interface else ("struct" if definition is not None and definition.type == "struct_type"
+                                              else "named")
+        key = builder.entity(EntityType.INTERFACE if interface else EntityType.CLASS, name, span_of(span_node),
+                             parent_key=scope.key, qualified_name=qualified, metadata={"kind": kind})
+        if key not in state.classes:  # local types are not in the top-level index
+            state.types[name].append(key)
+            state.classes.add(key)
+            if interface:
+                state.traits.add(key)
+        state.go_type_nodes[key] = node.child_by_field_name("name")
+        if interface:
+            self._interface(key, definition, scope, state, builder)
+        elif definition is not None and definition.type == "struct_type":
+            self._struct(key, definition, scope, state)
+        return None
+
+    def _interface(self, key, definition, scope, state, builder):
+        own, embedded = [], []
+        for element in definition.named_children:
+            if element.type == "method_elem":
+                method = text_of(element.child_by_field_name("name"))
+                _, arity = _go_parameters(element.child_by_field_name("parameters"))
+                own.append((method, arity[0]))
+                method_key = builder.entity(
+                    EntityType.METHOD, method, span_of(element), parent_key=key,
+                    qualified_name=f"{key.split('::', 1)[1]}.{method}", metadata={"abstract": True})
+                state.members[key][method].append(method_key)
+                state.arity[method_key] = arity
+            elif element.type == "type_elem":
+                for type_node in element.named_children:
+                    type_name = _go_type_name(type_node)
+                    if type_name:
+                        embedded.append(type_name)
+                        self._parent(key, type_name, type_node, scope, state)
+        state.go_interfaces[key] = (own, embedded)
+
+    def _struct(self, key, definition, scope, state):
+        fields = next((c for c in definition.named_children if c.type == "field_declaration_list"), None)
+        for field in fields.named_children if fields is not None else []:
+            if field.type != "field_declaration":
+                continue
+            type_node = field.child_by_field_name("type")
+            type_name = _go_type_name(type_node)
+            names = field.children_by_field_name("name")
+            if not names and type_name:  # an embedded field promotes its methods
+                self._parent(key, type_name, type_node, scope, state)
+                state.go_fields[key][type_name.rsplit(".", 1)[-1]] = type_name
+            for name in names:
+                state.go_fields[key][text_of(name)] = type_name
+
+    @staticmethod
+    def _parent(key, type_name, type_node, scope, state):
+        lookup = "type" if "." not in type_name else "none"
+        state.references.append(_Reference(RelationshipType.EXTENDS, key, span_of(type_node), "type", type_name,
+                                           lookup=lookup, name=type_name, scope=scope,
+                                           metadata={"embedded": True}))
+        if lookup == "type":
+            state.bases[key].append(type_name)  # names until prepare() resolves them
+
+    def _function(self, node, scope, state, builder):
+        if _scala_header_broken(node):
+            return None
+        name = text_of(node.child_by_field_name("name"))
+        parameters, arity = _go_parameters(node.child_by_field_name("parameters"))
+        receiver_name, receiver_type = None, None
+        if node.type == "method_declaration":
+            receivers, _ = _go_parameters(node.child_by_field_name("receiver"))
+            receiver_list = node.child_by_field_name("receiver")
+            declaration = next((c for c in receiver_list.named_children if c.type == "parameter_declaration"), None) \
+                if receiver_list is not None else None
+            receiver_type = _go_type_name(declaration.child_by_field_name("type")) if declaration is not None else None
+            receiver_name = receivers[0][0] if receivers else None
+        package = f"{state.package}." if state.package else ""
+        if receiver_type:
+            type_keys = [k for k in state.types.get(receiver_type, []) if k not in state.traits]
+            owner = type_keys[0] if len(type_keys) == 1 else f"go-type:{receiver_type}"
+            qualified = f"{package}{receiver_type}.{name}"
+            entity_type, parent = EntityType.METHOD, (owner if len(type_keys) == 1 else scope.key)
+        else:
+            owner, qualified, entity_type, parent = None, f"{package}{name}", EntityType.FUNCTION, scope.key
+        metadata: dict[str, Any] = {}
+        if receiver_type:
+            receiver_node = declaration.child_by_field_name("type")
+            metadata["pointer_receiver"] = receiver_node is not None and receiver_node.type == "pointer_type"
+        key = builder.entity(entity_type, name, span_of(node), parent_key=parent, qualified_name=qualified,
+                             metadata=metadata)
+        state.arity[key] = arity
+        if owner:
+            state.members[owner][name].append(key)
+        else:
+            state.names[scope.namespace][name].append(_Declaration(key, span_of(node).start_line, True))
+        state.parent_namespace[key] = scope.namespace
+        self._bind(state, key, parameters)
+        if receiver_name and receiver_name != "_":
+            state.variables[key][receiver_name] = receiver_type
+            state.go_receivers[key] = (receiver_name, owner)
+        return _Scope(key, "callable", qualified, owner, key, key, None)
+
+    @staticmethod
+    def _bind(state, namespace, bindings):
+        for name, type_name in bindings:
+            if not name or name == "_":
+                continue
+            if type_name:
+                state.variables[namespace][name] = type_name
+            else:
+                state.bound[namespace].add(name)
+
+    # -- references -------------------------------------------------------------------------
+
+    def _call(self, node, scope, state):
+        function = node.child_by_field_name("function")
+        if function is None:
+            return
+        source = scope.callable_key or scope.key
+        span = span_of(node)
+        arguments = node.child_by_field_name("arguments")
+        count = sum(1 for c in arguments.named_children if c.type != "comment") if arguments is not None else None
+        if function.type == "identifier":
+            name = _name(text_of(function))
+            if name in _GO_PREDECLARED_TYPES or self._is_type(state, name):
+                return  # a conversion
+            state.references.append(_Reference(RelationshipType.CALLS, source, span, "call", name,
+                                               lookup="lexical", name=name, scope=scope, arguments=count))
+        elif function.type == "selector_expression":
+            operand = function.child_by_field_name("operand")
+            field = _name(text_of(function.child_by_field_name("field")))
+            simple = _go_chain_is_simple(operand)
+            display = f"{_name(text_of(operand)) if simple else EXPRESSION}.{field}"
+            lookup, receiver = "none", None
+            if operand.type == "identifier":
+                lookup, receiver = "receiver", text_of(operand)
+            elif operand.type == "selector_expression" and simple and \
+                    operand.child_by_field_name("operand").type == "identifier":
+                lookup, receiver = "receiver", _name(text_of(operand))  # recv.field.Method()
+            state.references.append(_Reference(RelationshipType.CALLS, source, span, "call", display, lookup=lookup,
+                                               name=field, scope=scope, arguments=count, receiver=receiver))
+
+    def _generic_call(self, node, scope, state):
+        """`F[T](x)` parses as a conversion to a generic type; it is a call when F is a function."""
+        type_node = node.child_by_field_name("type")
+        if type_node is None or type_node.type != "generic_type":
+            return
+        name = _name(text_of(type_node.child_by_field_name("type")))
+        if not name or self._is_type(state, name):
+            return
+        state.references.append(_Reference(RelationshipType.CALLS, scope.callable_key or scope.key, span_of(node),
+                                           "call", name, lookup="lexical", name=name, scope=scope))
+
+    @staticmethod
+    def _is_type(state, name) -> bool:
+        return bool(state.types.get(name))
+
+    # -- resolution -------------------------------------------------------------------------
+
+    def candidates(self, ref, state):
+        scope = ref.scope
+        if ref.lookup == "type":
+            return list(state.types.get(ref.name, []))
+        if ref.lookup == "lexical":
+            if self._shadowed(state, scope.namespace, ref.name):
+                return []  # a function-typed variable or parameter
+            return [d.key for d in state.names[scope_file(state, scope)].get(ref.name, [])]
+        if ref.lookup == "receiver":
+            owner, how = self._receiver_owner(state, scope, ref.receiver)
+            if owner is None:
+                return []
+            state.basis_override[id(ref)] = how
+            return self._members(state, owner, ref.name)
+        return []
+
+    def _receiver_owner(self, state, scope, receiver) -> tuple[str | None, str]:
+        head, _, field = receiver.partition(".")
+        receivers = getattr(state, "go_receivers", {})
+        method_receiver, method_owner = receivers.get(scope.callable_key, (None, None))
+        if head in getattr(state, "go_imports", {}) and not self._shadowed(state, scope.namespace, head):
+            return None, "receiver"  # a package-qualified function
+        if head == method_receiver and not field:
+            return method_owner, "self"  # Go's receiver is its `this`
+        if head == method_receiver:
+            type_name = state.go_fields.get(method_owner, {}).get(field)  # recv.field.Method()
+        elif field:
+            return None, "receiver"
+        else:
+            type_name = self._declared_type(state, scope.namespace, head)
+        keys = list(state.types.get(type_name, [])) if type_name else []
+        return (keys[0] if len(keys) == 1 else None), "receiver"
+
+    @staticmethod
+    def _declared_type(state, namespace, name) -> str | None:
+        while namespace is not None:
+            if name in state.bound[namespace]:
+                return None
+            if name in state.variables.get(namespace, {}):
+                return state.variables[namespace][name]
+            namespace = state.parent_namespace.get(namespace)
+        return None
+
+    @staticmethod
+    def _shadowed(state, namespace, name) -> bool:
+        while namespace is not None and namespace in state.parent_namespace \
+                and state.parent_namespace[namespace] is not None:
+            if name in state.bound[namespace] or name in state.variables.get(namespace, {}):
+                return True
+            namespace = state.parent_namespace[namespace]
+        return False
+
+    def prepare(self, state) -> None:
+        for class_key, names in list(state.bases.items()):
+            resolved = []
+            for name in names:
+                keys = state.types.get(name, [])
+                if len(keys) == 1:
+                    resolved.append(keys[0])
+            state.bases[class_key] = resolved
+
+    def finish(self, state, builder) -> None:
+        """Emit IMPLEMENTS for each same-file type whose method set covers a same-file interface."""
+        interfaces = getattr(state, "go_interfaces", {})
+        imports = {alias: path for alias, path in getattr(state, "go_imports", {}).items()}
+
+        def required(key, seen) -> list[tuple[str, float]] | None:
+            if key in seen:
+                return []
+            seen.add(key)
+            own, embedded = interfaces[key]
+            methods = list(own)
+            for name in embedded:
+                keys = [k for k in state.types.get(name, []) if k in interfaces]
+                if len(keys) == 1:
+                    inner = required(keys[0], seen)
+                else:
+                    package, _, local = name.rpartition(".")
+                    known = _GO_KNOWN_INTERFACES.get((imports.get(package, package), local))
+                    inner = list(known) if known is not None else None
+                if inner is None:
+                    return None  # an embedded interface whose methods are unknown
+                methods += inner
+            return methods
+
+        def method_set(key, seen) -> dict[str, list[tuple[float, float]]]:
+            if key in seen:
+                return {}
+            seen.add(key)
+            found = {name: [state.arity.get(k, (0, math.inf)) for k in keys]
+                     for name, keys in state.members.get(key, {}).items()}
+            for base in state.bases.get(key, []):
+                for name, arities in method_set(base, seen).items():
+                    found.setdefault(name, arities)  # the shallower method wins, as in promotion
+            return found
+
+        for interface_key in sorted(interfaces):
+            needs = required(interface_key, set())
+            if not needs:
+                continue  # empty, or not decidable from this file
+            for type_key in sorted(k for k in state.classes if k.startswith("class:") and k in state.go_type_nodes):
+                methods = method_set(type_key, set())
+                if all(any(low <= arity <= high for low, high in methods.get(name, [])) for name, arity in needs):
+                    builder.relationship(RelationshipType.IMPLEMENTS, type_key, interface_key,
+                                         span_of(state.go_type_nodes[type_key]), certainty=Certainty.LOW,
+                                         metadata={"resolution": "same_file", "resolution_basis": "method_set",
+                                                   "implicit": True})
+
+
+def scope_file(state, scope) -> str:
+    """The package-level namespace of a scope: the file's own."""
+    namespace = scope.namespace
+    while state.parent_namespace.get(namespace) is not None:
+        namespace = state.parent_namespace[namespace]
+    return namespace

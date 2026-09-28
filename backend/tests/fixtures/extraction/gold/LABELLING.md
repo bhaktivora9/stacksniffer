@@ -82,6 +82,7 @@ the certainty it warrants; recall is published per basis.
 | `type_name` | Java `extends`/`implements` and static calls through a type name | MEDIUM |
 | `declared_type` | a receiver with a declared type: parameter, field, local, annotation | LOW |
 | `constructed_instance` | a method called on a just-constructed object: `Local().run()` | LOW |
+| `method_set` | Go: a type implicitly implements an interface its methods cover (name and parameter count) | LOW |
 | `import_path` | the file an import statement names | (cross-file; not produced yet) |
 | `import_binding` | a name bound by an import (`from .models import User; User()`) | (cross-file) |
 | `inferred_type` | a receiver typed only by inference (`user = User(); user.display()`) | (not produced) |
@@ -169,3 +170,28 @@ rather than by editing the label.
   declares one, else the class (the synthetic or universal apply; basis `constructor`).
   `new T { ... }` targets T, including a trait. `Name.m(...)` through an object has basis
   `type_name`.
+
+## Go conventions
+
+- Qualified names use the package name: `shapes.Circle`, `shapes.NewCircle`; methods are
+  `<package>.<receiver type>.<method>` whatever the receiver's pointer-ness; interface methods
+  are METHODs of the interface. Go has no overloading, so there are no signatures; a name
+  declared twice (e.g. `init`) gets `#2`.
+- Named types are `CLASS` (struct, slice, func or basic underlying types alike); interfaces are
+  `INTERFACE`; type aliases (`type A = B`) are not declarations. A lone `type T ...` spans the
+  `type` keyword; a spec inside `type ( ... )` spans itself. A method's parent is its receiver
+  type when that is declared in the same file, else the file.
+- IMPORTS: one fact per import spec, `module` the path as written. A package inside the
+  repository has no declaration to link to, so its import is `unresolvable`.
+- EXTENDS: each embedded field of a struct or interface (the embedded type without pointer or
+  type arguments).
+- IMPLEMENTS is implicit: labelled when a repository type's method set (its own and promoted
+  methods, value or pointer receivers) covers every method of a repository interface, with basis
+  `method_set` and the implementing type's name line as evidence. Implementations of interfaces
+  outside the repository are not labelled.
+- CALLS: `f(x)`, `pkg.F(x)`, `x.M(x)`, including builtins (`len`, `make`) and calls inside
+  closures, which belong to the enclosing function. Conversions (`Meters(x)`, `time.Duration(n)`,
+  `string(b)`) and composite literals are not calls; neither are method values
+  (`s.handler.Handle` passed as an argument). The receiver of a method is its `this`
+  (`enclosing_class`); calls through a package qualifier into the repository are
+  `import_binding`; a function defined in several build-tagged files is `ambiguous`.

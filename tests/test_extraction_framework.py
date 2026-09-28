@@ -116,8 +116,10 @@ def test_registry_selects_the_analyzer_for_each_language():
     registry = AnalyzerRegistry.default()
     assert registry.select("a.py").analyzer.language == "python"
     assert registry.select("A.java").analyzer.language == "java"
-    go = registry.select("main.go")
-    assert (go.language, go.analyzer, go.fallback_reason) == ("go", registry.fallback, "no_analyzer")
+    assert registry.select("Main.scala").analyzer.language == "scala"
+    assert registry.select("main.go").analyzer.language == "go"
+    rust = registry.select("main.rs")
+    assert (rust.language, rust.analyzer, rust.fallback_reason) == ("rust", registry.fallback, "no_analyzer")
     assert registry.select("NOTES").fallback_reason == "unknown_language"
 
 
@@ -132,14 +134,14 @@ def test_missing_grammar_falls_back_to_file_level():
 
 
 def test_unsupported_languages_get_file_level_analysis_only(tmp_path):
-    result, files, _ = extract(snapshot(tmp_path, {"main.go": b"package main\nfunc main() {}\n"}))
+    result, files, _ = extract(snapshot(tmp_path, {"main.rs": b"fn main() {}\n"}))
 
-    go = files["main.go"]
-    assert go.parse_status is ParseStatus.UNSUPPORTED
-    assert [e.entity_type for e in go.entities] == [EntityType.FILE]
-    assert go.relationships == ()
-    assert all(level is CapabilityLevel.UNSUPPORTED for level in go.capabilities.levels.values())
-    assert result.languages["go"]["fallback_reason"] == "no_analyzer"
+    rust = files["main.rs"]
+    assert rust.parse_status is ParseStatus.UNSUPPORTED
+    assert [e.entity_type for e in rust.entities] == [EntityType.FILE]
+    assert rust.relationships == ()
+    assert all(level is CapabilityLevel.UNSUPPORTED for level in rust.capabilities.levels.values())
+    assert result.languages["rust"]["fallback_reason"] == "no_analyzer"
 
 
 # --- canonical contract ----------------------------------------------------------------------
@@ -221,12 +223,12 @@ def test_an_analyzer_that_claims_unsupported_facts_has_its_file_rejected(tmp_pat
 
 
 def test_capability_coverage_is_reported_per_language_and_repository(tmp_path):
-    result, _, _ = extract(snapshot(tmp_path, {"a.py": PYTHON, "B.java": JAVA, "c.go": b"package c\n"}))
+    result, _, _ = extract(snapshot(tmp_path, {"a.py": PYTHON, "B.java": JAVA, "c.rs": b"fn c() {}\n"}))
 
     assert result.languages["python"]["capabilities"]["interfaces"] == "UNSUPPORTED"
     assert result.languages["python"]["capabilities"]["calls"] == "PARTIAL"
     assert result.languages["java"]["capabilities"]["interfaces"] == "PARTIAL"
-    assert result.languages["go"]["capabilities"]["declarations"] == "UNSUPPORTED"
+    assert result.languages["rust"]["capabilities"]["declarations"] == "UNSUPPORTED"
     assert result.capability_coverage["dependencies"] == {"UNSUPPORTED": 3}
     assert result.capability_coverage["declarations"] == {"SUPPORTED": 2, "UNSUPPORTED": 1}
     json.dumps(result.as_metrics())
