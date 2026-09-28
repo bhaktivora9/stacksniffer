@@ -1,0 +1,93 @@
+# Gold labels for java/cross_file. Written from the fixture source, never from extractor output.
+# CONTAINS facts are derived from the entity structure below by the evaluator.
+gold_version: 2
+fixture: java/cross_file
+language: java
+split: development
+description: An import, a constructor call and a typed-field call that cross from one file to another.
+labelled_from: source
+review:
+  status: pending_independent_review
+  reviewer: null
+files:
+  src/com/acme/api/UserController.java:
+    parse_status: PARSED
+    origin: first_party
+  src/com/acme/repo/UserRepository.java:
+    parse_status: PARSED
+    origin: first_party
+facts:
+- id: java.cross_file.com_acme_repo_userrepository
+  kind: entity
+  entity_type: CLASS
+  qualified_name: com.acme.repo.UserRepository
+  file: src/com/acme/repo/UserRepository.java
+  start_line: 3
+  end_line: 7
+- id: java.cross_file.com_acme_repo_userrepository_find_string
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.acme.repo.UserRepository.find(String)
+  file: src/com/acme/repo/UserRepository.java
+  start_line: 4
+  end_line: 6
+- id: java.cross_file.com_acme_api_usercontroller
+  kind: entity
+  entity_type: CLASS
+  qualified_name: com.acme.api.UserController
+  file: src/com/acme/api/UserController.java
+  start_line: 5
+  end_line: 11
+- id: java.cross_file.com_acme_api_usercontroller_show_string
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.acme.api.UserController.show(String)
+  file: src/com/acme/api/UserController.java
+  start_line: 8
+  end_line: 10
+- id: java.cross_file.imports_file_src_com_acme_api_usercontroller_java_com_acme_r
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:src/com/acme/api/UserController.java
+  target_key: class:src/com/acme/repo/UserRepository.java::com.acme.repo.UserRepository
+  resolution: cross_file
+  evidence:
+  - file: src/com/acme/api/UserController.java
+    start_line: 3
+    end_line: 3
+  module: com.acme.repo.UserRepository
+  basis: import_path
+- id: java.cross_file.calls_com_acme_repo_userrepository_find_string_id_trim
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/com/acme/repo/UserRepository.java::com.acme.repo.UserRepository.find(String)
+  target_key: external:id.trim
+  resolution: external
+  evidence:
+  - file: src/com/acme/repo/UserRepository.java
+    start_line: 5
+    end_line: 5
+- id: java.cross_file.calls_com_acme_api_usercontroller_com_acme_repo_userreposito
+  kind: relationship
+  relationship_type: CALLS
+  source_key: class:src/com/acme/api/UserController.java::com.acme.api.UserController
+  target_key: class:src/com/acme/repo/UserRepository.java::com.acme.repo.UserRepository
+  resolution: cross_file
+  evidence:
+  - file: src/com/acme/api/UserController.java
+    start_line: 6
+    end_line: 6
+  note: 'no declared constructor: the class'
+  basis: constructor
+- id: java.cross_file.calls_com_acme_api_usercontroller_show_string_com_acme_repo_
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/com/acme/api/UserController.java::com.acme.api.UserController.show(String)
+  target_key: method:src/com/acme/repo/UserRepository.java::com.acme.repo.UserRepository.find(String)
+  resolution: cross_file
+  evidence:
+  - file: src/com/acme/api/UserController.java
+    start_line: 9
+    end_line: 9
+  note: repository is a UserRepository field
+  basis: declared_type

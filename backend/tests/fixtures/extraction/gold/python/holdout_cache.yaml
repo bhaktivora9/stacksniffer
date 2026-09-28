@@ -1,0 +1,310 @@
+# Gold labels for python/holdout_cache. Written from the fixture source, never from extractor output.
+# CONTAINS facts are derived from the entity structure below by the evaluator.
+gold_version: 2
+fixture: python/holdout_cache
+language: python
+split: holdout
+description: Held out. Inherited self calls, super() delegation, runtime-chosen classes and a __main__ guard.
+labelled_from: source
+review:
+  status: pending_independent_review
+  reviewer: null
+files:
+  cache.py:
+    parse_status: PARSED
+    origin: first_party
+facts:
+- id: python.holdout_cache.cache
+  kind: entity
+  entity_type: CLASS
+  qualified_name: Cache
+  file: cache.py
+  start_line: 7
+  end_line: 17
+- id: python.holdout_cache.cache_init
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Cache.__init__
+  file: cache.py
+  start_line: 8
+  end_line: 9
+- id: python.holdout_cache.cache_put
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Cache.put
+  file: cache.py
+  start_line: 11
+  end_line: 13
+- id: python.holdout_cache.cache_evict
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Cache._evict
+  file: cache.py
+  start_line: 15
+  end_line: 17
+- id: python.holdout_cache.loggingcache
+  kind: entity
+  entity_type: CLASS
+  qualified_name: LoggingCache
+  file: cache.py
+  start_line: 20
+  end_line: 27
+- id: python.holdout_cache.loggingcache_put
+  kind: entity
+  entity_type: METHOD
+  qualified_name: LoggingCache.put
+  file: cache.py
+  start_line: 21
+  end_line: 24
+- id: python.holdout_cache.loggingcache_flush
+  kind: entity
+  entity_type: METHOD
+  qualified_name: LoggingCache.flush
+  file: cache.py
+  start_line: 26
+  end_line: 27
+- id: python.holdout_cache.build
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: build
+  file: cache.py
+  start_line: 30
+  end_line: 34
+- id: python.holdout_cache.main
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: main
+  file: cache.py
+  start_line: 37
+  end_line: 41
+- id: python.holdout_cache.imports_file_cache_py_logging
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:cache.py
+  target_key: external:logging
+  resolution: external
+  evidence:
+  - file: cache.py
+    start_line: 1
+    end_line: 1
+  module: logging
+- id: python.holdout_cache.imports_file_cache_py_collections
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:cache.py
+  target_key: external:collections
+  resolution: external
+  evidence:
+  - file: cache.py
+    start_line: 2
+    end_line: 2
+  module: collections
+- id: python.holdout_cache.extends_loggingcache_cache
+  kind: relationship
+  relationship_type: EXTENDS
+  source_key: class:cache.py::LoggingCache
+  target_key: class:cache.py::Cache
+  resolution: same_file
+  evidence:
+  - file: cache.py
+    start_line: 20
+    end_line: 20
+  basis: lexical_scope
+- id: python.holdout_cache.calls_file_cache_py_logging_getlogger
+  kind: relationship
+  relationship_type: CALLS
+  source_key: file:cache.py
+  target_key: external:logging.getLogger
+  resolution: external
+  evidence:
+  - file: cache.py
+    start_line: 4
+    end_line: 4
+- id: python.holdout_cache.calls_file_cache_py_main
+  kind: relationship
+  relationship_type: CALLS
+  source_key: file:cache.py
+  target_key: function:cache.py::main
+  resolution: same_file
+  evidence:
+  - file: cache.py
+    start_line: 45
+    end_line: 45
+  basis: lexical_scope
+- id: python.holdout_cache.calls_cache_init_defaultdict
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:cache.py::Cache.__init__
+  target_key: external:defaultdict
+  resolution: external
+  evidence:
+  - file: cache.py
+    start_line: 9
+    end_line: 9
+- id: python.holdout_cache.calls_cache_put_expression_append
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:cache.py::Cache.put
+  target_key: external:<expression>.append
+  resolution: external
+  evidence:
+  - file: cache.py
+    start_line: 12
+    end_line: 12
+- id: python.holdout_cache.calls_cache_put_cache_evict
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:cache.py::Cache.put
+  target_key: method:cache.py::Cache._evict
+  resolution: same_file
+  evidence:
+  - file: cache.py
+    start_line: 13
+    end_line: 13
+  basis: enclosing_class
+- id: python.holdout_cache.calls_cache_evict_len
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:cache.py::Cache._evict
+  target_key: external:len
+  resolution: external
+  evidence:
+  - file: cache.py
+    start_line: 16
+    end_line: 16
+- id: python.holdout_cache.calls_cache_evict_self_store_clear
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:cache.py::Cache._evict
+  target_key: external:self.store.clear
+  resolution: external
+  evidence:
+  - file: cache.py
+    start_line: 17
+    end_line: 17
+- id: python.holdout_cache.calls_loggingcache_put_logger_info
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:cache.py::LoggingCache.put
+  target_key: external:logger.info
+  resolution: external
+  evidence:
+  - file: cache.py
+    start_line: 22
+    end_line: 22
+- id: python.holdout_cache.calls_loggingcache_put_super
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:cache.py::LoggingCache.put
+  target_key: external:super
+  resolution: external
+  evidence:
+  - file: cache.py
+    start_line: 23
+    end_line: 23
+  note: corrected after the first holdout run in SS-BE-202 v0; the analyzer was unchanged
+- id: python.holdout_cache.calls_loggingcache_put_cache_put
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:cache.py::LoggingCache.put
+  target_key: method:cache.py::Cache.put
+  resolution: same_file
+  evidence:
+  - file: cache.py
+    start_line: 23
+    end_line: 23
+  basis: base_class
+- id: python.holdout_cache.calls_loggingcache_put_loggingcache_flush
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:cache.py::LoggingCache.put
+  target_key: method:cache.py::LoggingCache.flush
+  resolution: same_file
+  evidence:
+  - file: cache.py
+    start_line: 24
+    end_line: 24
+  basis: enclosing_class
+- id: python.holdout_cache.calls_loggingcache_flush_cache_evict
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:cache.py::LoggingCache.flush
+  target_key: method:cache.py::Cache._evict
+  resolution: same_file
+  evidence:
+  - file: cache.py
+    start_line: 27
+    end_line: 27
+  basis: enclosing_class
+- id: python.holdout_cache.calls_build_cls
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:cache.py::build
+  target_key: external:cls
+  resolution: unresolvable
+  evidence:
+  - file: cache.py
+    start_line: 32
+    end_line: 32
+  note: cls is chosen at runtime between two classes
+- id: python.holdout_cache.calls_build_cache_put
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:cache.py::build
+  target_key: external:cache.put
+  resolution: unresolvable
+  evidence:
+  - file: cache.py
+    start_line: 33
+    end_line: 33
+- id: python.holdout_cache.calls_main_build
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:cache.py::main
+  target_key: function:cache.py::build
+  resolution: same_file
+  evidence:
+  - file: cache.py
+    start_line: 38
+    end_line: 38
+  basis: lexical_scope
+- id: python.holdout_cache.calls_main_cache_put
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:cache.py::main
+  target_key: external:cache.put
+  resolution: unresolvable
+  evidence:
+  - file: cache.py
+    start_line: 40
+    end_line: 40
+- id: python.holdout_cache.calls_main_len
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:cache.py::main
+  target_key: external:len
+  resolution: external
+  evidence:
+  - file: cache.py
+    start_line: 40
+    end_line: 40
+- id: python.holdout_cache.calls_main_print
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:cache.py::main
+  target_key: external:print
+  resolution: external
+  evidence:
+  - file: cache.py
+    start_line: 41
+    end_line: 41
+- id: python.holdout_cache.calls_main_sorted
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:cache.py::main
+  target_key: external:sorted
+  resolution: external
+  evidence:
+  - file: cache.py
+    start_line: 41
+    end_line: 41

@@ -1,0 +1,260 @@
+# Gold labels for java/holdout_inventory. Written from the fixture source, never from extractor output.
+# CONTAINS facts are derived from the entity structure below by the evaluator.
+gold_version: 2
+fixture: java/holdout_inventory
+language: java
+split: holdout
+description: Held out (written for gold v2 after the type_name normalization fix). Overloads by arity, a static type-name call, a default interface
+  method, a record with an implicit accessor, and a typed-parameter call into another file.
+labelled_from: source
+review:
+  status: pending_independent_review
+  reviewer: null
+files:
+  src/com/acme/inventory/Stock.java:
+    parse_status: PARSED
+    origin: first_party
+  src/com/acme/inventory/Shipment.java:
+    parse_status: PARSED
+    origin: first_party
+facts:
+- id: java.holdout_inventory.stock
+  kind: entity
+  entity_type: CLASS
+  qualified_name: com.acme.inventory.Stock
+  file: src/com/acme/inventory/Stock.java
+  start_line: 6
+  end_line: 24
+- id: java.holdout_inventory.stock_receive_string_int
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.acme.inventory.Stock.receive(String,int)
+  file: src/com/acme/inventory/Stock.java
+  start_line: 9
+  end_line: 12
+- id: java.holdout_inventory.stock_receive_shipment
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.acme.inventory.Stock.receive(Shipment)
+  file: src/com/acme/inventory/Stock.java
+  start_line: 14
+  end_line: 18
+- id: java.holdout_inventory.stock_count
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.acme.inventory.Stock.count()
+  file: src/com/acme/inventory/Stock.java
+  start_line: 20
+  end_line: 23
+  decorators:
+  - Override
+- id: java.holdout_inventory.countable
+  kind: entity
+  entity_type: INTERFACE
+  qualified_name: com.acme.inventory.Countable
+  file: src/com/acme/inventory/Stock.java
+  start_line: 26
+  end_line: 32
+- id: java.holdout_inventory.countable_count
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.acme.inventory.Countable.count()
+  file: src/com/acme/inventory/Stock.java
+  start_line: 27
+  end_line: 27
+- id: java.holdout_inventory.countable_isempty
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.acme.inventory.Countable.isEmpty()
+  file: src/com/acme/inventory/Stock.java
+  start_line: 29
+  end_line: 31
+- id: java.holdout_inventory.audit
+  kind: entity
+  entity_type: CLASS
+  qualified_name: com.acme.inventory.Audit
+  file: src/com/acme/inventory/Stock.java
+  start_line: 34
+  end_line: 40
+- id: java.holdout_inventory.audit_constructor
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.acme.inventory.Audit.Audit()
+  file: src/com/acme/inventory/Stock.java
+  start_line: 35
+  end_line: 35
+- id: java.holdout_inventory.audit_record
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.acme.inventory.Audit.record(String,String)
+  file: src/com/acme/inventory/Stock.java
+  start_line: 37
+  end_line: 39
+- id: java.holdout_inventory.shipment
+  kind: entity
+  entity_type: CLASS
+  qualified_name: com.acme.inventory.Shipment
+  file: src/com/acme/inventory/Shipment.java
+  start_line: 5
+  end_line: 9
+- id: java.holdout_inventory.shipment_quantity
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.acme.inventory.Shipment.quantity(String)
+  file: src/com/acme/inventory/Shipment.java
+  start_line: 6
+  end_line: 8
+- id: java.holdout_inventory.stock_imports_hashmap
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:src/com/acme/inventory/Stock.java
+  target_key: external:java.util.HashMap
+  resolution: external
+  evidence:
+  - file: src/com/acme/inventory/Stock.java
+    start_line: 3
+    end_line: 3
+  module: java.util.HashMap
+- id: java.holdout_inventory.stock_imports_map
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:src/com/acme/inventory/Stock.java
+  target_key: external:java.util.Map
+  resolution: external
+  evidence:
+  - file: src/com/acme/inventory/Stock.java
+    start_line: 4
+    end_line: 4
+  module: java.util.Map
+- id: java.holdout_inventory.shipment_imports_list
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:src/com/acme/inventory/Shipment.java
+  target_key: external:java.util.List
+  resolution: external
+  evidence:
+  - file: src/com/acme/inventory/Shipment.java
+    start_line: 3
+    end_line: 3
+  module: java.util.List
+- id: java.holdout_inventory.stock_implements_countable
+  kind: relationship
+  relationship_type: IMPLEMENTS
+  source_key: class:src/com/acme/inventory/Stock.java::com.acme.inventory.Stock
+  target_key: interface:src/com/acme/inventory/Stock.java::com.acme.inventory.Countable
+  resolution: same_file
+  evidence:
+  - file: src/com/acme/inventory/Stock.java
+    start_line: 6
+    end_line: 6
+  basis: type_name
+- id: java.holdout_inventory.stock_calls_hashmap
+  kind: relationship
+  relationship_type: CALLS
+  source_key: class:src/com/acme/inventory/Stock.java::com.acme.inventory.Stock
+  target_key: external:HashMap
+  resolution: external
+  evidence:
+  - file: src/com/acme/inventory/Stock.java
+    start_line: 7
+    end_line: 7
+  note: field initializer
+- id: java.holdout_inventory.receive_calls_merge
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/com/acme/inventory/Stock.java::com.acme.inventory.Stock.receive(String,int)
+  target_key: external:levels.merge
+  resolution: external
+  evidence:
+  - file: src/com/acme/inventory/Stock.java
+    start_line: 10
+    end_line: 10
+  note: Integer::sum is a method reference, not a call at this site
+- id: java.holdout_inventory.receive_calls_record
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/com/acme/inventory/Stock.java::com.acme.inventory.Stock.receive(String,int)
+  target_key: method:src/com/acme/inventory/Stock.java::com.acme.inventory.Audit.record(String,String)
+  resolution: same_file
+  evidence:
+  - file: src/com/acme/inventory/Stock.java
+    start_line: 11
+    end_line: 11
+  basis: type_name
+  note: static call through the type name Audit
+- id: java.holdout_inventory.receive_shipment_calls_skus
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/com/acme/inventory/Stock.java::com.acme.inventory.Stock.receive(Shipment)
+  target_key: external:shipment.skus
+  resolution: unresolvable
+  evidence:
+  - file: src/com/acme/inventory/Stock.java
+    start_line: 15
+    end_line: 15
+  note: implicit record accessor
+- id: java.holdout_inventory.receive_shipment_calls_receive
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/com/acme/inventory/Stock.java::com.acme.inventory.Stock.receive(Shipment)
+  target_key: method:src/com/acme/inventory/Stock.java::com.acme.inventory.Stock.receive(String,int)
+  resolution: same_file
+  evidence:
+  - file: src/com/acme/inventory/Stock.java
+    start_line: 16
+    end_line: 16
+  basis: enclosing_class
+  note: two arguments select the two-parameter overload
+- id: java.holdout_inventory.receive_shipment_calls_quantity
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/com/acme/inventory/Stock.java::com.acme.inventory.Stock.receive(Shipment)
+  target_key: method:src/com/acme/inventory/Shipment.java::com.acme.inventory.Shipment.quantity(String)
+  resolution: cross_file
+  evidence:
+  - file: src/com/acme/inventory/Stock.java
+    start_line: 16
+    end_line: 16
+  basis: declared_type
+  note: shipment is a Shipment parameter
+- id: java.holdout_inventory.count_calls_size
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/com/acme/inventory/Stock.java::com.acme.inventory.Stock.count()
+  target_key: external:levels.size
+  resolution: external
+  evidence:
+  - file: src/com/acme/inventory/Stock.java
+    start_line: 22
+    end_line: 22
+- id: java.holdout_inventory.isempty_calls_count
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/com/acme/inventory/Stock.java::com.acme.inventory.Countable.isEmpty()
+  target_key: method:src/com/acme/inventory/Stock.java::com.acme.inventory.Countable.count()
+  resolution: same_file
+  evidence:
+  - file: src/com/acme/inventory/Stock.java
+    start_line: 30
+    end_line: 30
+  basis: enclosing_class
+- id: java.holdout_inventory.record_calls_println
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/com/acme/inventory/Stock.java::com.acme.inventory.Audit.record(String,String)
+  target_key: external:System.out.println
+  resolution: external
+  evidence:
+  - file: src/com/acme/inventory/Stock.java
+    start_line: 38
+    end_line: 38
+- id: java.holdout_inventory.quantity_calls_contains
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/com/acme/inventory/Shipment.java::com.acme.inventory.Shipment.quantity(String)
+  target_key: external:skus.contains
+  resolution: external
+  evidence:
+  - file: src/com/acme/inventory/Shipment.java
+    start_line: 7
+    end_line: 7

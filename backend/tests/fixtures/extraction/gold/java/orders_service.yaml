@@ -1,0 +1,838 @@
+# Gold labels for java/orders_service. Written from the fixture source, never from extractor output.
+# CONTAINS facts are derived from the entity structure below by the evaluator.
+# Moved from holdout to development: its missed compact record constructor led to an analyzer fix.
+gold_version: 2
+fixture: java/orders_service
+language: java
+split: development
+description: 'A layered Spring-style service across nested packages: cross-file constructors and typed-field calls, same-arity overloads, records
+  with a compact constructor, third-party annotations, a Maven dependency and a malformed class.'
+labelled_from: source
+review:
+  status: pending_independent_review
+  reviewer: null
+files:
+  src/main/java/com/acme/orders/model/Order.java:
+    parse_status: PARSED
+    origin: first_party
+  src/main/java/com/acme/orders/model/LineItem.java:
+    parse_status: PARSED
+    origin: first_party
+  src/main/java/com/acme/orders/service/PricingPolicy.java:
+    parse_status: PARSED
+    origin: first_party
+  src/main/java/com/acme/orders/service/OrderService.java:
+    parse_status: PARSED
+    origin: first_party
+  src/main/java/com/acme/orders/api/OrderController.java:
+    parse_status: PARSED
+    origin: first_party
+  src/main/java/com/acme/orders/legacy/LegacyImporter.java:
+    parse_status: PARTIAL
+    syntax_error_lines:
+    - 10
+    origin: first_party
+  pom.xml:
+    parse_status: UNSUPPORTED
+    origin: first_party
+  src/main/java/com/acme/orders/service/FlatPricing.java:
+    parse_status: PARSED
+    origin: first_party
+  src/main/java/com/acme/orders/service/DiscountPricing.java:
+    parse_status: PARSED
+    origin: first_party
+  target/generated-sources/annotations/com/acme/orders/model/Order_.java:
+    parse_status: PARSED
+    origin: generated
+  third_party/com/fasterxml/Json.java:
+    parse_status: PARSED
+    origin: vendored
+facts:
+- id: java.orders_service.order_com_acme_orders_model_order
+  kind: entity
+  entity_type: CLASS
+  qualified_name: com.acme.orders.model.Order
+  file: src/main/java/com/acme/orders/model/Order.java
+  start_line: 6
+  end_line: 33
+- id: java.orders_service.order_com_acme_orders_model_order_order_string
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.acme.orders.model.Order.Order(String)
+  file: src/main/java/com/acme/orders/model/Order.java
+  start_line: 10
+  end_line: 12
+- id: java.orders_service.order_com_acme_orders_model_order_add_lineitem
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.acme.orders.model.Order.add(LineItem)
+  file: src/main/java/com/acme/orders/model/Order.java
+  start_line: 14
+  end_line: 16
+- id: java.orders_service.order_com_acme_orders_model_order_add_string_int
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.acme.orders.model.Order.add(String,int)
+  file: src/main/java/com/acme/orders/model/Order.java
+  start_line: 18
+  end_line: 20
+- id: java.orders_service.order_com_acme_orders_model_order_add_string_long
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.acme.orders.model.Order.add(String,long)
+  file: src/main/java/com/acme/orders/model/Order.java
+  start_line: 22
+  end_line: 24
+- id: java.orders_service.order_com_acme_orders_model_order_items
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.acme.orders.model.Order.items()
+  file: src/main/java/com/acme/orders/model/Order.java
+  start_line: 26
+  end_line: 28
+- id: java.orders_service.order_com_acme_orders_model_order_customer
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.acme.orders.model.Order.customer()
+  file: src/main/java/com/acme/orders/model/Order.java
+  start_line: 30
+  end_line: 32
+- id: java.orders_service.lineitem_com_acme_orders_model_lineitem
+  kind: entity
+  entity_type: CLASS
+  qualified_name: com.acme.orders.model.LineItem
+  file: src/main/java/com/acme/orders/model/LineItem.java
+  start_line: 3
+  end_line: 13
+- id: java.orders_service.lineitem_com_acme_orders_model_lineitem_lineitem_string_int
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.acme.orders.model.LineItem.LineItem(String,int)
+  file: src/main/java/com/acme/orders/model/LineItem.java
+  start_line: 4
+  end_line: 8
+  note: compact canonical constructor; its signature is the record components
+- id: java.orders_service.lineitem_com_acme_orders_model_lineitem_subtotal_long
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.acme.orders.model.LineItem.subtotal(long)
+  file: src/main/java/com/acme/orders/model/LineItem.java
+  start_line: 10
+  end_line: 12
+- id: java.orders_service.pricingpolicy_com_acme_orders_service_pricingpolicy
+  kind: entity
+  entity_type: INTERFACE
+  qualified_name: com.acme.orders.service.PricingPolicy
+  file: src/main/java/com/acme/orders/service/PricingPolicy.java
+  start_line: 5
+  end_line: 11
+- id: java.orders_service.pricingpolicy_com_acme_orders_service_pricingpolicy_price_li
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.acme.orders.service.PricingPolicy.price(LineItem)
+  file: src/main/java/com/acme/orders/service/PricingPolicy.java
+  start_line: 6
+  end_line: 6
+- id: java.orders_service.pricingpolicy_com_acme_orders_service_pricingpolicy_flat_lon
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.acme.orders.service.PricingPolicy.flat(long)
+  file: src/main/java/com/acme/orders/service/PricingPolicy.java
+  start_line: 8
+  end_line: 10
+- id: java.orders_service.orderservice_com_acme_orders_service_orderservice
+  kind: entity
+  entity_type: CLASS
+  qualified_name: com.acme.orders.service.OrderService
+  file: src/main/java/com/acme/orders/service/OrderService.java
+  start_line: 9
+  end_line: 30
+  decorators:
+  - Service
+- id: java.orders_service.orderservice_com_acme_orders_service_orderservice_orderservi
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.acme.orders.service.OrderService.OrderService(PricingPolicy)
+  file: src/main/java/com/acme/orders/service/OrderService.java
+  start_line: 13
+  end_line: 15
+- id: java.orders_service.orderservice_com_acme_orders_service_orderservice_place_stri
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.acme.orders.service.OrderService.place(String,String,int)
+  file: src/main/java/com/acme/orders/service/OrderService.java
+  start_line: 17
+  end_line: 21
+- id: java.orders_service.orderservice_com_acme_orders_service_orderservice_total_orde
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.acme.orders.service.OrderService.total(Order)
+  file: src/main/java/com/acme/orders/service/OrderService.java
+  start_line: 23
+  end_line: 29
+- id: java.orders_service.ordercontroller_com_acme_orders_api_ordercontroller
+  kind: entity
+  entity_type: CLASS
+  qualified_name: com.acme.orders.api.OrderController
+  file: src/main/java/com/acme/orders/api/OrderController.java
+  start_line: 7
+  end_line: 32
+  decorators:
+  - RestController
+  - RequestMapping
+- id: java.orders_service.ordercontroller_com_acme_orders_api_ordercontroller_ordercon
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.acme.orders.api.OrderController.OrderController(OrderService)
+  file: src/main/java/com/acme/orders/api/OrderController.java
+  start_line: 12
+  end_line: 14
+- id: java.orders_service.ordercontroller_com_acme_orders_api_ordercontroller_create_c
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.acme.orders.api.OrderController.create(CreateOrder)
+  file: src/main/java/com/acme/orders/api/OrderController.java
+  start_line: 16
+  end_line: 19
+  decorators:
+  - PostMapping
+- id: java.orders_service.ordercontroller_com_acme_orders_api_ordercontroller_total_st
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.acme.orders.api.OrderController.total(String)
+  file: src/main/java/com/acme/orders/api/OrderController.java
+  start_line: 21
+  end_line: 25
+  decorators:
+  - GetMapping
+- id: java.orders_service.ordercontroller_com_acme_orders_api_ordercontroller_lookup_s
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.acme.orders.api.OrderController.lookup(String)
+  file: src/main/java/com/acme/orders/api/OrderController.java
+  start_line: 27
+  end_line: 29
+- id: java.orders_service.ordercontroller_com_acme_orders_api_ordercontroller_createor
+  kind: entity
+  entity_type: CLASS
+  qualified_name: com.acme.orders.api.OrderController.CreateOrder
+  file: src/main/java/com/acme/orders/api/OrderController.java
+  start_line: 31
+  end_line: 31
+- id: java.orders_service.legacyimporter_com_acme_orders_legacy_legacyimporter
+  kind: entity
+  entity_type: CLASS
+  qualified_name: com.acme.orders.legacy.LegacyImporter
+  file: src/main/java/com/acme/orders/legacy/LegacyImporter.java
+  start_line: 5
+  end_line: 17
+- id: java.orders_service.legacyimporter_com_acme_orders_legacy_legacyimporter_convert
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.acme.orders.legacy.LegacyImporter.convert(String)
+  file: src/main/java/com/acme/orders/legacy/LegacyImporter.java
+  start_line: 6
+  end_line: 8
+- id: java.orders_service.legacyimporter_com_acme_orders_legacy_legacyimporter_count_s
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.acme.orders.legacy.LegacyImporter.count(String[])
+  file: src/main/java/com/acme/orders/legacy/LegacyImporter.java
+  start_line: 14
+  end_line: 16
+  note: declared after a method with a broken header
+- id: java.orders_service.order_java_imports_arraylist
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:src/main/java/com/acme/orders/model/Order.java
+  target_key: external:java.util.ArrayList
+  resolution: external
+  evidence:
+  - file: src/main/java/com/acme/orders/model/Order.java
+    start_line: 3
+    end_line: 3
+  module: java.util.ArrayList
+- id: java.orders_service.order_java_imports_list
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:src/main/java/com/acme/orders/model/Order.java
+  target_key: external:java.util.List
+  resolution: external
+  evidence:
+  - file: src/main/java/com/acme/orders/model/Order.java
+    start_line: 4
+    end_line: 4
+  module: java.util.List
+- id: java.orders_service.pricingpolicy_java_imports_lineitem
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:src/main/java/com/acme/orders/service/PricingPolicy.java
+  target_key: class:src/main/java/com/acme/orders/model/LineItem.java::com.acme.orders.model.LineItem
+  resolution: cross_file
+  evidence:
+  - file: src/main/java/com/acme/orders/service/PricingPolicy.java
+    start_line: 3
+    end_line: 3
+  module: com.acme.orders.model.LineItem
+  basis: import_path
+- id: java.orders_service.orderservice_java_imports_requirenonnull
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:src/main/java/com/acme/orders/service/OrderService.java
+  target_key: external:java.util.Objects.requireNonNull
+  resolution: external
+  evidence:
+  - file: src/main/java/com/acme/orders/service/OrderService.java
+    start_line: 3
+    end_line: 3
+  module: java.util.Objects.requireNonNull
+  note: static import
+- id: java.orders_service.orderservice_java_imports_lineitem
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:src/main/java/com/acme/orders/service/OrderService.java
+  target_key: class:src/main/java/com/acme/orders/model/LineItem.java::com.acme.orders.model.LineItem
+  resolution: cross_file
+  evidence:
+  - file: src/main/java/com/acme/orders/service/OrderService.java
+    start_line: 5
+    end_line: 5
+  module: com.acme.orders.model.LineItem
+  basis: import_path
+- id: java.orders_service.orderservice_java_imports_order
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:src/main/java/com/acme/orders/service/OrderService.java
+  target_key: class:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order
+  resolution: cross_file
+  evidence:
+  - file: src/main/java/com/acme/orders/service/OrderService.java
+    start_line: 6
+    end_line: 6
+  module: com.acme.orders.model.Order
+  basis: import_path
+- id: java.orders_service.orderservice_java_imports_service
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:src/main/java/com/acme/orders/service/OrderService.java
+  target_key: external:org.springframework.stereotype.Service
+  resolution: external
+  evidence:
+  - file: src/main/java/com/acme/orders/service/OrderService.java
+    start_line: 7
+    end_line: 7
+  module: org.springframework.stereotype.Service
+  note: third-party
+- id: java.orders_service.ordercontroller_java_imports_order
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:src/main/java/com/acme/orders/api/OrderController.java
+  target_key: class:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order
+  resolution: cross_file
+  evidence:
+  - file: src/main/java/com/acme/orders/api/OrderController.java
+    start_line: 3
+    end_line: 3
+  module: com.acme.orders.model.Order
+  basis: import_path
+- id: java.orders_service.ordercontroller_java_imports_orderservice
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:src/main/java/com/acme/orders/api/OrderController.java
+  target_key: class:src/main/java/com/acme/orders/service/OrderService.java::com.acme.orders.service.OrderService
+  resolution: cross_file
+  evidence:
+  - file: src/main/java/com/acme/orders/api/OrderController.java
+    start_line: 4
+    end_line: 4
+  module: com.acme.orders.service.OrderService
+  basis: import_path
+- id: java.orders_service.ordercontroller_java_imports
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:src/main/java/com/acme/orders/api/OrderController.java
+  target_key: external:org.springframework.web.bind.annotation.*
+  resolution: external
+  evidence:
+  - file: src/main/java/com/acme/orders/api/OrderController.java
+    start_line: 5
+    end_line: 5
+  module: org.springframework.web.bind.annotation.*
+  note: third-party wildcard
+- id: java.orders_service.legacyimporter_java_imports_order
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:src/main/java/com/acme/orders/legacy/LegacyImporter.java
+  target_key: class:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order
+  resolution: cross_file
+  evidence:
+  - file: src/main/java/com/acme/orders/legacy/LegacyImporter.java
+    start_line: 3
+    end_line: 3
+  module: com.acme.orders.model.Order
+  basis: import_path
+- id: java.orders_service.calls_com_acme_orders_model_order_arraylist
+  kind: relationship
+  relationship_type: CALLS
+  source_key: class:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order
+  target_key: external:ArrayList
+  resolution: external
+  evidence:
+  - file: src/main/java/com/acme/orders/model/Order.java
+    start_line: 8
+    end_line: 8
+  note: field initializer
+- id: java.orders_service.calls_com_acme_orders_model_order_add_lineitem_items_add
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order.add(LineItem)
+  target_key: external:items.add
+  resolution: external
+  evidence:
+  - file: src/main/java/com/acme/orders/model/Order.java
+    start_line: 15
+    end_line: 15
+- id: java.orders_service.calls_com_acme_orders_model_order_add_string_int_com_acme_or
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order.add(String,int)
+  target_key: method:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order.add(LineItem)
+  resolution: same_file
+  evidence:
+  - file: src/main/java/com/acme/orders/model/Order.java
+    start_line: 19
+    end_line: 19
+  note: one argument selects add(LineItem)
+  basis: enclosing_class
+- id: java.orders_service.calls_com_acme_orders_model_order_add_string_int_com_acme_or_2
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order.add(String,int)
+  target_key: method:src/main/java/com/acme/orders/model/LineItem.java::com.acme.orders.model.LineItem.LineItem(String,int)
+  resolution: cross_file
+  evidence:
+  - file: src/main/java/com/acme/orders/model/Order.java
+    start_line: 19
+    end_line: 19
+  note: the record declares a compact canonical constructor
+  basis: constructor
+- id: java.orders_service.calls_com_acme_orders_model_order_add_string_long_com_acme_o
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order.add(String,long)
+  target_key: method:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order.add(LineItem)
+  resolution: same_file
+  evidence:
+  - file: src/main/java/com/acme/orders/model/Order.java
+    start_line: 23
+    end_line: 23
+  basis: enclosing_class
+- id: java.orders_service.calls_com_acme_orders_model_order_add_string_long_com_acme_o_2
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order.add(String,long)
+  target_key: method:src/main/java/com/acme/orders/model/LineItem.java::com.acme.orders.model.LineItem.LineItem(String,int)
+  resolution: cross_file
+  evidence:
+  - file: src/main/java/com/acme/orders/model/Order.java
+    start_line: 23
+    end_line: 23
+  basis: constructor
+- id: java.orders_service.calls_com_acme_orders_model_lineitem_lineitem_string_int_ill
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/java/com/acme/orders/model/LineItem.java::com.acme.orders.model.LineItem.LineItem(String,int)
+  target_key: external:IllegalArgumentException
+  resolution: external
+  evidence:
+  - file: src/main/java/com/acme/orders/model/LineItem.java
+    start_line: 6
+    end_line: 6
+- id: java.orders_service.calls_com_acme_orders_service_pricingpolicy_flat_long_item_q
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/java/com/acme/orders/service/PricingPolicy.java::com.acme.orders.service.PricingPolicy.flat(long)
+  target_key: external:item.quantity
+  resolution: unresolvable
+  evidence:
+  - file: src/main/java/com/acme/orders/service/PricingPolicy.java
+    start_line: 9
+    end_line: 9
+  note: 'implicit record accessor: there is no declaration to link to'
+- id: java.orders_service.calls_com_acme_orders_service_orderservice_orderservice_pric
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/java/com/acme/orders/service/OrderService.java::com.acme.orders.service.OrderService.OrderService(PricingPolicy)
+  target_key: external:requireNonNull
+  resolution: external
+  evidence:
+  - file: src/main/java/com/acme/orders/service/OrderService.java
+    start_line: 14
+    end_line: 14
+- id: java.orders_service.calls_com_acme_orders_service_orderservice_place_string_stri
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/java/com/acme/orders/service/OrderService.java::com.acme.orders.service.OrderService.place(String,String,int)
+  target_key: method:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order.Order(String)
+  resolution: cross_file
+  evidence:
+  - file: src/main/java/com/acme/orders/service/OrderService.java
+    start_line: 18
+    end_line: 18
+  basis: constructor
+- id: java.orders_service.calls_com_acme_orders_service_orderservice_place_string_stri_2
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/java/com/acme/orders/service/OrderService.java::com.acme.orders.service.OrderService.place(String,String,int)
+  target_key: method:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order.add(String,int)
+  resolution: cross_file
+  evidence:
+  - file: src/main/java/com/acme/orders/service/OrderService.java
+    start_line: 19
+    end_line: 19
+  note: same-arity overloads add(String,int)/add(String,long); the int argument selects add(String,int)
+  basis: declared_type
+- id: java.orders_service.calls_com_acme_orders_service_orderservice_total_order_com_a
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/java/com/acme/orders/service/OrderService.java::com.acme.orders.service.OrderService.total(Order)
+  target_key: method:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order.items()
+  resolution: cross_file
+  evidence:
+  - file: src/main/java/com/acme/orders/service/OrderService.java
+    start_line: 25
+    end_line: 25
+  basis: declared_type
+- id: java.orders_service.calls_com_acme_orders_service_orderservice_total_order_com_a_2
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/java/com/acme/orders/service/OrderService.java::com.acme.orders.service.OrderService.total(Order)
+  target_key: method:src/main/java/com/acme/orders/service/PricingPolicy.java::com.acme.orders.service.PricingPolicy.price(LineItem)
+  resolution: cross_file
+  evidence:
+  - file: src/main/java/com/acme/orders/service/OrderService.java
+    start_line: 26
+    end_line: 26
+  note: pricing is a PricingPolicy field
+  basis: declared_type
+- id: java.orders_service.calls_com_acme_orders_api_ordercontroller_create_createorder
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/java/com/acme/orders/api/OrderController.java::com.acme.orders.api.OrderController.create(CreateOrder)
+  target_key: method:src/main/java/com/acme/orders/service/OrderService.java::com.acme.orders.service.OrderService.place(String,String,int)
+  resolution: cross_file
+  evidence:
+  - file: src/main/java/com/acme/orders/api/OrderController.java
+    start_line: 18
+    end_line: 18
+  basis: declared_type
+- id: java.orders_service.calls_com_acme_orders_api_ordercontroller_create_createorder_2
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/java/com/acme/orders/api/OrderController.java::com.acme.orders.api.OrderController.create(CreateOrder)
+  target_key: external:request.customer
+  resolution: unresolvable
+  evidence:
+  - file: src/main/java/com/acme/orders/api/OrderController.java
+    start_line: 18
+    end_line: 18
+  note: implicit record accessor
+- id: java.orders_service.calls_com_acme_orders_api_ordercontroller_create_createorder_3
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/java/com/acme/orders/api/OrderController.java::com.acme.orders.api.OrderController.create(CreateOrder)
+  target_key: external:request.sku
+  resolution: unresolvable
+  evidence:
+  - file: src/main/java/com/acme/orders/api/OrderController.java
+    start_line: 18
+    end_line: 18
+  note: implicit record accessor
+- id: java.orders_service.calls_com_acme_orders_api_ordercontroller_create_createorder_4
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/java/com/acme/orders/api/OrderController.java::com.acme.orders.api.OrderController.create(CreateOrder)
+  target_key: external:request.quantity
+  resolution: unresolvable
+  evidence:
+  - file: src/main/java/com/acme/orders/api/OrderController.java
+    start_line: 18
+    end_line: 18
+  note: implicit record accessor
+- id: java.orders_service.calls_com_acme_orders_api_ordercontroller_total_string_com_a
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/java/com/acme/orders/api/OrderController.java::com.acme.orders.api.OrderController.total(String)
+  target_key: method:src/main/java/com/acme/orders/api/OrderController.java::com.acme.orders.api.OrderController.lookup(String)
+  resolution: same_file
+  evidence:
+  - file: src/main/java/com/acme/orders/api/OrderController.java
+    start_line: 23
+    end_line: 23
+  basis: enclosing_class
+- id: java.orders_service.calls_com_acme_orders_api_ordercontroller_total_string_com_a_2
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/java/com/acme/orders/api/OrderController.java::com.acme.orders.api.OrderController.total(String)
+  target_key: method:src/main/java/com/acme/orders/service/OrderService.java::com.acme.orders.service.OrderService.total(Order)
+  resolution: cross_file
+  evidence:
+  - file: src/main/java/com/acme/orders/api/OrderController.java
+    start_line: 24
+    end_line: 24
+  basis: declared_type
+- id: java.orders_service.calls_com_acme_orders_api_ordercontroller_lookup_string_com_
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/java/com/acme/orders/api/OrderController.java::com.acme.orders.api.OrderController.lookup(String)
+  target_key: method:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order.Order(String)
+  resolution: cross_file
+  evidence:
+  - file: src/main/java/com/acme/orders/api/OrderController.java
+    start_line: 28
+    end_line: 28
+  basis: constructor
+- id: java.orders_service.calls_com_acme_orders_legacy_legacyimporter_convert_string_c
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/java/com/acme/orders/legacy/LegacyImporter.java::com.acme.orders.legacy.LegacyImporter.convert(String)
+  target_key: method:src/main/java/com/acme/orders/model/Order.java::com.acme.orders.model.Order.Order(String)
+  resolution: cross_file
+  evidence:
+  - file: src/main/java/com/acme/orders/legacy/LegacyImporter.java
+    start_line: 7
+    end_line: 7
+  basis: constructor
+- id: java.orders_service.calls_com_acme_orders_legacy_legacyimporter_convert_string_r
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/java/com/acme/orders/legacy/LegacyImporter.java::com.acme.orders.legacy.LegacyImporter.convert(String)
+  target_key: external:row.trim
+  resolution: external
+  evidence:
+  - file: src/main/java/com/acme/orders/legacy/LegacyImporter.java
+    start_line: 7
+    end_line: 7
+- id: java.orders_service.unsupported_dependency_spring_boot_starter_web
+  kind: unsupported
+  capability: dependencies
+  entity_type: DEPENDENCY
+  name: spring-boot-starter-web
+  file: pom.xml
+  note: declared Maven dependency; dependency extraction is UNSUPPORTED
+- id: java.orders_service.flatpricing.flatpricing
+  kind: entity
+  entity_type: CLASS
+  qualified_name: com.acme.orders.service.FlatPricing
+  file: src/main/java/com/acme/orders/service/FlatPricing.java
+  start_line: 5
+  end_line: 16
+- id: java.orders_service.flatpricing.constructor
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.acme.orders.service.FlatPricing.FlatPricing(long)
+  file: src/main/java/com/acme/orders/service/FlatPricing.java
+  start_line: 8
+  end_line: 10
+- id: java.orders_service.flatpricing.price
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.acme.orders.service.FlatPricing.price(LineItem)
+  file: src/main/java/com/acme/orders/service/FlatPricing.java
+  start_line: 12
+  end_line: 15
+  decorators:
+  - Override
+- id: java.orders_service.discountpricing.discountpricing
+  kind: entity
+  entity_type: CLASS
+  qualified_name: com.acme.orders.service.DiscountPricing
+  file: src/main/java/com/acme/orders/service/DiscountPricing.java
+  start_line: 5
+  end_line: 14
+- id: java.orders_service.discountpricing.constructor
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.acme.orders.service.DiscountPricing.DiscountPricing(long)
+  file: src/main/java/com/acme/orders/service/DiscountPricing.java
+  start_line: 6
+  end_line: 8
+- id: java.orders_service.discountpricing.price
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.acme.orders.service.DiscountPricing.price(LineItem)
+  file: src/main/java/com/acme/orders/service/DiscountPricing.java
+  start_line: 10
+  end_line: 13
+  decorators:
+  - Override
+- id: java.orders_service.flatpricing_imports_lineitem
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:src/main/java/com/acme/orders/service/FlatPricing.java
+  target_key: class:src/main/java/com/acme/orders/model/LineItem.java::com.acme.orders.model.LineItem
+  resolution: cross_file
+  evidence:
+  - file: src/main/java/com/acme/orders/service/FlatPricing.java
+    start_line: 3
+    end_line: 3
+  module: com.acme.orders.model.LineItem
+  basis: import_path
+- id: java.orders_service.discountpricing_imports_lineitem
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:src/main/java/com/acme/orders/service/DiscountPricing.java
+  target_key: class:src/main/java/com/acme/orders/model/LineItem.java::com.acme.orders.model.LineItem
+  resolution: cross_file
+  evidence:
+  - file: src/main/java/com/acme/orders/service/DiscountPricing.java
+    start_line: 3
+    end_line: 3
+  module: com.acme.orders.model.LineItem
+  basis: import_path
+- id: java.orders_service.flatpricing_implements_pricingpolicy
+  kind: relationship
+  relationship_type: IMPLEMENTS
+  source_key: class:src/main/java/com/acme/orders/service/FlatPricing.java::com.acme.orders.service.FlatPricing
+  target_key: interface:src/main/java/com/acme/orders/service/PricingPolicy.java::com.acme.orders.service.PricingPolicy
+  resolution: cross_file
+  evidence:
+  - file: src/main/java/com/acme/orders/service/FlatPricing.java
+    start_line: 5
+    end_line: 5
+  note: same package, declared in another file
+  basis: type_name
+- id: java.orders_service.discountpricing_extends_flatpricing
+  kind: relationship
+  relationship_type: EXTENDS
+  source_key: class:src/main/java/com/acme/orders/service/DiscountPricing.java::com.acme.orders.service.DiscountPricing
+  target_key: class:src/main/java/com/acme/orders/service/FlatPricing.java::com.acme.orders.service.FlatPricing
+  resolution: cross_file
+  evidence:
+  - file: src/main/java/com/acme/orders/service/DiscountPricing.java
+    start_line: 5
+    end_line: 5
+  basis: type_name
+- id: java.orders_service.flatpricing_price_calls_subtotal
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/java/com/acme/orders/service/FlatPricing.java::com.acme.orders.service.FlatPricing.price(LineItem)
+  target_key: method:src/main/java/com/acme/orders/model/LineItem.java::com.acme.orders.model.LineItem.subtotal(long)
+  resolution: cross_file
+  evidence:
+  - file: src/main/java/com/acme/orders/service/FlatPricing.java
+    start_line: 14
+    end_line: 14
+  note: item is a LineItem parameter
+  basis: declared_type
+- id: java.orders_service.discountpricing_constructor_calls_super
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/java/com/acme/orders/service/DiscountPricing.java::com.acme.orders.service.DiscountPricing.DiscountPricing(long)
+  target_key: method:src/main/java/com/acme/orders/service/FlatPricing.java::com.acme.orders.service.FlatPricing.FlatPricing(long)
+  resolution: cross_file
+  evidence:
+  - file: src/main/java/com/acme/orders/service/DiscountPricing.java
+    start_line: 7
+    end_line: 7
+  note: super(cents)
+  basis: constructor
+- id: java.orders_service.discountpricing_price_calls_super_price
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/java/com/acme/orders/service/DiscountPricing.java::com.acme.orders.service.DiscountPricing.price(LineItem)
+  target_key: method:src/main/java/com/acme/orders/service/FlatPricing.java::com.acme.orders.service.FlatPricing.price(LineItem)
+  resolution: cross_file
+  evidence:
+  - file: src/main/java/com/acme/orders/service/DiscountPricing.java
+    start_line: 12
+    end_line: 12
+  note: super.price(item)
+  basis: base_class
+- id: java.orders_service.order_.order_
+  kind: entity
+  entity_type: CLASS
+  qualified_name: com.acme.orders.model.Order_
+  file: target/generated-sources/annotations/com/acme/orders/model/Order_.java
+  start_line: 5
+  end_line: 12
+  decorators:
+  - Generated
+- id: java.orders_service.order_.describe
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.acme.orders.model.Order_.describe()
+  file: target/generated-sources/annotations/com/acme/orders/model/Order_.java
+  start_line: 9
+  end_line: 11
+- id: java.orders_service.order__imports_generated
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:target/generated-sources/annotations/com/acme/orders/model/Order_.java
+  target_key: external:javax.annotation.processing.Generated
+  resolution: external
+  evidence:
+  - file: target/generated-sources/annotations/com/acme/orders/model/Order_.java
+    start_line: 3
+    end_line: 3
+  module: javax.annotation.processing.Generated
+- id: java.orders_service.describe_calls_trim
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:target/generated-sources/annotations/com/acme/orders/model/Order_.java::com.acme.orders.model.Order_.describe()
+  target_key: external:customer.trim
+  resolution: external
+  evidence:
+  - file: target/generated-sources/annotations/com/acme/orders/model/Order_.java
+    start_line: 10
+    end_line: 10
+  note: customer is a static String field
+- id: java.orders_service.json.json
+  kind: entity
+  entity_type: CLASS
+  qualified_name: com.fasterxml.Json
+  file: third_party/com/fasterxml/Json.java
+  start_line: 3
+  end_line: 13
+- id: java.orders_service.json.constructor
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.fasterxml.Json.Json()
+  file: third_party/com/fasterxml/Json.java
+  start_line: 4
+  end_line: 4
+- id: java.orders_service.json.quote
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.fasterxml.Json.quote(String)
+  file: third_party/com/fasterxml/Json.java
+  start_line: 6
+  end_line: 8
+- id: java.orders_service.json.escape
+  kind: entity
+  entity_type: METHOD
+  qualified_name: com.fasterxml.Json.escape(String)
+  file: third_party/com/fasterxml/Json.java
+  start_line: 10
+  end_line: 12
+- id: java.orders_service.quote_calls_escape
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:third_party/com/fasterxml/Json.java::com.fasterxml.Json.quote(String)
+  target_key: method:third_party/com/fasterxml/Json.java::com.fasterxml.Json.escape(String)
+  resolution: same_file
+  evidence:
+  - file: third_party/com/fasterxml/Json.java
+    start_line: 7
+    end_line: 7
+  basis: enclosing_class
+- id: java.orders_service.escape_calls_replace
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:third_party/com/fasterxml/Json.java::com.fasterxml.Json.escape(String)
+  target_key: external:value.replace
+  resolution: external
+  evidence:
+  - file: third_party/com/fasterxml/Json.java
+    start_line: 11
+    end_line: 11
