@@ -1,4 +1,4 @@
-"""SS-BE-202: Java and Python pass identical canonical-contract tests."""
+"""SS-BE-202/203: every analyzed language passes identical canonical-contract tests."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from uuid import uuid4
 import pytest
 
 from backend.evaluation import extraction_metrics as metrics
-from backend.services.extraction.analyzers import JavaAnalyzer, PythonAnalyzer
+from backend.services.extraction.analyzers import JavaAnalyzer, PythonAnalyzer, ScalaAnalyzer
 from backend.services.extraction.builder import FileFactsBuilder
 from backend.services.extraction.contracts import (
     AnalyzerCapabilities, CanonicalEntity, CanonicalRelationship, CancellationToken, Capability, CapabilityLevel,
@@ -26,12 +26,14 @@ from extraction_benchmark_support import LANGUAGES, requires_grammars
 pytestmark = requires_grammars
 
 # A multi-file fixture with a malformed file, per language.
-FIXTURE = {"python": "python/shop_app", "java": "java/orders_service"}
-ANALYZER = {"python": PythonAnalyzer, "java": JavaAnalyzer}
+FIXTURE = {"python": "python/shop_app", "java": "java/orders_service", "scala": "scala/broker"}
+ANALYZER = {"python": PythonAnalyzer, "java": JavaAnalyzer, "scala": ScalaAnalyzer}
 DUPLICATES = {
     "python": ("dup.py", b"def handler():\n    return 1\n\n\ndef handler():\n    return 2\n", "function", "handler"),
     "java": ("Dup.java", b"class Dup {\n  void go() {\n    new Runnable() { public void run() {} };\n"
                          b"    new Runnable() { public void run() {} };\n  }\n}\n", "method", "run"),
+    "scala": ("Dup.scala", b"class Dup {\n  def go(): Unit = {\n    new Runnable { def run(): Unit = () }\n"
+                           b"    new Runnable { def run(): Unit = () }\n  }\n}\n", "method", "run"),
 }
 
 
@@ -80,15 +82,16 @@ def test_emits_only_canonical_model_types(language):
         assert all(type(e) is SourceEvidence for e in file.evidence)
 
 
-def test_both_languages_fill_the_model_with_the_same_value_types():
-    python, java = record_shapes(extract("python")), record_shapes(extract("java"))
-    assert python.keys() == java.keys()
+@pytest.mark.parametrize("language", [language for language in LANGUAGES if language != "python"])
+def test_every_language_fills_the_model_with_the_same_value_types(language):
+    python, other = record_shapes(extract("python")), record_shapes(extract(language))
+    assert python.keys() == other.keys()
     for record in python:
         # A field may be None in one language's sample and set in the other; types must otherwise agree.
-        for name in {n for n, _ in python[record]} | {n for n, _ in java[record]}:
+        for name in {n for n, _ in python[record]} | {n for n, _ in other[record]}:
             types_p = {t for n, t in python[record] if n == name} - {"NoneType"}
-            types_j = {t for n, t in java[record] if n == name} - {"NoneType"}
-            assert not (types_p and types_j) or types_p == types_j, (record, name, types_p, types_j)
+            types_o = {t for n, t in other[record] if n == name} - {"NoneType"}
+            assert not (types_p and types_o) or types_p == types_o, (record, name, types_p, types_o)
 
 
 # --- determinism -----------------------------------------------------------------------------
@@ -192,13 +195,22 @@ def test_downgrading_a_capability_blocks_its_facts(language):
         assert failure is None
 
 
-# --- Java overloads, malformed isolation -------------------------------------------------------
+# --- overloads, companions, malformed isolation ------------------------------------------------
 
 
 def test_java_overloads_remain_distinguishable():
     keys = [e.stable_key for f in extract("java") for e in f.entities if e.name == "add"]
     assert len(keys) == len(set(keys)) == 3
     assert {k.rsplit(".", 1)[-1] for k in keys} == {"add(LineItem)", "add(String,int)", "add(String,long)"}
+
+
+def test_scala_companion_objects_and_their_classes_stay_distinct():
+    keys = {e.stable_key for f in extract("scala") for e in f.entities}
+    utils = "core/src/main/scala/kafka/utils/CoreUtils.scala"
+    assert {f"interface:{utils}::kafka.utils.Logging", f"class:{utils}::kafka.utils.Logging$"} <= keys
+    # The trait and its companion both declare warn(String): two different methods.
+    assert {f"method:{utils}::kafka.utils.Logging.warn(String)",
+            f"method:{utils}::kafka.utils.Logging$.warn(String)"} <= keys
 
 
 @pytest.mark.parametrize("language", LANGUAGES)
@@ -308,6 +320,36 @@ class Repo {
         "this.add": ("method:Repo.java::Repo.add(int)", "enclosing_class", "MEDIUM"),
         "other.add": ("method:Repo.java::Repo.add(int)", "declared_type", "LOW"),
     }),
+    "scala": ("Repo.scala", b"""import java.util.List
+class Repo {
+  private val list: List[Integer] = null
+  def add(x: Int): Unit = {}
+  def viaExternalField(): Unit = {
+    list.add(1)
+  }
+  def viaInferredLocal(): Unit = {
+    val local = new java.util.ArrayList[Integer]()
+    local.add(2)
+  }
+  def viaLambda(): Unit = {
+    Seq(1).foreach(x => x.add(3))
+  }
+  def viaUnqualified(): Unit = {
+    add(4)
+  }
+  def viaThis(): Unit = {
+    this.add(5)
+  }
+  def viaTypedParameter(other: Repo): Unit = {
+    other.add(6)
+  }
+}
+""", {
+        "list.add": None, "local.add": None, "x.add": None,
+        "add": ("method:Repo.scala::Repo.add(Int)", "enclosing_class", "MEDIUM"),
+        "this.add": ("method:Repo.scala::Repo.add(Int)", "enclosing_class", "MEDIUM"),
+        "other.add": ("method:Repo.scala::Repo.add(Int)", "declared_type", "LOW"),
+    }),
 }
 
 
@@ -361,6 +403,8 @@ def test_an_edge_is_as_certain_as_its_strongest_site_regardless_of_order(languag
         "python": ("a.py", b"class A:\n    def m(self):\n        return 1\n\n"
                            b"    def run(self):\n        A().m()\n        self.m()\n"),
         "java": ("A.java", b"class A {\n  void m() {}\n  void run(A other) {\n    other.m();\n    m();\n  }\n}\n"),
+        "scala": ("A.scala", b"class A {\n  def m(): Unit = {}\n  def run(other: A): Unit = {\n    other.m()\n"
+                             b"    m()\n  }\n}\n"),
     }[language]
     edge = next(r for r in analyze(language, path, source).relationships
                 if r.relationship_type.value == "CALLS" and "run" in r.source_key and not r.target_key.startswith("ext"))

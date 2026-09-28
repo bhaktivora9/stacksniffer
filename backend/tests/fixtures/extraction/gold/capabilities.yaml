@@ -17,3 +17,11 @@ languages:
     interfaces: PARTIAL
     dependencies: UNSUPPORTED
     decorators: SUPPORTED
+  scala:
+    declarations: SUPPORTED
+    imports: SUPPORTED
+    calls: PARTIAL
+    inheritance: PARTIAL
+    interfaces: PARTIAL
+    dependencies: UNSUPPORTED
+    decorators: SUPPORTED

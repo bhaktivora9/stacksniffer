@@ -167,7 +167,7 @@ def test_stale_attempt_of_finished_analysis_only_closes_the_attempt():
 # --- application startup ---------------------------------------------------------------------
 
 
-READY_ANALYZERS = {"required": ["java", "python"], "unavailable": {}}
+READY_ANALYZERS = {"required": ["java", "python", "scala"], "unavailable": {}}
 
 
 def test_app_starts_the_worker_and_reports_health(monkeypatch):
@@ -236,9 +236,9 @@ def test_a_missing_required_grammar_fails_readiness_but_not_liveness(monkeypatch
 
 
 def test_required_languages_are_configurable(monkeypatch):
-    monkeypatch.setenv("ANALYSIS_REQUIRED_LANGUAGES", "python, java, scala")
+    monkeypatch.setenv("ANALYSIS_REQUIRED_LANGUAGES", "python, java, kotlin")
     monkeypatch.delenv("DATABASE_URL", raising=False)
     with TestClient(app_module.app) as client:
         body = client.get("/api/health/ready").json()
-    assert body["analyzers"]["required"] == ["java", "python", "scala"]
-    assert body["analyzers"]["unavailable"] == {"scala": "no analyzer registered"}
+    assert body["analyzers"]["required"] == ["java", "kotlin", "python"]
+    assert body["analyzers"]["unavailable"] == {"kotlin": "no analyzer registered"}

@@ -9,14 +9,14 @@ from pathlib import Path
 import pytest
 
 from backend.evaluation import extraction_metrics as metrics
-from backend.services.extraction.analyzers import JavaAnalyzer, PythonAnalyzer
+from backend.services.extraction.analyzers import JavaAnalyzer, PythonAnalyzer, ScalaAnalyzer
 
 requires_grammars = pytest.mark.skipif(
-    not PythonAnalyzer().available or not JavaAnalyzer().available,
+    not all(analyzer().available for analyzer in (PythonAnalyzer, JavaAnalyzer, ScalaAnalyzer)),
     reason="tree-sitter grammars are not installed",
 )
 
-LANGUAGES = ("python", "java")
+LANGUAGES = ("python", "java", "scala")
 REGENERATE = ("python -m backend.evaluation.extraction_metrics "
               "--json backend/evaluation/results/structural-extraction-baseline.json "
               "--markdown docs/evaluation/structural-extraction-baseline.md")

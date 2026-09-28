@@ -1,0 +1,820 @@
+# Gold labels for scala/basics. Written from the fixture source, never from extractor output.
+# CONTAINS facts are derived from the entity structure below by the evaluator.
+gold_version: 2
+fixture: scala/basics
+language: scala
+split: development
+description: 'One package over two files: traits, case classes and companions, overloads (including same-arity ones only argument types separate),
+  auxiliary and superclass constructors, local and anonymous definitions, calls through objects, typed receivers, super, infix calls, annotations,
+  and Scala 3 enums and top-level definitions.'
+labelled_from: source
+review:
+  status: pending_independent_review
+  reviewer: null
+files:
+  src/main/scala/acme/shop/Orders.scala:
+    parse_status: PARSED
+    origin: first_party
+  src/main/scala/acme/shop/Status.scala:
+    parse_status: PARSED
+    origin: first_party
+facts:
+- id: scala.basics.acme_shop_priced
+  kind: entity
+  entity_type: INTERFACE
+  qualified_name: acme.shop.Priced
+  file: src/main/scala/acme/shop/Orders.scala
+  start_line: 7
+  end_line: 10
+- id: scala.basics.acme_shop_priced_price_int
+  kind: entity
+  entity_type: METHOD
+  qualified_name: acme.shop.Priced.price(Int)
+  file: src/main/scala/acme/shop/Orders.scala
+  start_line: 8
+  end_line: 8
+- id: scala.basics.acme_shop_priced_label
+  kind: entity
+  entity_type: METHOD
+  qualified_name: acme.shop.Priced.label()
+  file: src/main/scala/acme/shop/Orders.scala
+  start_line: 9
+  end_line: 9
+- id: scala.basics.acme_shop_item
+  kind: entity
+  entity_type: CLASS
+  qualified_name: acme.shop.Item
+  file: src/main/scala/acme/shop/Orders.scala
+  start_line: 12
+  end_line: 15
+  decorators:
+  - SerialVersionUID
+- id: scala.basics.acme_shop_item_price_int
+  kind: entity
+  entity_type: METHOD
+  qualified_name: acme.shop.Item.price(Int)
+  file: src/main/scala/acme/shop/Orders.scala
+  start_line: 14
+  end_line: 14
+- id: scala.basics.acme_shop_item_object
+  kind: entity
+  entity_type: CLASS
+  qualified_name: acme.shop.Item$
+  file: src/main/scala/acme/shop/Orders.scala
+  start_line: 17
+  end_line: 20
+  note: companion object of the case class
+- id: scala.basics.acme_shop_item_object_apply_string
+  kind: entity
+  entity_type: METHOD
+  qualified_name: acme.shop.Item$.apply(String)
+  file: src/main/scala/acme/shop/Orders.scala
+  start_line: 18
+  end_line: 18
+- id: scala.basics.acme_shop_item_object_parse_string
+  kind: entity
+  entity_type: METHOD
+  qualified_name: acme.shop.Item$.parse(String)
+  file: src/main/scala/acme/shop/Orders.scala
+  start_line: 19
+  end_line: 19
+- id: scala.basics.acme_shop_cart
+  kind: entity
+  entity_type: CLASS
+  qualified_name: acme.shop.Cart
+  file: src/main/scala/acme/shop/Orders.scala
+  start_line: 22
+  end_line: 42
+- id: scala.basics.acme_shop_cart_this
+  kind: entity
+  entity_type: METHOD
+  qualified_name: acme.shop.Cart.this()
+  file: src/main/scala/acme/shop/Orders.scala
+  start_line: 26
+  end_line: 26
+  note: auxiliary constructor
+- id: scala.basics.acme_shop_cart_add_item
+  kind: entity
+  entity_type: METHOD
+  qualified_name: acme.shop.Cart.add(Item)
+  file: src/main/scala/acme/shop/Orders.scala
+  start_line: 28
+  end_line: 28
+- id: scala.basics.acme_shop_cart_add_string_int
+  kind: entity
+  entity_type: METHOD
+  qualified_name: acme.shop.Cart.add(String,Int)
+  file: src/main/scala/acme/shop/Orders.scala
+  start_line: 29
+  end_line: 33
+- id: scala.basics.acme_shop_cart_add_string_int_expand_int
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: acme.shop.Cart.add(String,Int).expand(Int)
+  file: src/main/scala/acme/shop/Orders.scala
+  start_line: 30
+  end_line: 30
+  note: local definition
+- id: scala.basics.acme_shop_cart_add_string_long
+  kind: entity
+  entity_type: METHOD
+  qualified_name: acme.shop.Cart.add(String,Long)
+  file: src/main/scala/acme/shop/Orders.scala
+  start_line: 34
+  end_line: 34
+- id: scala.basics.acme_shop_cart_iterator
+  kind: entity
+  entity_type: METHOD
+  qualified_name: acme.shop.Cart.iterator
+  file: src/main/scala/acme/shop/Orders.scala
+  start_line: 36
+  end_line: 36
+  note: parameterless
+- id: scala.basics.acme_shop_cart_price_int
+  kind: entity
+  entity_type: METHOD
+  qualified_name: acme.shop.Cart.price(Int)
+  file: src/main/scala/acme/shop/Orders.scala
+  start_line: 37
+  end_line: 37
+- id: scala.basics.acme_shop_cart_sum
+  kind: entity
+  entity_type: METHOD
+  qualified_name: acme.shop.Cart.sum()
+  file: src/main/scala/acme/shop/Orders.scala
+  start_line: 38
+  end_line: 39
+  decorators:
+  - deprecated
+- id: scala.basics.acme_shop_cart_total_tax
+  kind: entity
+  entity_type: METHOD
+  qualified_name: acme.shop.Cart.total(Tax)
+  file: src/main/scala/acme/shop/Orders.scala
+  start_line: 40
+  end_line: 40
+- id: scala.basics.acme_shop_cart_audit
+  kind: entity
+  entity_type: METHOD
+  qualified_name: acme.shop.Cart.audit()
+  file: src/main/scala/acme/shop/Orders.scala
+  start_line: 41
+  end_line: 41
+- id: scala.basics.acme_shop_inventory
+  kind: entity
+  entity_type: CLASS
+  qualified_name: acme.shop.Inventory
+  file: src/main/scala/acme/shop/Orders.scala
+  start_line: 44
+  end_line: 52
+- id: scala.basics.acme_shop_inventory_reserve_string_int
+  kind: entity
+  entity_type: METHOD
+  qualified_name: acme.shop.Inventory.reserve(String,Int)
+  file: src/main/scala/acme/shop/Orders.scala
+  start_line: 45
+  end_line: 45
+- id: scala.basics.acme_shop_inventory_release_string
+  kind: entity
+  entity_type: METHOD
+  qualified_name: acme.shop.Inventory.release(String)
+  file: src/main/scala/acme/shop/Orders.scala
+  start_line: 46
+  end_line: 51
+- id: scala.basics.acme_shop_inventory_release_string_anonymous_run
+  kind: entity
+  entity_type: METHOD
+  qualified_name: acme.shop.Inventory.release(String).<anonymous>.run()
+  file: src/main/scala/acme/shop/Orders.scala
+  start_line: 48
+  end_line: 48
+- id: scala.basics.acme_shop_tax
+  kind: entity
+  entity_type: CLASS
+  qualified_name: acme.shop.Tax
+  file: src/main/scala/acme/shop/Orders.scala
+  start_line: 54
+  end_line: 56
+- id: scala.basics.acme_shop_tax_apply_long
+  kind: entity
+  entity_type: METHOD
+  qualified_name: acme.shop.Tax.apply(Long)
+  file: src/main/scala/acme/shop/Orders.scala
+  start_line: 55
+  end_line: 55
+- id: scala.basics.acme_shop_audit_object
+  kind: entity
+  entity_type: CLASS
+  qualified_name: acme.shop.Audit$
+  file: src/main/scala/acme/shop/Orders.scala
+  start_line: 58
+  end_line: 61
+- id: scala.basics.acme_shop_audit_object_record_string_string
+  kind: entity
+  entity_type: METHOD
+  qualified_name: acme.shop.Audit$.record(String,String)
+  file: src/main/scala/acme/shop/Orders.scala
+  start_line: 59
+  end_line: 59
+- id: scala.basics.acme_shop_audit_object_log_string
+  kind: entity
+  entity_type: METHOD
+  qualified_name: acme.shop.Audit$.log(String)
+  file: src/main/scala/acme/shop/Orders.scala
+  start_line: 60
+  end_line: 60
+- id: scala.basics.acme_shop_giftcart
+  kind: entity
+  entity_type: CLASS
+  qualified_name: acme.shop.GiftCart
+  file: src/main/scala/acme/shop/Orders.scala
+  start_line: 63
+  end_line: 68
+- id: scala.basics.acme_shop_giftcart_add_item
+  kind: entity
+  entity_type: METHOD
+  qualified_name: acme.shop.GiftCart.add(Item)
+  file: src/main/scala/acme/shop/Orders.scala
+  start_line: 64
+  end_line: 67
+- id: scala.basics.acme_shop_checkout_object
+  kind: entity
+  entity_type: CLASS
+  qualified_name: acme.shop.Checkout$
+  file: src/main/scala/acme/shop/Orders.scala
+  start_line: 70
+  end_line: 76
+- id: scala.basics.acme_shop_checkout_object_run_cart_tax
+  kind: entity
+  entity_type: METHOD
+  qualified_name: acme.shop.Checkout$.run(Cart,Tax)
+  file: src/main/scala/acme/shop/Orders.scala
+  start_line: 71
+  end_line: 75
+- id: scala.basics.acme_shop_status
+  kind: entity
+  entity_type: CLASS
+  qualified_name: acme.shop.Status
+  file: src/main/scala/acme/shop/Status.scala
+  start_line: 5
+  end_line: 7
+  note: Scala 3 enum
+- id: scala.basics.acme_shop_status_isopen
+  kind: entity
+  entity_type: METHOD
+  qualified_name: acme.shop.Status.isOpen
+  file: src/main/scala/acme/shop/Status.scala
+  start_line: 7
+  end_line: 7
+- id: scala.basics.acme_shop_describe_status
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: acme.shop.describe(Status)
+  file: src/main/scala/acme/shop/Status.scala
+  start_line: 9
+  end_line: 10
+  note: top-level definition
+- id: scala.basics.acme_shop_label_string
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: acme.shop.label(String)
+  file: src/main/scala/acme/shop/Status.scala
+  start_line: 12
+  end_line: 12
+- id: scala.basics.acme_shop_report
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: acme.shop.report()
+  file: src/main/scala/acme/shop/Status.scala
+  start_line: 14
+  end_line: 16
+  decorators:
+  - main
+- id: scala.basics.imports_orders_scala_external_java_util_concurrent_concurrenthashmap_3
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:src/main/scala/acme/shop/Orders.scala
+  target_key: external:java.util.concurrent.ConcurrentHashMap
+  resolution: external
+  evidence:
+  - file: src/main/scala/acme/shop/Orders.scala
+    start_line: 3
+    end_line: 3
+  module: java.util.concurrent.ConcurrentHashMap
+- id: scala.basics.imports_orders_scala_external_java_util_concurrent_timeunit_3
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:src/main/scala/acme/shop/Orders.scala
+  target_key: external:java.util.concurrent.TimeUnit
+  resolution: external
+  evidence:
+  - file: src/main/scala/acme/shop/Orders.scala
+    start_line: 3
+    end_line: 3
+  module: java.util.concurrent.TimeUnit
+  note: renamed to Unit2
+- id: scala.basics.imports_orders_scala_external_scala_collection_mutable_4
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:src/main/scala/acme/shop/Orders.scala
+  target_key: external:scala.collection.mutable
+  resolution: external
+  evidence:
+  - file: src/main/scala/acme/shop/Orders.scala
+    start_line: 4
+    end_line: 4
+  module: scala.collection.mutable
+- id: scala.basics.imports_orders_scala_external_scala_util_try_5
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:src/main/scala/acme/shop/Orders.scala
+  target_key: external:scala.util.Try
+  resolution: external
+  evidence:
+  - file: src/main/scala/acme/shop/Orders.scala
+    start_line: 5
+    end_line: 5
+  module: scala.util.Try
+- id: scala.basics.imports_orders_scala_external_scala_concurrent_5
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:src/main/scala/acme/shop/Orders.scala
+  target_key: external:scala.concurrent.*
+  resolution: external
+  evidence:
+  - file: src/main/scala/acme/shop/Orders.scala
+    start_line: 5
+    end_line: 5
+  module: scala.concurrent.*
+  note: '`_` wildcard; second import in the statement'
+- id: scala.basics.imports_status_scala_external_scala_concurrent_duration_3
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:src/main/scala/acme/shop/Status.scala
+  target_key: external:scala.concurrent.duration.*
+  resolution: external
+  evidence:
+  - file: src/main/scala/acme/shop/Status.scala
+    start_line: 3
+    end_line: 3
+  module: scala.concurrent.duration.*
+  note: Scala 3 `*` wildcard
+- id: scala.basics.extends_acme_shop_item_acme_shop_priced_13
+  kind: relationship
+  relationship_type: EXTENDS
+  source_key: class:src/main/scala/acme/shop/Orders.scala::acme.shop.Item
+  target_key: interface:src/main/scala/acme/shop/Orders.scala::acme.shop.Priced
+  resolution: same_file
+  evidence:
+  - file: src/main/scala/acme/shop/Orders.scala
+    start_line: 13
+    end_line: 13
+  basis: type_name
+- id: scala.basics.extends_acme_shop_cart_external_iterable_22
+  kind: relationship
+  relationship_type: EXTENDS
+  source_key: class:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart
+  target_key: external:Iterable
+  resolution: external
+  evidence:
+  - file: src/main/scala/acme/shop/Orders.scala
+    start_line: 22
+    end_line: 22
+  note: type arguments dropped
+- id: scala.basics.implements_acme_shop_cart_acme_shop_priced_22
+  kind: relationship
+  relationship_type: IMPLEMENTS
+  source_key: class:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart
+  target_key: interface:src/main/scala/acme/shop/Orders.scala::acme.shop.Priced
+  resolution: same_file
+  evidence:
+  - file: src/main/scala/acme/shop/Orders.scala
+    start_line: 22
+    end_line: 22
+  basis: type_name
+  note: '`with` mixin'
+- id: scala.basics.extends_acme_shop_giftcart_acme_shop_cart_63
+  kind: relationship
+  relationship_type: EXTENDS
+  source_key: class:src/main/scala/acme/shop/Orders.scala::acme.shop.GiftCart
+  target_key: class:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart
+  resolution: same_file
+  evidence:
+  - file: src/main/scala/acme/shop/Orders.scala
+    start_line: 63
+    end_line: 63
+  basis: type_name
+- id: scala.basics.calls_acme_shop_priced_label_acme_shop_priced_price_int_9
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/scala/acme/shop/Orders.scala::acme.shop.Priced.label()
+  target_key: method:src/main/scala/acme/shop/Orders.scala::acme.shop.Priced.price(Int)
+  resolution: same_file
+  evidence:
+  - file: src/main/scala/acme/shop/Orders.scala
+    start_line: 9
+    end_line: 9
+  basis: enclosing_class
+- id: scala.basics.calls_acme_shop_item_object_apply_string_acme_shop_item_18
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/scala/acme/shop/Orders.scala::acme.shop.Item$.apply(String)
+  target_key: class:src/main/scala/acme/shop/Orders.scala::acme.shop.Item
+  resolution: same_file
+  evidence:
+  - file: src/main/scala/acme/shop/Orders.scala
+    start_line: 18
+    end_line: 18
+  basis: constructor
+  note: 'two arguments: the primary constructor'
+- id: scala.basics.calls_acme_shop_item_object_parse_string_external_try_19
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/scala/acme/shop/Orders.scala::acme.shop.Item$.parse(String)
+  target_key: external:Try
+  resolution: external
+  evidence:
+  - file: src/main/scala/acme/shop/Orders.scala
+    start_line: 19
+    end_line: 19
+- id: scala.basics.calls_acme_shop_item_object_parse_string_acme_shop_item_object_apply_string_19
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/scala/acme/shop/Orders.scala::acme.shop.Item$.parse(String)
+  target_key: method:src/main/scala/acme/shop/Orders.scala::acme.shop.Item$.apply(String)
+  resolution: same_file
+  evidence:
+  - file: src/main/scala/acme/shop/Orders.scala
+    start_line: 19
+    end_line: 19
+  basis: type_name
+  note: Item(raw) applies the companion object's apply(String)
+- id: scala.basics.calls_acme_shop_cart_external_mutable_listbuffer_23
+  kind: relationship
+  relationship_type: CALLS
+  source_key: class:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart
+  target_key: external:mutable.ListBuffer
+  resolution: external
+  evidence:
+  - file: src/main/scala/acme/shop/Orders.scala
+    start_line: 23
+    end_line: 23
+  note: field initializer
+- id: scala.basics.calls_acme_shop_cart_acme_shop_inventory_24
+  kind: relationship
+  relationship_type: CALLS
+  source_key: class:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart
+  target_key: class:src/main/scala/acme/shop/Orders.scala::acme.shop.Inventory
+  resolution: same_file
+  evidence:
+  - file: src/main/scala/acme/shop/Orders.scala
+    start_line: 24
+    end_line: 24
+  basis: constructor
+- id: scala.basics.calls_acme_shop_cart_this_acme_shop_cart_26
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.this()
+  target_key: class:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart
+  resolution: same_file
+  evidence:
+  - file: src/main/scala/acme/shop/Orders.scala
+    start_line: 26
+    end_line: 26
+  basis: constructor
+  note: this("guest") invokes the primary constructor
+- id: scala.basics.calls_acme_shop_cart_add_string_int_expand_int_external_seq_fill_30
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.add(String,Int).expand(Int)
+  target_key: external:Seq.fill
+  resolution: external
+  evidence:
+  - file: src/main/scala/acme/shop/Orders.scala
+    start_line: 30
+    end_line: 30
+  note: first argument list of a curried application
+- id: scala.basics.calls_acme_shop_cart_add_string_int_expand_int_acme_shop_item_object_apply_string_30
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.add(String,Int).expand(Int)
+  target_key: method:src/main/scala/acme/shop/Orders.scala::acme.shop.Item$.apply(String)
+  resolution: same_file
+  evidence:
+  - file: src/main/scala/acme/shop/Orders.scala
+    start_line: 30
+    end_line: 30
+  basis: type_name
+- id: scala.basics.calls_acme_shop_cart_add_string_int_acme_shop_cart_add_string_int_expand_int_31
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.add(String,Int)
+  target_key: function:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.add(String,Int).expand(Int)
+  resolution: same_file
+  evidence:
+  - file: src/main/scala/acme/shop/Orders.scala
+    start_line: 31
+    end_line: 31
+  basis: lexical_scope
+- id: scala.basics.calls_acme_shop_cart_add_string_int_external_expression_foreach_31
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.add(String,Int)
+  target_key: external:<expression>.foreach
+  resolution: external
+  evidence:
+  - file: src/main/scala/acme/shop/Orders.scala
+    start_line: 31
+    end_line: 31
+  note: alphanumeric infix call on a Seq; `add` is passed as a function, not called here
+- id: scala.basics.calls_acme_shop_cart_add_string_int_acme_shop_inventory_reserve_string_int_32
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.add(String,Int)
+  target_key: method:src/main/scala/acme/shop/Orders.scala::acme.shop.Inventory.reserve(String,Int)
+  resolution: same_file
+  evidence:
+  - file: src/main/scala/acme/shop/Orders.scala
+    start_line: 32
+    end_line: 32
+  basis: declared_type
+  note: index is an Inventory field
+- id: scala.basics.calls_acme_shop_cart_add_string_long_acme_shop_cart_add_item_34
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.add(String,Long)
+  target_key: method:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.add(Item)
+  resolution: same_file
+  evidence:
+  - file: src/main/scala/acme/shop/Orders.scala
+    start_line: 34
+    end_line: 34
+  basis: enclosing_class
+  note: one argument selects add(Item)
+- id: scala.basics.calls_acme_shop_cart_add_string_long_acme_shop_item_34
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.add(String,Long)
+  target_key: class:src/main/scala/acme/shop/Orders.scala::acme.shop.Item
+  resolution: same_file
+  evidence:
+  - file: src/main/scala/acme/shop/Orders.scala
+    start_line: 34
+    end_line: 34
+  basis: constructor
+- id: scala.basics.calls_acme_shop_cart_price_int_external_items_map_37
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.price(Int)
+  target_key: external:items.map
+  resolution: external
+  evidence:
+  - file: src/main/scala/acme/shop/Orders.scala
+    start_line: 37
+    end_line: 37
+- id: scala.basics.calls_acme_shop_cart_price_int_acme_shop_item_price_int_37
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.price(Int)
+  target_key: method:src/main/scala/acme/shop/Orders.scala::acme.shop.Item.price(Int)
+  resolution: same_file
+  evidence:
+  - file: src/main/scala/acme/shop/Orders.scala
+    start_line: 37
+    end_line: 37
+  basis: inferred_type
+  note: '`_` is an Item, inferred from items: ListBuffer[Item]'
+- id: scala.basics.calls_acme_shop_cart_sum_acme_shop_cart_price_int_39
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.sum()
+  target_key: method:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.price(Int)
+  resolution: same_file
+  evidence:
+  - file: src/main/scala/acme/shop/Orders.scala
+    start_line: 39
+    end_line: 39
+  basis: enclosing_class
+- id: scala.basics.calls_acme_shop_cart_total_tax_acme_shop_tax_apply_long_40
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.total(Tax)
+  target_key: method:src/main/scala/acme/shop/Orders.scala::acme.shop.Tax.apply(Long)
+  resolution: same_file
+  evidence:
+  - file: src/main/scala/acme/shop/Orders.scala
+    start_line: 40
+    end_line: 40
+  basis: declared_type
+  note: tax is a Tax parameter
+- id: scala.basics.calls_acme_shop_cart_total_tax_acme_shop_cart_price_int_40
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.total(Tax)
+  target_key: method:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.price(Int)
+  resolution: same_file
+  evidence:
+  - file: src/main/scala/acme/shop/Orders.scala
+    start_line: 40
+    end_line: 40
+  basis: enclosing_class
+- id: scala.basics.calls_acme_shop_cart_audit_acme_shop_audit_object_record_string_string_41
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.audit()
+  target_key: method:src/main/scala/acme/shop/Orders.scala::acme.shop.Audit$.record(String,String)
+  resolution: same_file
+  evidence:
+  - file: src/main/scala/acme/shop/Orders.scala
+    start_line: 41
+    end_line: 41
+  basis: type_name
+- id: scala.basics.calls_acme_shop_cart_audit_acme_shop_priced_label_41
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.audit()
+  target_key: method:src/main/scala/acme/shop/Orders.scala::acme.shop.Priced.label()
+  resolution: same_file
+  evidence:
+  - file: src/main/scala/acme/shop/Orders.scala
+    start_line: 41
+    end_line: 41
+  basis: enclosing_class
+  note: inherited from Priced
+- id: scala.basics.calls_acme_shop_inventory_release_string_external_runnable_47
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/scala/acme/shop/Orders.scala::acme.shop.Inventory.release(String)
+  target_key: external:Runnable
+  resolution: external
+  evidence:
+  - file: src/main/scala/acme/shop/Orders.scala
+    start_line: 47
+    end_line: 49
+  note: anonymous class instance
+- id: scala.basics.calls_acme_shop_inventory_release_string_anonymous_run_external_println_48
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/scala/acme/shop/Orders.scala::acme.shop.Inventory.release(String).<anonymous>.run()
+  target_key: external:println
+  resolution: external
+  evidence:
+  - file: src/main/scala/acme/shop/Orders.scala
+    start_line: 48
+    end_line: 48
+- id: scala.basics.calls_acme_shop_inventory_release_string_acme_shop_inventory_release_string_anonymous_run_50
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/scala/acme/shop/Orders.scala::acme.shop.Inventory.release(String)
+  target_key: method:src/main/scala/acme/shop/Orders.scala::acme.shop.Inventory.release(String).<anonymous>.run()
+  resolution: same_file
+  evidence:
+  - file: src/main/scala/acme/shop/Orders.scala
+    start_line: 50
+    end_line: 50
+  basis: inferred_type
+  note: listener's type is the anonymous class, inferred
+- id: scala.basics.calls_acme_shop_tax_apply_long_external_math_round_55
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/scala/acme/shop/Orders.scala::acme.shop.Tax.apply(Long)
+  target_key: external:math.round
+  resolution: external
+  evidence:
+  - file: src/main/scala/acme/shop/Orders.scala
+    start_line: 55
+    end_line: 55
+- id: scala.basics.calls_acme_shop_audit_object_record_string_string_acme_shop_audit_object_log_string_59
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/scala/acme/shop/Orders.scala::acme.shop.Audit$.record(String,String)
+  target_key: method:src/main/scala/acme/shop/Orders.scala::acme.shop.Audit$.log(String)
+  resolution: same_file
+  evidence:
+  - file: src/main/scala/acme/shop/Orders.scala
+    start_line: 59
+    end_line: 59
+  basis: enclosing_class
+- id: scala.basics.calls_acme_shop_audit_object_log_string_external_console_println_60
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/scala/acme/shop/Orders.scala::acme.shop.Audit$.log(String)
+  target_key: external:Console.println
+  resolution: external
+  evidence:
+  - file: src/main/scala/acme/shop/Orders.scala
+    start_line: 60
+    end_line: 60
+- id: scala.basics.calls_acme_shop_giftcart_acme_shop_cart_63
+  kind: relationship
+  relationship_type: CALLS
+  source_key: class:src/main/scala/acme/shop/Orders.scala::acme.shop.GiftCart
+  target_key: class:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart
+  resolution: same_file
+  evidence:
+  - file: src/main/scala/acme/shop/Orders.scala
+    start_line: 63
+    end_line: 63
+  basis: constructor
+  note: extends Cart("gift")
+- id: scala.basics.calls_acme_shop_giftcart_add_item_acme_shop_cart_add_item_65
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/scala/acme/shop/Orders.scala::acme.shop.GiftCart.add(Item)
+  target_key: method:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.add(Item)
+  resolution: same_file
+  evidence:
+  - file: src/main/scala/acme/shop/Orders.scala
+    start_line: 65
+    end_line: 65
+  basis: base_class
+  note: super.add(item)
+- id: scala.basics.calls_acme_shop_giftcart_add_item_acme_shop_audit_object_record_string_string_66
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/scala/acme/shop/Orders.scala::acme.shop.GiftCart.add(Item)
+  target_key: method:src/main/scala/acme/shop/Orders.scala::acme.shop.Audit$.record(String,String)
+  resolution: same_file
+  evidence:
+  - file: src/main/scala/acme/shop/Orders.scala
+    start_line: 66
+    end_line: 66
+  basis: type_name
+- id: scala.basics.calls_acme_shop_checkout_object_run_cart_tax_acme_shop_cart_add_string_int_72
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/scala/acme/shop/Orders.scala::acme.shop.Checkout$.run(Cart,Tax)
+  target_key: method:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.add(String,Int)
+  resolution: same_file
+  evidence:
+  - file: src/main/scala/acme/shop/Orders.scala
+    start_line: 72
+    end_line: 72
+  basis: declared_type
+  note: same-arity overloads add(String,Int)/add(String,Long); the Int argument selects add(String,Int)
+- id: scala.basics.calls_acme_shop_checkout_object_run_cart_tax_acme_shop_cart_add_string_long_73
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/scala/acme/shop/Orders.scala::acme.shop.Checkout$.run(Cart,Tax)
+  target_key: method:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.add(String,Long)
+  resolution: same_file
+  evidence:
+  - file: src/main/scala/acme/shop/Orders.scala
+    start_line: 73
+    end_line: 73
+  basis: declared_type
+  note: the Long argument selects add(String,Long)
+- id: scala.basics.calls_acme_shop_checkout_object_run_cart_tax_acme_shop_cart_total_tax_74
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:src/main/scala/acme/shop/Orders.scala::acme.shop.Checkout$.run(Cart,Tax)
+  target_key: method:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.total(Tax)
+  resolution: same_file
+  evidence:
+  - file: src/main/scala/acme/shop/Orders.scala
+    start_line: 74
+    end_line: 74
+  basis: declared_type
+- id: scala.basics.calls_acme_shop_describe_status_acme_shop_label_string_10
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:src/main/scala/acme/shop/Status.scala::acme.shop.describe(Status)
+  target_key: function:src/main/scala/acme/shop/Status.scala::acme.shop.label(String)
+  resolution: same_file
+  evidence:
+  - file: src/main/scala/acme/shop/Status.scala
+    start_line: 10
+    end_line: 10
+  basis: lexical_scope
+  note: both branches call label
+- id: scala.basics.calls_acme_shop_label_string_external_text_touppercase_12
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:src/main/scala/acme/shop/Status.scala::acme.shop.label(String)
+  target_key: external:text.toUpperCase
+  resolution: external
+  evidence:
+  - file: src/main/scala/acme/shop/Status.scala
+    start_line: 12
+    end_line: 12
+- id: scala.basics.calls_acme_shop_report_external_println_16
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:src/main/scala/acme/shop/Status.scala::acme.shop.report()
+  target_key: external:println
+  resolution: external
+  evidence:
+  - file: src/main/scala/acme/shop/Status.scala
+    start_line: 16
+    end_line: 16
+- id: scala.basics.calls_acme_shop_report_acme_shop_describe_status_16
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:src/main/scala/acme/shop/Status.scala::acme.shop.report()
+  target_key: function:src/main/scala/acme/shop/Status.scala::acme.shop.describe(Status)
+  resolution: same_file
+  evidence:
+  - file: src/main/scala/acme/shop/Status.scala
+    start_line: 16
+    end_line: 16
+  basis: lexical_scope

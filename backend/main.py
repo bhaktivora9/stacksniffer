@@ -50,9 +50,9 @@ except ModuleNotFoundError:
 logger = logging.getLogger(__name__)
 
 WORKER_SHUTDOWN_SECONDS = 10.0
-# Languages whose structural analyzer must be available for the service to be ready (R1: Java,
-# Python). SS-BE-203 adds scala, go, javascript and ruby here as their analyzers ship.
-DEFAULT_REQUIRED_LANGUAGES = "python,java"
+# Languages whose structural analyzer must be available for the service to be ready. SS-BE-203
+# adds go, javascript and ruby here as their analyzers ship.
+DEFAULT_REQUIRED_LANGUAGES = "python,java,scala"
 
 
 def load_environment() -> bool:

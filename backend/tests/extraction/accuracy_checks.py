@@ -1,4 +1,4 @@
-"""The accuracy checks both languages must pass; test_python_accuracy / test_java_accuracy bind a language."""
+"""The accuracy checks every language must pass; test_<language>_accuracy binds a language."""
 
 from __future__ import annotations
 
@@ -84,19 +84,32 @@ def check_fixture_coverage(language: str) -> None:
     if language == "python":
         assert "ambiguous" in resolutions  # e.g. a name bound by alternative imports
     else:
-        # Java overloads are always statically determined, so ambiguity means same-name, same-arity
+        # JVM overloads are always statically determined, so ambiguity means same-name, same-arity
         # overloads that only argument types can tell apart; at least one call must target one.
         methods = [f for f in facts if isinstance(f, metrics.EntityFact) and f.entity_type == "METHOD"]
-        def shape(f):
-            name, params = f.qualified_name.rsplit("(", 1)
-            return name, params.count(",") + (params != ")")
-        shapes = [shape(f) for f in methods]
-        overloaded = {f.key for f in methods if shapes.count(shape(f)) > 1}
+        shapes = [_shape(f.qualified_name) for f in methods]
+        overloaded = {f.key for f in methods if shapes.count(_shape(f.qualified_name)) > 1}
         assert any(isinstance(f, metrics.RelationshipFact) and f.target_key in overloaded for f in facts)
     assert any(isinstance(f, metrics.UnsupportedFact) for f in facts), "no unsupported (negative) facts"
     assert any(f.parse_status.value == "PARTIAL" for case in cases for f in case.files.values()), "no malformed file"
     assert {"development", "holdout"} <= {c.split for c in cases}
     assert all(c.labelled_from == "source" for c in cases)
+
+
+def _shape(qualified_name: str) -> tuple[str, int]:
+    """A method's name and first-parameter-list arity; commas inside type arguments do not count."""
+    name, _, parameters = qualified_name.partition("(")
+    parameters = parameters.replace("=>", "")  # Scala by-name and function types are not brackets
+    depth, arity, seen = 0, 0, False
+    for char in parameters:
+        if char == ")" and depth == 0:
+            break
+        depth += char in "[<("
+        depth -= char in "]>)"
+        if char == "," and depth == 0:
+            arity += 1
+        seen = seen or not char.isspace()
+    return name, arity + seen
 
 
 def check_capability_reporting(language: str) -> None:

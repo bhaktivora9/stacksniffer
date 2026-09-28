@@ -1,9 +1,9 @@
-"""Language analyzers: Python and Java over Tree-sitter, plus the file-level fallback.
+"""Language analyzers: Python, Java and Scala over Tree-sitter, plus the file-level fallback.
 
 Resolution is deliberately local to one file. A reference is linked to an
 entity only when the file's own declarations determine it: lexical scopes and
-shadowing (Python), class members including same-file base and outer classes,
-overloads by argument count and typed receivers (Java). Anything that is
+shadowing (Python, Scala), class members including same-file base and outer classes,
+overloads by argument count and typed receivers (Java, Scala). Anything that is
 ambiguous or declared elsewhere becomes an unresolved ``EXTERNAL_SYMBOL``;
 cross-file linking is not attempted, which is why calls and inheritance are
 reported as PARTIAL.
@@ -37,6 +37,7 @@ from .tree_sitter_adapter import (
     span_of,
     syntax_errors,
     text_of,
+    walk,
 )
 
 S, P, U = CapabilityLevel.SUPPORTED, CapabilityLevel.PARTIAL, CapabilityLevel.UNSUPPORTED
@@ -140,10 +141,12 @@ class _FileState:
         self.variables: dict[str, dict[str, str]] = defaultdict(dict)
         self.references: list[_Reference] = []
         self.pending_decorators: dict[int, list[str]] = {}
-        # Resolution basis decided during lookup, keyed by id() of the reference.
+        # RESOLUTION_BASIS key decided during lookup, keyed by id() of the reference.
         self.basis_override: dict[int, str] = {}
         self.pending_bases: list[tuple[str, str, _Scope, int]] = []
         self.package: str | None = None
+        self.objects: dict[str, list[str]] = defaultdict(list)  # Scala singleton objects by name
+        self.traits: set[str] = set()
 
 
 class TreeSitterAnalyzer:
@@ -192,10 +195,9 @@ class TreeSitterAnalyzer:
             candidates = self.candidates(ref, state)
             metadata = dict(ref.metadata)
             if len(candidates) == 1:
-                basis, certainty = RESOLUTION_BASIS[ref.lookup]
-                if state.basis_override.get(id(ref)) == "type_name":
-                    # A static call through a type name is as certain as a scope lookup.
-                    basis, certainty = "type_name", Certainty.MEDIUM
+                # Lookup decided how the name resolved when one reference form allows several
+                # (e.g. a static call through a type name looks like a call on a variable).
+                basis, certainty = RESOLUTION_BASIS[state.basis_override.get(id(ref), ref.lookup)]
                 target = candidates[0]
                 metadata["resolution"] = "same_file"
                 metadata["resolution_basis"] = basis
@@ -765,7 +767,7 @@ class JavaAnalyzer(TreeSitterAnalyzer):
         if ref.lookup == "receiver":
             class_key, via = self._receiver_class(state, scope, ref.receiver)
             if via == "type_name":
-                state.basis_override[id(ref)] = "type_name"
+                state.basis_override[id(ref)] = "type"  # as certain as a scope lookup
             return self._members(state, class_key, ref.name, arguments=ref.arguments) if class_key else []
         if ref.lookup == "new":
             classes = self._type_keys(state, ref.name)
@@ -826,3 +828,514 @@ class JavaAnalyzer(TreeSitterAnalyzer):
                 return state.variables[current][name]
             current = state.outer.get(current)
         return None
+
+
+# --- Scala -----------------------------------------------------------------------------------
+
+# Objects are singletons: like the JVM, their qualified name ends in `$`, so a companion object
+# never collides with its class. Traits are the Scala counterpart of interfaces.
+_SCALA_TEMPLATES = {
+    "class_definition": (EntityType.CLASS, "class"),
+    "object_definition": (EntityType.CLASS, "object"),
+    "trait_definition": (EntityType.INTERFACE, "trait"),
+    "enum_definition": (EntityType.CLASS, "enum"),
+}
+_SCALA_FUNCTIONS = ("function_definition", "function_declaration")
+_SCALA_VARIABLES = ("val_definition", "var_definition", "val_declaration", "var_declaration")
+_SCALA_COMMENTS = {"comment", "block_comment"}
+
+
+def _scala_type_name(node: Any) -> str | None:
+    """A type's name without type arguments (dotted when qualified); None for other type forms."""
+    while node is not None and node.type in ("generic_type", "compound_type", "applied_constructor_type"):
+        if node.type == "generic_type":
+            node = node.child_by_field_name("type")
+        elif node.type == "compound_type":
+            node = node.child_by_field_name("base")
+        else:
+            node = next((c for c in node.named_children if c.type != "arguments"), None)
+    if node is None or node.type not in ("type_identifier", "stable_type_identifier"):
+        return None
+    return _name(text_of(node))
+
+
+def _scala_argument_count(arguments: Any) -> int | None:
+    if arguments is None:
+        return None
+    if arguments.type == "block":  # f { ... } passes the block as the only argument
+        return 1
+    return sum(1 for child in arguments.named_children if child.type not in _SCALA_COMMENTS)
+
+
+def _scala_is_super(node: Any) -> bool:
+    if node.type == "generic_function":  # super[Trait]
+        node = node.child_by_field_name("function")
+    return node is not None and node.type == "identifier" and text_of(node) == "super"
+
+
+def _scala_receiver_is_simple(node: Any) -> bool:
+    while node.type == "field_expression":
+        node = node.child_by_field_name("value")
+    return node.type == "identifier" or _scala_is_super(node)
+
+
+def _scala_header_broken(node: Any) -> bool:
+    """A definition whose name, parameters, parents or type do not parse. Unlike Java, a missing
+    parameter list is legal (`def size: Int`), so any error outside the body counts."""
+    if node.child_by_field_name("name") is None:
+        return True
+    return any(child.type == "ERROR" or child.is_missing or child.has_error
+               for index, child in enumerate(node.children) if node.field_name_for_child(index) != "body")
+
+
+def _scala_span(node: Any) -> Span:
+    """A declaration's span without trailing blank lines, which indentation-based (Scala 3)
+    definitions include in their node."""
+    span = span_of(node)
+    text = node.text or b""
+    trailing = len(text) - len(text.rstrip())
+    if not trailing:
+        return span
+    kept = text[:len(text) - trailing]
+    return Span(span.start_byte, span.end_byte - trailing, span.start_line,
+                span.start_line + kept.count(b"\n"))
+
+
+def _scala_parameters(parameter_list: Any) -> list[Any]:
+    return [p for p in parameter_list.named_children if p.type in ("parameter", "class_parameter")]
+
+
+class ScalaAnalyzer(TreeSitterAnalyzer):
+    """Scala 2 and the common Scala 3 forms (enums, top-level definitions, `as`/`*` imports).
+
+    Calls are explicit applications (`f(x)`, `a.f { ... }`, `new C(...)`, `C(...)`) and
+    alphanumeric infix applications (`xs foreach f`). Symbolic operators and parameterless
+    member selections are not reported: without types they cannot be told from arithmetic
+    or field access.
+    """
+
+    language = "scala"
+    extractor = "tree-sitter-scala"
+    analyzer_version = "stacksniffer-scala/1"
+    capabilities = AnalyzerCapabilities({
+        Capability.DECLARATIONS: S,
+        Capability.IMPORTS: S,
+        Capability.CALLS: P,
+        Capability.INHERITANCE: P,
+        Capability.INTERFACES: P,  # traits
+        Capability.DEPENDENCIES: U,  # build.sbt is not interpreted
+        Capability.DECORATORS: S,  # annotations
+    })
+
+    def __init__(self, adapter: TreeSitterParserAdapter | None = None):
+        super().__init__(adapter or TreeSitterParserAdapter("scala", "tree_sitter_scala", "tree-sitter-scala"))
+
+    def visit(self, node, scope, state, builder):
+        kind = node.type
+        if kind == "ERROR" and node.parent is not None:
+            return None  # a broken region: names and extents inside it are not trustworthy
+        if node.parent is not None and node.parent.type == "ERROR" and node.start_point[1] != 0:
+            # When recovery turns the whole file into an ERROR node, only definitions starting at
+            # column 0 are known to be top level; indented ones belonged to a broken enclosing one.
+            return None
+        if kind == "package_clause":
+            return self._package(node, scope, state)
+        if kind == "import_declaration":
+            self._import(node, builder)
+            return None
+        if kind in _SCALA_TEMPLATES:
+            return self._template(node, scope, state, builder)
+        if kind in _SCALA_FUNCTIONS:
+            return self._function(node, scope, state, builder)
+        if kind in _SCALA_VARIABLES:
+            self._variables(node, scope, state)
+        elif kind == "lambda_expression":
+            parameters = node.child_by_field_name("parameters")
+            if parameters is not None:
+                state.bound[scope.namespace].update(text_of(n) for n in walk(parameters) if n.type == "identifier")
+        elif kind == "call_expression":
+            self._call(node, scope, state)
+        elif kind == "infix_expression":
+            operator = node.child_by_field_name("operator")
+            if operator is not None and operator.type == "identifier":  # `xs foreach f`, never `a + b`
+                self._member_call(node.child_by_field_name("left"), _name(text_of(operator)), span_of(node), 1,
+                                  scope, state)
+        elif kind == "instance_expression":
+            self._instance(node, scope, state)
+        return scope
+
+    # -- declarations -----------------------------------------------------------------------
+
+    @staticmethod
+    def _package(node, scope, state):
+        name = _name(text_of(node.child_by_field_name("name")))
+        outer = scope.qualified_name or state.package
+        qualified = f"{outer}.{name}" if outer else name
+        body = node.child_by_field_name("body")
+        if body is None:  # `package a.b` applies to the rest of the file
+            state.package = qualified
+            return None
+        return _Scope(scope.key, "file", qualified, None, None, scope.namespace, None)
+
+    def _import(self, node, builder):
+        path: list[str] = []
+
+        def emit(name: str, **metadata) -> None:
+            target = builder.external("import", name, span_of(node))
+            builder.relationship(RelationshipType.IMPORTS, builder.file_key, target, span_of(node),
+                                 certainty=Certainty.EXACT,
+                                 metadata={"module": name, "wildcard": name.endswith(".*"), **metadata,
+                                           "resolution": "unresolved"})
+
+        # One statement may import several paths (`import a.B, c.D`) and several selectors of one.
+        for index, child in enumerate(node.children):
+            if node.field_name_for_child(index) == "path":
+                if child.is_named:  # the `.` separators carry the field too
+                    path.append(text_of(child))
+            elif child.type == "namespace_wildcard":
+                if text_of(child) in ("_", "*"):
+                    emit(".".join(path) + ".*")
+                path = []
+            elif child.type == "namespace_selectors":
+                prefix = ".".join(path)
+                for selector in child.named_children:
+                    if selector.type == "identifier":
+                        emit(f"{prefix}.{text_of(selector)}")
+                    elif selector.type in ("arrow_renamed_identifier", "as_renamed_identifier"):
+                        alias = text_of(selector.child_by_field_name("alias"))
+                        if alias != "_":  # `X => _` hides X instead of importing it
+                            emit(f"{prefix}.{text_of(selector.child_by_field_name('name'))}", alias=alias)
+                    elif selector.type == "namespace_wildcard" and text_of(selector) in ("_", "*"):
+                        emit(f"{prefix}.*")
+                path = []
+            elif child.type == "," and path:
+                emit(".".join(path))
+                path = []
+        if path:
+            emit(".".join(path))
+
+    @staticmethod
+    def _annotations(node) -> list[str]:
+        names = []
+        for child in node.children:
+            if child.type == "annotation":
+                name = _scala_type_name(child.child_by_field_name("name"))
+                if name:
+                    names.append(name)
+        return names
+
+    @staticmethod
+    def _parameter_types(lists) -> tuple[str, tuple[float, float] | None]:
+        """The signature suffix over every parameter list, and the first list's arity range."""
+        suffix, arity = "", None
+        for number, parameter_list in enumerate(lists):
+            parameters = _scala_parameters(parameter_list)
+            suffix += "(" + ",".join(_name(text_of(p.child_by_field_name("type"))) for p in parameters) + ")"
+            if number == 0:
+                repeated = any((t := p.child_by_field_name("type")) is not None
+                               and t.type == "repeated_parameter_type" for p in parameters)
+                required = sum(1 for p in parameters if p.child_by_field_name("default_value") is None)
+                arity = (required - repeated, math.inf if repeated else len(parameters))
+        return suffix, arity
+
+    @staticmethod
+    def _bind_parameters(owner, lists, state):
+        for parameter_list in lists:
+            for parameter in _scala_parameters(parameter_list):
+                name = text_of(parameter.child_by_field_name("name"))
+                type_name = _scala_type_name(parameter.child_by_field_name("type"))
+                if type_name:
+                    state.variables[owner][name] = type_name
+                else:
+                    state.bound[owner].add(name)
+
+    def _template(self, node, scope, state, builder):
+        if _scala_header_broken(node):
+            return None
+        name = text_of(node.child_by_field_name("name")).strip()
+        entity_type, kind = _SCALA_TEMPLATES[node.type]
+        if any(child.type == "case" for child in node.children):
+            kind = f"case {kind}"
+        own = f"{name}$" if node.type == "object_definition" else name
+        if scope.kind == "callable":
+            qualified = f"{scope.qualified_name}.<local>.{own}"
+        else:
+            qualified = self._qualify(scope, own, state.package)
+        metadata: dict[str, Any] = {"kind": kind}
+        if annotations := self._annotations(node):
+            metadata["annotations"] = annotations
+        key = builder.entity(entity_type, name, _scala_span(node), parent_key=scope.key,
+                             qualified_name=qualified, metadata=metadata)
+        state.classes.add(key)
+        (state.objects if node.type == "object_definition" else state.types)[name].append(key)
+        if node.type == "trait_definition":
+            state.traits.add(key)
+        if scope.class_key:
+            state.outer[key] = scope.class_key
+        state.parent_namespace[key] = scope.namespace
+
+        if node.type in ("class_definition", "enum_definition"):
+            lists = [n for n in node.children_by_field_name("class_parameters") if n.type == "class_parameters"]
+            _, arity = self._parameter_types(lists)
+            state.arity[key] = arity or (0, 0)  # the primary constructor
+            self._bind_parameters(key, lists, state)
+
+        extend = node.child_by_field_name("extend")
+        if extend is not None:
+            parents = [child for index, child in enumerate(extend.children)
+                       if child.is_named and extend.field_name_for_child(index) == "type"]
+            for number, parent in enumerate(parents):
+                # The first parent is the superclass template; later ones are mixins. A trait's
+                # parents are all traits it extends.
+                relationship = (RelationshipType.EXTENDS if number == 0 or node.type == "trait_definition"
+                                else RelationshipType.IMPLEMENTS)
+                self._parent(relationship, key, parent, scope, state, superclass=number == 0)
+            arguments = extend.child_by_field_name("arguments")
+            if arguments is not None and parents and (parent_name := _scala_type_name(parents[0])):
+                # `extends Base(x)` invokes Base's constructor.
+                start, end = span_of(parents[0]), span_of(arguments)
+                span = Span(start.start_byte, end.end_byte, start.start_line, end.end_line)
+                state.references.append(_Reference(
+                    RelationshipType.CALLS, key, span, "call", parent_name,
+                    lookup="new" if "." not in parent_name else "none", name=parent_name, scope=scope,
+                    arguments=_scala_argument_count(arguments)))
+        return _Scope(key, "class", qualified, key, None, key, None)
+
+    @staticmethod
+    def _parent(relationship, source_key, type_node, scope, state, *, superclass=False):
+        name = _scala_type_name(type_node)
+        if not name:
+            return
+        # Only simple names can match a same-file declaration; qualified names stay unresolved.
+        lookup = "type" if "." not in name else "none"
+        state.references.append(_Reference(relationship, source_key, span_of(type_node), "type", name,
+                                           lookup=lookup, name=name, scope=scope))
+        if lookup == "type":
+            state.bases[source_key].append(name)  # names until prepare() resolves them
+            if superclass:
+                state.superclass[source_key] = name
+
+    def _function(self, node, scope, state, builder):
+        if _scala_header_broken(node):
+            return None
+        name = text_of(node.child_by_field_name("name")).strip()
+        # type parameters (`def f[T](x: T)`) share the field; only value parameter lists count
+        lists = [n for n in node.children_by_field_name("parameters") if n.type == "parameters"]
+        suffix, arity = self._parameter_types(lists)
+        signature = name + suffix
+        constructor = name == "this"
+        body_owner = node.parent.parent if node.parent is not None else None
+        anonymous = node.parent.type == "template_body" and body_owner is not None \
+            and body_owner.type == "instance_expression"
+        if anonymous:
+            base = scope.qualified_name or state.package
+            qualified = f"{base}.<anonymous>.{signature}" if base else f"<anonymous>.{signature}"
+            class_key = f"anonymous@{node.parent.id}"
+            if class_key not in state.classes:
+                state.classes.add(class_key)
+                state.parent_namespace[class_key] = scope.namespace
+                state.outer.setdefault(class_key, scope.class_key)
+        elif scope.kind == "class":
+            qualified, class_key = self._qualify(scope, signature), scope.class_key
+        else:
+            qualified, class_key = self._qualify(scope, signature, state.package), None
+        metadata: dict[str, Any] = {"signature": signature, "constructor": constructor}
+        if node.type == "function_declaration":
+            metadata["abstract"] = True
+        if annotations := self._annotations(node):
+            metadata["annotations"] = annotations
+        key = builder.entity(EntityType.METHOD if class_key else EntityType.FUNCTION, name, _scala_span(node),
+                             parent_key=scope.key, qualified_name=qualified, metadata=metadata)
+        if arity is not None:
+            state.arity[key] = arity  # a parameterless `def x` has none: it is never applied
+        if class_key and constructor:
+            state.constructors[class_key].append(key)
+        elif class_key:
+            state.members[class_key][name].append(key)
+        else:
+            state.names[scope.namespace][name].append(_Declaration(key, span_of(node).start_line, True))
+        state.parent_namespace[key] = class_key if anonymous else scope.namespace
+        self._bind_parameters(key, lists, state)
+        return _Scope(key, "callable", qualified, class_key or scope.class_key, key, key, None)
+
+    @staticmethod
+    def _variables(node, scope, state):
+        pattern = node.child_by_field_name("pattern")
+        if pattern is None or pattern.type != "identifier":
+            return
+        name = text_of(pattern)
+        type_name = _scala_type_name(node.child_by_field_name("type"))
+        if type_name:
+            state.variables[scope.namespace][name] = type_name
+        else:
+            state.bound[scope.namespace].add(name)  # inferred type: known to exist, type unknown
+
+    # -- references -------------------------------------------------------------------------
+
+    def _call(self, node, scope, state):
+        function = node.child_by_field_name("function")
+        if function is None or function.type == "call_expression":
+            return  # a further argument list of a curried application; the innermost call reports it
+        if function.type == "generic_function":  # f[T](x)
+            function = function.child_by_field_name("function")
+        arguments = _scala_argument_count(node.child_by_field_name("arguments"))
+        span = span_of(node)
+        if function.type == "identifier":
+            name = _name(text_of(function))
+            source = scope.callable_key or scope.key
+            lookup = "this_constructor" if name == "this" else "unqualified"
+            state.references.append(_Reference(RelationshipType.CALLS, source, span, "call", name, lookup=lookup,
+                                               name=name, scope=scope, arguments=arguments))
+        elif function.type == "field_expression":
+            self._member_call(function.child_by_field_name("value"),
+                              _name(text_of(function.child_by_field_name("field"))), span, arguments, scope, state)
+
+    def _member_call(self, receiver, name, span, arguments, scope, state):
+        if receiver is None or not name:
+            return
+        source = scope.callable_key or scope.key
+        text = _name(text_of(receiver))
+        display = f"{text if _scala_receiver_is_simple(receiver) else EXPRESSION}.{name}"
+        receiver_name = None
+        if receiver.type == "identifier" and text == "this":
+            lookup = "this"
+        elif _scala_is_super(receiver):
+            lookup = "super"
+        elif receiver.type == "identifier":
+            lookup, receiver_name = "receiver", text
+        elif receiver.type == "field_expression" and text.startswith("this.") and text.count(".") == 1:
+            lookup, receiver_name = "receiver", text
+        elif receiver.type == "instance_expression" and (type_name := self._instance_type(receiver)[0]):
+            lookup, receiver_name = "instance", type_name  # new Local().run()
+        else:
+            lookup = "none"
+        state.references.append(_Reference(RelationshipType.CALLS, source, span, "call", display, lookup=lookup,
+                                           name=name, scope=scope, arguments=arguments, receiver=receiver_name))
+
+    @staticmethod
+    def _instance_type(node) -> tuple[str | None, int]:
+        type_node = next((c for c in node.named_children if c.type not in ("arguments", "template_body")), None)
+        arguments = node.child_by_field_name("arguments")
+        if type_node is not None and type_node.type == "compound_type":  # new A(x) with B
+            type_node = type_node.child_by_field_name("base")
+        if type_node is not None and type_node.type == "applied_constructor_type":
+            arguments = next((c for c in type_node.named_children if c.type == "arguments"), arguments)
+        return _scala_type_name(type_node), _scala_argument_count(arguments) or 0
+
+    def _instance(self, node, scope, state):
+        type_name, arguments = self._instance_type(node)
+        if not type_name:
+            return
+        # `new T { ... }` instantiates an anonymous subclass, so T may be a trait (as a Java
+        # anonymous class may implement an interface).
+        anonymous = any(child.type == "template_body" for child in node.named_children)
+        state.references.append(_Reference(
+            RelationshipType.CALLS, scope.callable_key or scope.key, span_of(node), "call", type_name,
+            lookup="new" if "." not in type_name else "none", name=type_name, scope=scope, arguments=arguments,
+            receiver="anonymous" if anonymous else None))
+
+    # -- resolution -------------------------------------------------------------------------
+
+    def candidates(self, ref, state):
+        scope = ref.scope
+        if ref.lookup == "type":
+            return list(state.types.get(ref.name, []))
+        if ref.lookup == "unqualified":
+            found, how = self._unqualified(state, scope, ref.name, ref.arguments)
+            if how:
+                state.basis_override[id(ref)] = how
+            return found
+        if ref.lookup == "this":
+            return self._members(state, scope.class_key, ref.name, arguments=ref.arguments)
+        if ref.lookup == "super":
+            return self._members(state, scope.class_key, ref.name, arguments=ref.arguments, bases_only=True)
+        if ref.lookup == "receiver":
+            class_key, how = self._receiver_class(state, scope, ref.receiver)
+            state.basis_override[id(ref)] = how
+            return self._members(state, class_key, ref.name, arguments=ref.arguments) if class_key else []
+        if ref.lookup == "instance":
+            classes = self._instantiable(state, ref.receiver)
+            return self._members(state, classes[0], ref.name, arguments=ref.arguments) if len(classes) == 1 else []
+        if ref.lookup == "new":
+            classes = (list(state.types.get(ref.name, [])) if ref.receiver == "anonymous"
+                       else self._instantiable(state, ref.name))
+            return self._constructors(state, classes[0], ref.arguments) if len(classes) == 1 else []
+        if ref.lookup == "this_constructor" and scope.class_key:
+            return [key for key in self._constructors(state, scope.class_key, ref.arguments) if key != ref.source_key]
+        return []
+
+    @staticmethod
+    def _instantiable(state, name) -> list[str]:
+        return [key for key in state.types.get(name, []) if key not in state.traits]
+
+    @staticmethod
+    def _constructors(state, class_key, arguments) -> list[str]:
+        """Auxiliary constructors and the primary one (the class itself) that accept the arguments."""
+        def fits(key):
+            low, high = state.arity.get(key, (0, math.inf))
+            return arguments is None or low <= arguments <= high
+        return [key for key in state.constructors.get(class_key, []) if fits(key)] + \
+            ([class_key] if fits(class_key) else [])
+
+    def _unqualified(self, state, scope, name, arguments) -> tuple[list[str], str | None]:
+        """Scala name lookup: local definitions, then members of each enclosing template
+        (inherited ones included), then top-level definitions; parameters and values shadow."""
+        namespace = scope.namespace
+        while namespace is not None:
+            if namespace in state.classes:
+                found = self._inherited(state, namespace, name, arguments, set())
+                if found:
+                    return found, "unqualified"
+            else:
+                declarations = state.names[namespace].get(name)
+                if declarations:
+                    return self._by_arity(state, [d.key for d in declarations], arguments), "lexical"
+                if name in state.bound[namespace] or name in state.variables.get(namespace, {}):
+                    return [], None
+            namespace = state.parent_namespace.get(namespace)
+        # Not a function in scope: `Name(...)` applies a same-file companion object or class.
+        objects = state.objects.get(name, [])
+        if len(objects) == 1 and state.members[objects[0]].get("apply"):
+            return self._by_arity(state, state.members[objects[0]]["apply"], arguments), "type"
+        classes = self._instantiable(state, name)
+        if len(classes) == 1:
+            return self._constructors(state, classes[0], arguments), "new"
+        return [], None
+
+    def _receiver_class(self, state, scope, receiver) -> tuple[str | None, str]:
+        """The template a receiver denotes, and how: a declared type ("receiver") or an object name ("type")."""
+        if receiver.startswith("this."):
+            type_name = state.variables.get(scope.class_key, {}).get(receiver[5:])
+        else:
+            type_name, shadowed = self._variable_type(state, scope.namespace, receiver)
+            if type_name is None and not shadowed and receiver[:1].isupper():
+                # Name.member(...) selects from the object Name, like a Java static call.
+                objects = state.objects.get(receiver, [])
+                return (objects[0] if len(objects) == 1 else None), "type"
+        keys = list(state.types.get(type_name, [])) if type_name else []
+        return (keys[0] if len(keys) == 1 else None), "receiver"
+
+    @staticmethod
+    def _variable_type(state, namespace, name) -> tuple[str | None, bool]:
+        """The declared type of the nearest binding of ``name``; (None, True) when it has none."""
+        while namespace is not None:
+            if name in state.bound[namespace]:
+                return None, True
+            if name in state.variables.get(namespace, {}):
+                return state.variables[namespace][name], False
+            namespace = state.parent_namespace.get(namespace)
+        return None, False
+
+    def prepare(self, state) -> None:
+        """Turn recorded parent names into same-file class/trait keys; other parents are dropped."""
+        def resolve(name):
+            keys = state.types.get(name, [])
+            return keys[0] if len(keys) == 1 else None
+
+        for class_key, names in list(state.bases.items()):
+            state.bases[class_key] = [key for key in map(resolve, names) if key]
+        for class_key, name in list(state.superclass.items()):
+            if (key := resolve(name)) is not None:
+                state.superclass[class_key] = key
+            else:
+                del state.superclass[class_key]

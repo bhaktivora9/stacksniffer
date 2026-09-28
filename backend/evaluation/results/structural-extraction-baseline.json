@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "baseline_version": 2,
+  "baseline_version": 3,
   "gold_version": 2,
   "review_status": [
     "pending_independent_review"
@@ -2311,6 +2311,1215 @@
             "area": "relationships",
             "outcome": "unexpected",
             "detail": "IMPORTS file:app/util/__init__.py external:.text (label: IMPORTS file:app/util/__init__.py file:app/util/text.py)",
+            "category": "cross-file limitation"
+          }
+        ]
+      }
+    },
+    "scala": {
+      "cases": [
+        "scala/basics",
+        "scala/broker",
+        "scala/holdout_coordinator",
+        "scala/holdout_streams",
+        "scala/malformed"
+      ],
+      "extractor_versions": {
+        "scala": "stacksniffer-scala/1+tree-sitter-scala@0.26.2"
+      },
+      "entities": {
+        "overall": {
+          "tp": 122,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "CLASS": {
+          "tp": 34,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "INTERFACE": {
+          "tp": 5,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "FUNCTION": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "METHOD": {
+          "tp": 79,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "relationships": {
+        "overall": {
+          "tp": 245,
+          "fp": 31,
+          "fn": 32,
+          "precision": 0.8877,
+          "recall": 0.8845,
+          "f1": 0.8861
+        },
+        "CONTAINS": {
+          "tp": 122,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "IMPORTS": {
+          "tp": 16,
+          "fp": 6,
+          "fn": 6,
+          "precision": 0.7273,
+          "recall": 0.7273,
+          "f1": 0.7273
+        },
+        "CALLS": {
+          "tp": 96,
+          "fp": 22,
+          "fn": 23,
+          "precision": 0.8136,
+          "recall": 0.8067,
+          "f1": 0.8101
+        },
+        "EXTENDS": {
+          "tp": 8,
+          "fp": 3,
+          "fn": 3,
+          "precision": 0.7273,
+          "recall": 0.7273,
+          "f1": 0.7273
+        },
+        "IMPLEMENTS": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "import_statements": {
+        "tp": 22,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "resolution": {
+        "CALLS": {
+          "same_file": {
+            "tp": 54,
+            "fp": 0,
+            "fn": 9,
+            "precision": 1.0,
+            "recall": 0.8571,
+            "f1": 0.9231
+          },
+          "cross_file": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 14,
+            "precision": 1.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "overall": {
+            "tp": 54,
+            "fp": 0,
+            "fn": 23,
+            "precision": 1.0,
+            "recall": 0.7013,
+            "f1": 0.8244
+          }
+        },
+        "EXTENDS": {
+          "same_file": {
+            "tp": 6,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "cross_file": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 3,
+            "precision": 1.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "overall": {
+            "tp": 6,
+            "fp": 0,
+            "fn": 3,
+            "precision": 1.0,
+            "recall": 0.6667,
+            "f1": 0.8
+          }
+        },
+        "IMPLEMENTS": {
+          "same_file": {
+            "tp": 2,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "cross_file": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "overall": {
+            "tp": 2,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          }
+        },
+        "IMPORTS": {
+          "same_file": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "cross_file": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 6,
+            "precision": 1.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "overall": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 6,
+            "precision": 1.0,
+            "recall": 0.0,
+            "f1": 0.0
+          }
+        }
+      },
+      "resolved_edge_precision": {
+        "tp": 62,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "resolution_recall_by_expected_basis": {
+        "lexical_scope": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "enclosing_class": {
+          "tp": 17,
+          "fp": 0,
+          "fn": 2,
+          "precision": 1.0,
+          "recall": 0.8947,
+          "f1": 0.9444
+        },
+        "base_class": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "type_name": {
+          "tp": 18,
+          "fp": 0,
+          "fn": 7,
+          "precision": 1.0,
+          "recall": 0.72,
+          "f1": 0.8372
+        },
+        "constructor": {
+          "tp": 15,
+          "fp": 0,
+          "fn": 3,
+          "precision": 1.0,
+          "recall": 0.8333,
+          "f1": 0.9091
+        },
+        "declared_type": {
+          "tp": 7,
+          "fp": 0,
+          "fn": 6,
+          "precision": 1.0,
+          "recall": 0.5385,
+          "f1": 0.7
+        },
+        "import_path": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 6,
+          "precision": 1.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        "inferred_type": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 8,
+          "precision": 1.0,
+          "recall": 0.0,
+          "f1": 0.0
+        }
+      },
+      "basis_accuracy": {
+        "valid": 62,
+        "total": 62,
+        "rate": 1.0
+      },
+      "certainty_accuracy": {
+        "valid": 62,
+        "total": 62,
+        "rate": 1.0
+      },
+      "by_origin": {
+        "entities": {
+          "first_party": {
+            "tp": 115,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "generated": {
+            "tp": 2,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "vendored": {
+            "tp": 5,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          }
+        },
+        "relationships": {
+          "first_party": {
+            "tp": 235,
+            "fp": 31,
+            "fn": 32,
+            "precision": 0.8835,
+            "recall": 0.8801,
+            "f1": 0.8818
+          },
+          "generated": {
+            "tp": 3,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "vendored": {
+            "tp": 7,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          }
+        },
+        "classification": {
+          "valid": 14,
+          "total": 14,
+          "rate": 1.0
+        }
+      },
+      "by_capability_level": {
+        "PARTIAL": {
+          "capabilities": [
+            "calls",
+            "inheritance",
+            "interfaces"
+          ],
+          "tp": 112,
+          "fp": 25,
+          "fn": 26,
+          "precision": 0.8175,
+          "recall": 0.8116,
+          "f1": 0.8145
+        },
+        "SUPPORTED": {
+          "capabilities": [
+            "declarations",
+            "imports"
+          ],
+          "tp": 261,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "resolved_edge_precision_by_basis": {
+        "base_class": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "constructor": {
+          "tp": 15,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "declared_type": {
+          "tp": 7,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "enclosing_class": {
+          "tp": 17,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "lexical_scope": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "type_name": {
+          "tp": 18,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "unresolved_edges": {
+        "overall": {
+          "tp": 61,
+          "fp": 31,
+          "fn": 0,
+          "precision": 0.663,
+          "recall": 1.0,
+          "f1": 0.7974
+        },
+        "external": {
+          "tp": 59,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "unresolvable": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "evidence": {
+        "path_validity": {
+          "valid": 367,
+          "total": 367,
+          "rate": 1.0
+        },
+        "line_range_validity": {
+          "valid": 367,
+          "total": 367,
+          "rate": 1.0
+        },
+        "source_integrity": {
+          "valid": 285,
+          "total": 285,
+          "rate": 1.0
+        }
+      },
+      "decorators": {
+        "valid": 122,
+        "total": 122,
+        "rate": 1.0
+      },
+      "parse_status": {
+        "valid": 14,
+        "total": 14,
+        "rate": 1.0
+      },
+      "syntax_error_location": {
+        "valid": 2,
+        "total": 2,
+        "rate": 1.0
+      },
+      "malformed_isolation": {
+        "malformed_files": 2,
+        "isolated": 2,
+        "rate": 1.0,
+        "repository_failures": 0
+      },
+      "determinism": {
+        "identical_runs": {
+          "valid": 5,
+          "total": 5,
+          "rate": 1.0
+        },
+        "stable_keys": {
+          "valid": 223,
+          "total": 223,
+          "rate": 1.0
+        }
+      },
+      "unsupported_leakage": {
+        "count": 0,
+        "facts": []
+      },
+      "capabilities": {
+        "declared": {
+          "declarations": "SUPPORTED",
+          "imports": "SUPPORTED",
+          "calls": "PARTIAL",
+          "inheritance": "PARTIAL",
+          "interfaces": "PARTIAL",
+          "dependencies": "UNSUPPORTED",
+          "decorators": "SUPPORTED"
+        },
+        "expected": {
+          "declarations": "SUPPORTED",
+          "imports": "SUPPORTED",
+          "calls": "PARTIAL",
+          "inheritance": "PARTIAL",
+          "interfaces": "PARTIAL",
+          "dependencies": "UNSUPPORTED",
+          "decorators": "SUPPORTED"
+        },
+        "accuracy": 1.0,
+        "mismatched": [],
+        "consistency_issues": []
+      },
+      "splits": {
+        "development": {
+          "entities": {
+            "tp": 98,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "relationships": {
+            "tp": 194,
+            "fp": 24,
+            "fn": 25,
+            "precision": 0.8899,
+            "recall": 0.8858,
+            "f1": 0.8879
+          },
+          "calls_resolution": {
+            "tp": 42,
+            "fp": 0,
+            "fn": 19,
+            "precision": 1.0,
+            "recall": 0.6885,
+            "f1": 0.8155
+          }
+        },
+        "holdout": {
+          "entities": {
+            "tp": 24,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "relationships": {
+            "tp": 51,
+            "fp": 7,
+            "fn": 7,
+            "precision": 0.8793,
+            "recall": 0.8793,
+            "f1": 0.8793
+          },
+          "calls_resolution": {
+            "tp": 12,
+            "fp": 0,
+            "fn": 4,
+            "precision": 1.0,
+            "recall": 0.75,
+            "f1": 0.8571
+          }
+        }
+      },
+      "gates": [
+        {
+          "gate": "declaration_precision",
+          "required": ">= 0.98",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "declaration_recall",
+          "required": ">= 0.95",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "import_precision",
+          "required": ">= 0.95",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "import_recall",
+          "required": ">= 0.95",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "resolved_edge_precision",
+          "required": ">= 0.9",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "evidence_path_validity",
+          "required": ">= 1.0",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "evidence_line_range_validity",
+          "required": ">= 1.0",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "deterministic_stable_keys",
+          "required": ">= 1.0",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "unsupported_fact_leakage",
+          "required": "<= 0",
+          "actual": 0,
+          "passed": true
+        },
+        {
+          "gate": "repository_failures_from_malformed_files",
+          "required": "<= 0",
+          "actual": 0,
+          "passed": true
+        }
+      ],
+      "gates_passed": true,
+      "errors": {
+        "by_category": {
+          "parser query gap": 0,
+          "normalization error": 0,
+          "receiver-resolution error": 14,
+          "ambiguity": 3,
+          "cross-file limitation": 46,
+          "evidence-range error": 0,
+          "incorrect fixture label": 0,
+          "parser error recovery": 0,
+          "unsupported-fact leakage": 0
+        },
+        "items": [
+          {
+            "id": "scala/basics:relationships:missed:CALLS method:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.price(Int) method:src/main/scala/acme/shop/Orders.scala::acme.shop.Item.price(Int) (emitted as external:<expression>.price)",
+            "case": "scala/basics",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.price(Int) method:src/main/scala/acme/shop/Orders.scala::acme.shop.Item.price(Int) (emitted as external:<expression>.price)",
+            "category": "receiver-resolution error",
+            "fact_id": "scala.basics.calls_acme_shop_cart_price_int_acme_shop_item_price_int_37"
+          },
+          {
+            "id": "scala/basics:relationships:missed:CALLS method:src/main/scala/acme/shop/Orders.scala::acme.shop.Checkout$.run(Cart,Tax) method:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.add(String,Int) (emitted as external:cart.add)",
+            "case": "scala/basics",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:src/main/scala/acme/shop/Orders.scala::acme.shop.Checkout$.run(Cart,Tax) method:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.add(String,Int) (emitted as external:cart.add)",
+            "category": "ambiguity",
+            "fact_id": "scala.basics.calls_acme_shop_checkout_object_run_cart_tax_acme_shop_cart_add_string_int_72"
+          },
+          {
+            "id": "scala/basics:relationships:missed:CALLS method:src/main/scala/acme/shop/Orders.scala::acme.shop.Checkout$.run(Cart,Tax) method:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.add(String,Long) (emitted as external:cart.add)",
+            "case": "scala/basics",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:src/main/scala/acme/shop/Orders.scala::acme.shop.Checkout$.run(Cart,Tax) method:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.add(String,Long) (emitted as external:cart.add)",
+            "category": "ambiguity",
+            "fact_id": "scala.basics.calls_acme_shop_checkout_object_run_cart_tax_acme_shop_cart_add_string_long_73"
+          },
+          {
+            "id": "scala/basics:relationships:missed:CALLS method:src/main/scala/acme/shop/Orders.scala::acme.shop.Inventory.release(String) method:src/main/scala/acme/shop/Orders.scala::acme.shop.Inventory.release(String).<anonymous>.run() (emitted as external:listener.run)",
+            "case": "scala/basics",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:src/main/scala/acme/shop/Orders.scala::acme.shop.Inventory.release(String) method:src/main/scala/acme/shop/Orders.scala::acme.shop.Inventory.release(String).<anonymous>.run() (emitted as external:listener.run)",
+            "category": "receiver-resolution error",
+            "fact_id": "scala.basics.calls_acme_shop_inventory_release_string_acme_shop_inventory_release_string_anonymous_run_50"
+          },
+          {
+            "id": "scala/basics:relationships:unexpected:CALLS method:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.price(Int) external:<expression>.price (label: CALLS method:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.price(Int) method:src/main/scala/acme/shop/Orders.scala::acme.shop.Item.price(Int))",
+            "case": "scala/basics",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.price(Int) external:<expression>.price (label: CALLS method:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.price(Int) method:src/main/scala/acme/shop/Orders.scala::acme.shop.Item.price(Int))",
+            "category": "receiver-resolution error"
+          },
+          {
+            "id": "scala/basics:relationships:unexpected:CALLS method:src/main/scala/acme/shop/Orders.scala::acme.shop.Checkout$.run(Cart,Tax) external:cart.add (label: CALLS method:src/main/scala/acme/shop/Orders.scala::acme.shop.Checkout$.run(Cart,Tax) method:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.add(String,Int))",
+            "case": "scala/basics",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:src/main/scala/acme/shop/Orders.scala::acme.shop.Checkout$.run(Cart,Tax) external:cart.add (label: CALLS method:src/main/scala/acme/shop/Orders.scala::acme.shop.Checkout$.run(Cart,Tax) method:src/main/scala/acme/shop/Orders.scala::acme.shop.Cart.add(String,Int))",
+            "category": "ambiguity"
+          },
+          {
+            "id": "scala/basics:relationships:unexpected:CALLS method:src/main/scala/acme/shop/Orders.scala::acme.shop.Inventory.release(String) external:listener.run (label: CALLS method:src/main/scala/acme/shop/Orders.scala::acme.shop.Inventory.release(String) method:src/main/scala/acme/shop/Orders.scala::acme.shop.Inventory.release(String).<anonymous>.run())",
+            "case": "scala/basics",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:src/main/scala/acme/shop/Orders.scala::acme.shop.Inventory.release(String) external:listener.run (label: CALLS method:src/main/scala/acme/shop/Orders.scala::acme.shop.Inventory.release(String) method:src/main/scala/acme/shop/Orders.scala::acme.shop.Inventory.release(String).<anonymous>.run())",
+            "category": "receiver-resolution error"
+          },
+          {
+            "id": "scala/broker:relationships:missed:CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String]) method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.LogSegment.write(Seq[String]) (emitted as external:segment.write)",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String]) method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.LogSegment.write(Seq[String]) (emitted as external:segment.write)",
+            "category": "receiver-resolution error",
+            "fact_id": "scala.broker.calls_kafka_log_unifiedlog_append_seq_string_kafka_log_logsegment_write_seq_string_12"
+          },
+          {
+            "id": "scala/broker:relationships:missed:CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String]) method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.CoreUtils$.inLock(Lock)(=>T) (emitted as external:CoreUtils.inLock)",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String]) method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.CoreUtils$.inLock(Lock)(=>T) (emitted as external:CoreUtils.inLock)",
+            "category": "cross-file limitation",
+            "fact_id": "scala.broker.calls_kafka_log_unifiedlog_append_seq_string_kafka_utils_coreutils_object_inlock_lock_t_10"
+          },
+          {
+            "id": "scala/broker:relationships:missed:CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String]) method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging.info(String) (emitted as external:info)",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String]) method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging.info(String) (emitted as external:info)",
+            "category": "cross-file limitation",
+            "fact_id": "scala.broker.calls_kafka_log_unifiedlog_append_seq_string_kafka_utils_logging_info_string_13"
+          },
+          {
+            "id": "scala/broker:relationships:missed:CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.close() method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.LogSegment.close() (emitted as external:<expression>.close)",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.close() method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.LogSegment.close() (emitted as external:<expression>.close)",
+            "category": "receiver-resolution error",
+            "fact_id": "scala.broker.calls_kafka_log_unifiedlog_close_kafka_log_logsegment_close_23"
+          },
+          {
+            "id": "scala/broker:relationships:missed:CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.close() method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.CoreUtils$.swallow(=>Unit) (emitted as external:CoreUtils.swallow)",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.close() method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.CoreUtils$.swallow(=>Unit) (emitted as external:CoreUtils.swallow)",
+            "category": "cross-file limitation",
+            "fact_id": "scala.broker.calls_kafka_log_unifiedlog_close_kafka_utils_coreutils_object_swallow_unit_23"
+          },
+          {
+            "id": "scala/broker:relationships:missed:CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.appendRecords(String,Seq[String]) method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String]) (emitted as external:log.append)",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.appendRecords(String,Seq[String]) method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String]) (emitted as external:log.append)",
+            "category": "cross-file limitation",
+            "fact_id": "scala.broker.calls_kafka_server_replicamanager_appendrecords_string_seq_string_kafka_log_unifiedlog_append_seq_string_14"
+          },
+          {
+            "id": "scala/broker:relationships:missed:CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.appendRecords(String,Seq[String]) method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging.info(String) (emitted as external:info)",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.appendRecords(String,Seq[String]) method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging.info(String) (emitted as external:info)",
+            "category": "cross-file limitation",
+            "fact_id": "scala.broker.calls_kafka_server_replicamanager_appendrecords_string_seq_string_kafka_utils_logging_info_string_15"
+          },
+          {
+            "id": "scala/broker:relationships:missed:CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.getOrCreateLog(String) class:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog (emitted as external:UnifiedLog)",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.getOrCreateLog(String) class:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog (emitted as external:UnifiedLog)",
+            "category": "cross-file limitation",
+            "fact_id": "scala.broker.calls_kafka_server_replicamanager_getorcreatelog_string_kafka_log_unifiedlog_10"
+          },
+          {
+            "id": "scala/broker:relationships:missed:CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.shutdown() method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.close() (emitted as external:log.close)",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.shutdown() method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.close() (emitted as external:log.close)",
+            "category": "cross-file limitation",
+            "fact_id": "scala.broker.calls_kafka_server_replicamanager_shutdown_kafka_log_unifiedlog_close_19"
+          },
+          {
+            "id": "scala/broker:relationships:missed:CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.shutdown() method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.CoreUtils$.swallow(=>Unit) (emitted as external:CoreUtils.swallow)",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.shutdown() method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.CoreUtils$.swallow(=>Unit) (emitted as external:CoreUtils.swallow)",
+            "category": "cross-file limitation",
+            "fact_id": "scala.broker.calls_kafka_server_replicamanager_shutdown_kafka_utils_coreutils_object_swallow_unit_19"
+          },
+          {
+            "id": "scala/broker:relationships:missed:EXTENDS class:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog interface:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging (emitted as external:Logging)",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "EXTENDS class:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog interface:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging (emitted as external:Logging)",
+            "category": "cross-file limitation",
+            "fact_id": "scala.broker.extends_kafka_log_unifiedlog_kafka_utils_logging_6"
+          },
+          {
+            "id": "scala/broker:relationships:missed:EXTENDS class:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager interface:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging (emitted as external:Logging)",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "EXTENDS class:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager interface:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging (emitted as external:Logging)",
+            "category": "cross-file limitation",
+            "fact_id": "scala.broker.extends_kafka_server_replicamanager_kafka_utils_logging_6"
+          },
+          {
+            "id": "scala/broker:relationships:missed:IMPORTS file:core/src/main/scala/kafka/log/UnifiedLog.scala class:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.CoreUtils$ (emitted as external:kafka.utils.CoreUtils)",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "IMPORTS file:core/src/main/scala/kafka/log/UnifiedLog.scala class:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.CoreUtils$ (emitted as external:kafka.utils.CoreUtils)",
+            "category": "cross-file limitation",
+            "fact_id": "scala.broker.imports_unifiedlog_scala_kafka_utils_coreutils_object_3"
+          },
+          {
+            "id": "scala/broker:relationships:missed:IMPORTS file:core/src/main/scala/kafka/log/UnifiedLog.scala interface:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging (emitted as external:kafka.utils.Logging)",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "IMPORTS file:core/src/main/scala/kafka/log/UnifiedLog.scala interface:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging (emitted as external:kafka.utils.Logging)",
+            "category": "cross-file limitation",
+            "fact_id": "scala.broker.imports_unifiedlog_scala_kafka_utils_logging_3"
+          },
+          {
+            "id": "scala/broker:relationships:missed:IMPORTS file:core/src/main/scala/kafka/server/ReplicaManager.scala class:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.LogConfig (emitted as external:kafka.log.LogConfig)",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "IMPORTS file:core/src/main/scala/kafka/server/ReplicaManager.scala class:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.LogConfig (emitted as external:kafka.log.LogConfig)",
+            "category": "cross-file limitation",
+            "fact_id": "scala.broker.imports_replicamanager_scala_kafka_log_logconfig_3"
+          },
+          {
+            "id": "scala/broker:relationships:missed:IMPORTS file:core/src/main/scala/kafka/server/ReplicaManager.scala class:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog (emitted as external:kafka.log.UnifiedLog)",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "IMPORTS file:core/src/main/scala/kafka/server/ReplicaManager.scala class:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog (emitted as external:kafka.log.UnifiedLog)",
+            "category": "cross-file limitation",
+            "fact_id": "scala.broker.imports_replicamanager_scala_kafka_log_unifiedlog_3"
+          },
+          {
+            "id": "scala/broker:relationships:unexpected:CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String]) external:CoreUtils.inLock (label: CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String]) method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.CoreUtils$.inLock(Lock)(=>T))",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String]) external:CoreUtils.inLock (label: CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String]) method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.CoreUtils$.inLock(Lock)(=>T))",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "scala/broker:relationships:unexpected:CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String]) external:info (label: CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String]) method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging.info(String))",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String]) external:info (label: CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String]) method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging.info(String))",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "scala/broker:relationships:unexpected:CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String]) external:segment.write (label: CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String]) method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.LogSegment.write(Seq[String]))",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String]) external:segment.write (label: CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String]) method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.LogSegment.write(Seq[String]))",
+            "category": "receiver-resolution error"
+          },
+          {
+            "id": "scala/broker:relationships:unexpected:CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.close() external:<expression>.close (label: CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.close() method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.LogSegment.close())",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.close() external:<expression>.close (label: CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.close() method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.LogSegment.close())",
+            "category": "receiver-resolution error"
+          },
+          {
+            "id": "scala/broker:relationships:unexpected:CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.close() external:CoreUtils.swallow (label: CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.close() method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.CoreUtils$.swallow(=>Unit))",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.close() external:CoreUtils.swallow (label: CALLS method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.close() method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.CoreUtils$.swallow(=>Unit))",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "scala/broker:relationships:unexpected:CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.appendRecords(String,Seq[String]) external:info (label: CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.appendRecords(String,Seq[String]) method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging.info(String))",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.appendRecords(String,Seq[String]) external:info (label: CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.appendRecords(String,Seq[String]) method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging.info(String))",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "scala/broker:relationships:unexpected:CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.appendRecords(String,Seq[String]) external:log.append (label: CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.appendRecords(String,Seq[String]) method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String]))",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.appendRecords(String,Seq[String]) external:log.append (label: CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.appendRecords(String,Seq[String]) method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.append(Seq[String]))",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "scala/broker:relationships:unexpected:CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.getOrCreateLog(String) external:UnifiedLog (label: CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.getOrCreateLog(String) class:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog)",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.getOrCreateLog(String) external:UnifiedLog (label: CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.getOrCreateLog(String) class:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "scala/broker:relationships:unexpected:CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.shutdown() external:CoreUtils.swallow (label: CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.shutdown() method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.CoreUtils$.swallow(=>Unit))",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.shutdown() external:CoreUtils.swallow (label: CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.shutdown() method:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.CoreUtils$.swallow(=>Unit))",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "scala/broker:relationships:unexpected:CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.shutdown() external:log.close (label: CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.shutdown() method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.close())",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.shutdown() external:log.close (label: CALLS method:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager.shutdown() method:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog.close())",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "scala/broker:relationships:unexpected:EXTENDS class:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog external:Logging (label: EXTENDS class:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog interface:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging)",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "EXTENDS class:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog external:Logging (label: EXTENDS class:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog interface:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "scala/broker:relationships:unexpected:EXTENDS class:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager external:Logging (label: EXTENDS class:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager interface:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging)",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "EXTENDS class:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager external:Logging (label: EXTENDS class:core/src/main/scala/kafka/server/ReplicaManager.scala::kafka.server.ReplicaManager interface:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "scala/broker:relationships:unexpected:IMPORTS file:core/src/main/scala/kafka/log/UnifiedLog.scala external:kafka.utils.CoreUtils (label: IMPORTS file:core/src/main/scala/kafka/log/UnifiedLog.scala class:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.CoreUtils$)",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPORTS file:core/src/main/scala/kafka/log/UnifiedLog.scala external:kafka.utils.CoreUtils (label: IMPORTS file:core/src/main/scala/kafka/log/UnifiedLog.scala class:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.CoreUtils$)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "scala/broker:relationships:unexpected:IMPORTS file:core/src/main/scala/kafka/log/UnifiedLog.scala external:kafka.utils.Logging (label: IMPORTS file:core/src/main/scala/kafka/log/UnifiedLog.scala interface:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging)",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPORTS file:core/src/main/scala/kafka/log/UnifiedLog.scala external:kafka.utils.Logging (label: IMPORTS file:core/src/main/scala/kafka/log/UnifiedLog.scala interface:core/src/main/scala/kafka/utils/CoreUtils.scala::kafka.utils.Logging)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "scala/broker:relationships:unexpected:IMPORTS file:core/src/main/scala/kafka/server/ReplicaManager.scala external:kafka.log.LogConfig (label: IMPORTS file:core/src/main/scala/kafka/server/ReplicaManager.scala class:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.LogConfig)",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPORTS file:core/src/main/scala/kafka/server/ReplicaManager.scala external:kafka.log.LogConfig (label: IMPORTS file:core/src/main/scala/kafka/server/ReplicaManager.scala class:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.LogConfig)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "scala/broker:relationships:unexpected:IMPORTS file:core/src/main/scala/kafka/server/ReplicaManager.scala external:kafka.log.UnifiedLog (label: IMPORTS file:core/src/main/scala/kafka/server/ReplicaManager.scala class:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog)",
+            "case": "scala/broker",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPORTS file:core/src/main/scala/kafka/server/ReplicaManager.scala external:kafka.log.UnifiedLog (label: IMPORTS file:core/src/main/scala/kafka/server/ReplicaManager.scala class:core/src/main/scala/kafka/log/UnifiedLog.scala::kafka.log.UnifiedLog)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "scala/holdout_coordinator:relationships:missed:CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupCoordinator.doJoin(GroupMetadata,String) method:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata.add(String) (emitted as external:group.add)",
+            "case": "scala/holdout_coordinator",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupCoordinator.doJoin(GroupMetadata,String) method:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata.add(String) (emitted as external:group.add)",
+            "category": "cross-file limitation",
+            "fact_id": "scala.holdout_coordinator.calls_kafka_coordinator_groupcoordinator_dojoin_groupmetadata_string_kafka_coordinator_groupmetadata_add_string_26"
+          },
+          {
+            "id": "scala/holdout_coordinator:relationships:missed:CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupCoordinator.doJoin(GroupMetadata,String) method:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata.size() (emitted as external:group.size)",
+            "case": "scala/holdout_coordinator",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupCoordinator.doJoin(GroupMetadata,String) method:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata.size() (emitted as external:group.size)",
+            "category": "cross-file limitation",
+            "fact_id": "scala.holdout_coordinator.calls_kafka_coordinator_groupcoordinator_dojoin_groupmetadata_string_kafka_coordinator_groupmetadata_size_28"
+          },
+          {
+            "id": "scala/holdout_coordinator:relationships:missed:CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupCoordinator.doJoin(GroupMetadata,String) method:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata.transitionTo(GroupState) (emitted as external:group.transitionTo)",
+            "case": "scala/holdout_coordinator",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupCoordinator.doJoin(GroupMetadata,String) method:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata.transitionTo(GroupState) (emitted as external:group.transitionTo)",
+            "category": "cross-file limitation",
+            "fact_id": "scala.holdout_coordinator.calls_kafka_coordinator_groupcoordinator_dojoin_groupmetadata_string_kafka_coordinator_groupmetadata_transitionto_groupstate_27"
+          },
+          {
+            "id": "scala/holdout_coordinator:relationships:missed:CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupMetadataManager.getGroup(String) class:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata (emitted as external:GroupMetadata)",
+            "case": "scala/holdout_coordinator",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupMetadataManager.getGroup(String) class:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata (emitted as external:GroupMetadata)",
+            "category": "cross-file limitation",
+            "fact_id": "scala.holdout_coordinator.calls_kafka_coordinator_groupmetadatamanager_getgroup_string_kafka_coordinator_groupmetadata_43"
+          },
+          {
+            "id": "scala/holdout_coordinator:relationships:missed:CALLS method:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata.summary() method:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata.summary().<anonymous>.format(String) (emitted as external:helper.format)",
+            "case": "scala/holdout_coordinator",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata.summary() method:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata.summary().<anonymous>.format(String) (emitted as external:helper.format)",
+            "category": "receiver-resolution error",
+            "fact_id": "scala.holdout_coordinator.calls_kafka_coordinator_groupmetadata_summary_kafka_coordinator_groupmetadata_summary_anonymous_format_string_20"
+          },
+          {
+            "id": "scala/holdout_coordinator:relationships:unexpected:CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupCoordinator.doJoin(GroupMetadata,String) external:group.add (label: CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupCoordinator.doJoin(GroupMetadata,String) method:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata.add(String))",
+            "case": "scala/holdout_coordinator",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupCoordinator.doJoin(GroupMetadata,String) external:group.add (label: CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupCoordinator.doJoin(GroupMetadata,String) method:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata.add(String))",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "scala/holdout_coordinator:relationships:unexpected:CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupCoordinator.doJoin(GroupMetadata,String) external:group.size (label: CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupCoordinator.doJoin(GroupMetadata,String) method:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata.size())",
+            "case": "scala/holdout_coordinator",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupCoordinator.doJoin(GroupMetadata,String) external:group.size (label: CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupCoordinator.doJoin(GroupMetadata,String) method:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata.size())",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "scala/holdout_coordinator:relationships:unexpected:CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupCoordinator.doJoin(GroupMetadata,String) external:group.transitionTo (label: CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupCoordinator.doJoin(GroupMetadata,String) method:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata.transitionTo(GroupState))",
+            "case": "scala/holdout_coordinator",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupCoordinator.doJoin(GroupMetadata,String) external:group.transitionTo (label: CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupCoordinator.doJoin(GroupMetadata,String) method:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata.transitionTo(GroupState))",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "scala/holdout_coordinator:relationships:unexpected:CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupMetadataManager.getGroup(String) external:GroupMetadata (label: CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupMetadataManager.getGroup(String) class:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata)",
+            "case": "scala/holdout_coordinator",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupMetadataManager.getGroup(String) external:GroupMetadata (label: CALLS method:src/kafka/coordinator/GroupCoordinator.scala::kafka.coordinator.GroupMetadataManager.getGroup(String) class:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "scala/holdout_coordinator:relationships:unexpected:CALLS method:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata.summary() external:helper.format (label: CALLS method:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata.summary() method:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata.summary().<anonymous>.format(String))",
+            "case": "scala/holdout_coordinator",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata.summary() external:helper.format (label: CALLS method:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata.summary() method:src/kafka/coordinator/GroupMetadata.scala::kafka.coordinator.GroupMetadata.summary().<anonymous>.format(String))",
+            "category": "receiver-resolution error"
+          },
+          {
+            "id": "scala/holdout_streams:relationships:missed:CALLS class:src/streams/state/Stores.scala::streams.state.InMemoryStore class:src/streams/processor/Topology.scala::streams.processor.Node (emitted as external:Node)",
+            "case": "scala/holdout_streams",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS class:src/streams/state/Stores.scala::streams.state.InMemoryStore class:src/streams/processor/Topology.scala::streams.processor.Node (emitted as external:Node)",
+            "category": "cross-file limitation",
+            "fact_id": "scala.holdout_streams.calls_streams_state_inmemorystore_streams_processor_node_10"
+          },
+          {
+            "id": "scala/holdout_streams:relationships:missed:CALLS method:src/streams/processor/Topology.scala::streams.processor.SourceNode.process(String,String) method:src/streams/processor/Topology.scala::streams.processor.Node.process(String,String) (emitted as external:<expression>.process)",
+            "case": "scala/holdout_streams",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:src/streams/processor/Topology.scala::streams.processor.SourceNode.process(String,String) method:src/streams/processor/Topology.scala::streams.processor.Node.process(String,String) (emitted as external:<expression>.process)",
+            "category": "receiver-resolution error",
+            "fact_id": "scala.holdout_streams.calls_streams_processor_sourcenode_process_string_string_streams_processor_node_process_string_string_20"
+          },
+          {
+            "id": "scala/holdout_streams:relationships:missed:CALLS method:src/streams/processor/Topology.scala::streams.processor.Topology$.build(String) method:src/streams/processor/Topology.scala::streams.processor.SourceNode.addChild(Node) (emitted as external:source.addChild)",
+            "case": "scala/holdout_streams",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:src/streams/processor/Topology.scala::streams.processor.Topology$.build(String) method:src/streams/processor/Topology.scala::streams.processor.SourceNode.addChild(Node) (emitted as external:source.addChild)",
+            "category": "receiver-resolution error",
+            "fact_id": "scala.holdout_streams.calls_streams_processor_topology_object_build_string_streams_processor_sourcenode_addchild_node_38"
+          },
+          {
+            "id": "scala/holdout_streams:relationships:missed:CALLS method:src/streams/state/Stores.scala::streams.state.InMemoryStore.process(String,String) method:src/streams/processor/Topology.scala::streams.processor.Topology$.log(String,String) (emitted as external:Topology.log)",
+            "case": "scala/holdout_streams",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:src/streams/state/Stores.scala::streams.state.InMemoryStore.process(String,String) method:src/streams/processor/Topology.scala::streams.processor.Topology$.log(String,String) (emitted as external:Topology.log)",
+            "category": "cross-file limitation",
+            "fact_id": "scala.holdout_streams.calls_streams_state_inmemorystore_process_string_string_streams_processor_topology_object_log_string_string_17"
+          },
+          {
+            "id": "scala/holdout_streams:relationships:missed:EXTENDS class:src/streams/state/Stores.scala::streams.state.InMemoryStore class:src/streams/processor/Topology.scala::streams.processor.Node (emitted as external:Node)",
+            "case": "scala/holdout_streams",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "EXTENDS class:src/streams/state/Stores.scala::streams.state.InMemoryStore class:src/streams/processor/Topology.scala::streams.processor.Node (emitted as external:Node)",
+            "category": "cross-file limitation",
+            "fact_id": "scala.holdout_streams.extends_streams_state_inmemorystore_streams_processor_node_10"
+          },
+          {
+            "id": "scala/holdout_streams:relationships:missed:IMPORTS file:src/streams/state/Stores.scala class:src/streams/processor/Topology.scala::streams.processor.Node (emitted as external:streams.processor.Node)",
+            "case": "scala/holdout_streams",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "IMPORTS file:src/streams/state/Stores.scala class:src/streams/processor/Topology.scala::streams.processor.Node (emitted as external:streams.processor.Node)",
+            "category": "cross-file limitation",
+            "fact_id": "scala.holdout_streams.imports_stores_scala_streams_processor_node_3"
+          },
+          {
+            "id": "scala/holdout_streams:relationships:missed:IMPORTS file:src/streams/state/Stores.scala class:src/streams/processor/Topology.scala::streams.processor.Topology$ (emitted as external:streams.processor.Node)",
+            "case": "scala/holdout_streams",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "IMPORTS file:src/streams/state/Stores.scala class:src/streams/processor/Topology.scala::streams.processor.Topology$ (emitted as external:streams.processor.Node)",
+            "category": "cross-file limitation",
+            "fact_id": "scala.holdout_streams.imports_stores_scala_streams_processor_topology_object_3"
+          },
+          {
+            "id": "scala/holdout_streams:relationships:unexpected:CALLS class:src/streams/state/Stores.scala::streams.state.InMemoryStore external:Node (label: CALLS class:src/streams/state/Stores.scala::streams.state.InMemoryStore class:src/streams/processor/Topology.scala::streams.processor.Node)",
+            "case": "scala/holdout_streams",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS class:src/streams/state/Stores.scala::streams.state.InMemoryStore external:Node (label: CALLS class:src/streams/state/Stores.scala::streams.state.InMemoryStore class:src/streams/processor/Topology.scala::streams.processor.Node)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "scala/holdout_streams:relationships:unexpected:CALLS method:src/streams/processor/Topology.scala::streams.processor.SourceNode.process(String,String) external:<expression>.process (label: CALLS method:src/streams/processor/Topology.scala::streams.processor.SourceNode.process(String,String) method:src/streams/processor/Topology.scala::streams.processor.Node.process(String,String))",
+            "case": "scala/holdout_streams",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:src/streams/processor/Topology.scala::streams.processor.SourceNode.process(String,String) external:<expression>.process (label: CALLS method:src/streams/processor/Topology.scala::streams.processor.SourceNode.process(String,String) method:src/streams/processor/Topology.scala::streams.processor.Node.process(String,String))",
+            "category": "receiver-resolution error"
+          },
+          {
+            "id": "scala/holdout_streams:relationships:unexpected:CALLS method:src/streams/processor/Topology.scala::streams.processor.Topology$.build(String) external:source.addChild (label: CALLS method:src/streams/processor/Topology.scala::streams.processor.Topology$.build(String) method:src/streams/processor/Topology.scala::streams.processor.SourceNode.addChild(Node))",
+            "case": "scala/holdout_streams",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:src/streams/processor/Topology.scala::streams.processor.Topology$.build(String) external:source.addChild (label: CALLS method:src/streams/processor/Topology.scala::streams.processor.Topology$.build(String) method:src/streams/processor/Topology.scala::streams.processor.SourceNode.addChild(Node))",
+            "category": "receiver-resolution error"
+          },
+          {
+            "id": "scala/holdout_streams:relationships:unexpected:CALLS method:src/streams/state/Stores.scala::streams.state.InMemoryStore.process(String,String) external:Topology.log (label: CALLS method:src/streams/state/Stores.scala::streams.state.InMemoryStore.process(String,String) method:src/streams/processor/Topology.scala::streams.processor.Topology$.log(String,String))",
+            "case": "scala/holdout_streams",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:src/streams/state/Stores.scala::streams.state.InMemoryStore.process(String,String) external:Topology.log (label: CALLS method:src/streams/state/Stores.scala::streams.state.InMemoryStore.process(String,String) method:src/streams/processor/Topology.scala::streams.processor.Topology$.log(String,String))",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "scala/holdout_streams:relationships:unexpected:EXTENDS class:src/streams/state/Stores.scala::streams.state.InMemoryStore external:Node (label: EXTENDS class:src/streams/state/Stores.scala::streams.state.InMemoryStore class:src/streams/processor/Topology.scala::streams.processor.Node)",
+            "case": "scala/holdout_streams",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "EXTENDS class:src/streams/state/Stores.scala::streams.state.InMemoryStore external:Node (label: EXTENDS class:src/streams/state/Stores.scala::streams.state.InMemoryStore class:src/streams/processor/Topology.scala::streams.processor.Node)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "scala/holdout_streams:relationships:unexpected:IMPORTS file:src/streams/state/Stores.scala external:streams.processor.Node (label: IMPORTS file:src/streams/state/Stores.scala class:src/streams/processor/Topology.scala::streams.processor.Node)",
+            "case": "scala/holdout_streams",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPORTS file:src/streams/state/Stores.scala external:streams.processor.Node (label: IMPORTS file:src/streams/state/Stores.scala class:src/streams/processor/Topology.scala::streams.processor.Node)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "scala/holdout_streams:relationships:unexpected:IMPORTS file:src/streams/state/Stores.scala external:streams.processor.Topology (label: IMPORTS file:src/streams/state/Stores.scala class:src/streams/processor/Topology.scala::streams.processor.Node)",
+            "case": "scala/holdout_streams",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPORTS file:src/streams/state/Stores.scala external:streams.processor.Topology (label: IMPORTS file:src/streams/state/Stores.scala class:src/streams/processor/Topology.scala::streams.processor.Node)",
             "category": "cross-file limitation"
           }
         ]

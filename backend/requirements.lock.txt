@@ -982,6 +982,16 @@ tree-sitter-python==0.25.0 \
     --hash=sha256:be71650ca2b93b6e9649e5d65c6811aad87a7614c8c1003246b303f6b150f61b \
     --hash=sha256:e6d5b5799628cc0f24691ab2a172a8e676f668fe90dc60468bee14084a35c16d
     # via -r requirements.in
+tree-sitter-scala==0.26.2 \
+    --hash=sha256:0ac121c9afd813e0820c9f0e90c2d028ca90e096298cbcab2f139ba5f4a8aaaa \
+    --hash=sha256:0e68e55c50fa7e7f2866ce7ca590df8df6407dd7a85e484e9f20e974cbc6d8f2 \
+    --hash=sha256:2f6c38288c08f8c69bcbd87f4c6904287651e3d2ff4d7730d7154177e9115fda \
+    --hash=sha256:54d2e92824c7908b7e688f218dc1d65c5684c365cd7a3e8028e8860847aeabd4 \
+    --hash=sha256:679bb420771e236d6bcc60c2c7f6096f344cf07d829a7f401250735ad4f4a695 \
+    --hash=sha256:a2ba6e45827e01f11790b24cdae357db51ede59ee7ee5c8b7eccc61e9a7782ea \
+    --hash=sha256:beab6a0397d4f45cecaed715f224f444652d6bb1c5318d46c641893cd91de98d \
+    --hash=sha256:eba630fc41cee1093005883fa70e275ecb26351e3ca6471ac2f6f83779478d07
+    # via -r requirements.in
 typing-extensions==4.16.0 \
     --hash=sha256:481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8 \
     --hash=sha256:dc983d19a509c94dba722ee6abd33940f7c05a89e243c47e907eb4db6f1a43e5

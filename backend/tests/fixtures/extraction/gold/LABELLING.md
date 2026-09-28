@@ -138,3 +138,34 @@ rather than by editing the label.
 - EXTENDS / IMPLEMENTS target the base type without type arguments.
 - Declarations that do not parse are not labelled; `syntax_error_lines` records
   where the error is.
+
+## Scala conventions
+
+- Classes, case classes and enums are `CLASS`; traits are `INTERFACE`; objects and case
+  objects are `CLASS` named with a trailing `$` (`kafka.utils.Logging$`), as on the JVM, so a
+  companion object never shares a key with its class or trait.
+- `def` in a class, object, trait or enum is a `METHOD`; top-level (Scala 3) and local `def`s
+  are `FUNCTION`s (`Cart.add(String,Int).expand(Int)`). The signature lists every parameter
+  list with types as written, whitespace removed: `inLock(Lock)(=>T)`; type parameters are
+  omitted; a parameterless `def size: Int` is just `size`. Auxiliary constructors are
+  `this(...)` methods; the primary constructor is the class itself.
+- Methods of an anonymous class (`new T { def run() = ... }`) are
+  `<enclosing>.<anonymous>.run()`; classes declared inside a `def` use `<local>`.
+- IMPORTS: one fact per imported name, all with the statement's evidence. Each selector of
+  `a.{B, C => D}` is its own fact (the original name, not the alias); `X => _` imports nothing;
+  `_` and `*` wildcards are written `a.*`. A repository type or object is the target; when a
+  trait or class and its companion share the name, the type is the target. A wildcard over a
+  repository package is `unresolvable` (a package has no declaration).
+- EXTENDS / IMPLEMENTS follow the syntax: a class's or object's first parent is `EXTENDS`, each
+  further parent (`with`, or Scala 3 `,`) is `IMPLEMENTS`; a trait's parents are all `EXTENDS`.
+- CALLS are explicit applications: `f(x)`, `a.f(x)`, `a.f { ... }`, `new C(...)`,
+  `new T { ... }`, `C(...)` (an `apply`), `this(...)` in an auxiliary constructor,
+  `extends Base(x)` (from the class to Base's constructor) and alphanumeric infix calls
+  (`xs foreach f`, target `xs.foreach`). Symbolic operators (`a + b`, `x :: xs`, `buf += x`),
+  parameterless selections (`xs.size`), string interpolators and functions passed as values
+  (`xs.foreach(println)`) are not calls.
+- A curried application `f(a)(b)` is one call whose evidence is its first application `f(a)`.
+- `Name(...)` targets the companion object's `apply` (basis `type_name`) when the object
+  declares one, else the class (the synthetic or universal apply; basis `constructor`).
+  `new T { ... }` targets T, including a trait. `Name.m(...)` through an object has basis
+  `type_name`.
