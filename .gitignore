@@ -36,3 +36,5 @@ seed_ground_truth_v2_prev.json
 
 # Python virtual environment
 .venv/
+.agents/
+.claude/
