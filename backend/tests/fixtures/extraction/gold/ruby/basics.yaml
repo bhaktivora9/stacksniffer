@@ -1,0 +1,576 @@
+# Gold labels for ruby/basics. Written from the fixture source, never from extractor output.
+# CONTAINS facts are derived from the entity structure below by the evaluator.
+gold_version: 2
+fixture: ruby/basics
+language: ruby
+split: development
+description: 'A namespaced library: a mixin module, attr_reader accessors, constructors through new, singleton methods written as def self.x and
+  inside class << self, bare method calls, super without arguments, a YARD-typed parameter, require_relative, and a top-level method defined on
+  either branch of an if.'
+labelled_from: source
+review:
+  status: pending_independent_review
+  reviewer: null
+files:
+  lib/shop/cart.rb:
+    parse_status: PARSED
+    origin: first_party
+  lib/shop/pricing.rb:
+    parse_status: PARSED
+    origin: first_party
+  lib/shop/encoding.rb:
+    parse_status: PARSED
+    origin: first_party
+facts:
+- id: ruby.basics.interface_cart_shop
+  kind: entity
+  entity_type: INTERFACE
+  qualified_name: Shop
+  file: lib/shop/cart.rb
+  start_line: 4
+  end_line: 81
+  note: module used as a namespace
+- id: ruby.basics.interface_cart_shop_auditable
+  kind: entity
+  entity_type: INTERFACE
+  qualified_name: Shop.Auditable
+  file: lib/shop/cart.rb
+  start_line: 5
+  end_line: 13
+- id: ruby.basics.method_cart_shop_auditable_audit
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Shop.Auditable.audit
+  file: lib/shop/cart.rb
+  start_line: 6
+  end_line: 8
+- id: ruby.basics.method_cart_shop_auditable_log
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Shop.Auditable.log
+  file: lib/shop/cart.rb
+  start_line: 10
+  end_line: 12
+- id: ruby.basics.class_cart_shop_item
+  kind: entity
+  entity_type: CLASS
+  qualified_name: Shop.Item
+  file: lib/shop/cart.rb
+  start_line: 15
+  end_line: 30
+- id: ruby.basics.method_cart_shop_item_initialize
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Shop.Item.initialize
+  file: lib/shop/cart.rb
+  start_line: 18
+  end_line: 21
+- id: ruby.basics.method_cart_shop_item_price
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Shop.Item.price
+  file: lib/shop/cart.rb
+  start_line: 23
+  end_line: 25
+- id: ruby.basics.method_cart_shop_item_self_parse
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Shop.Item.self.parse
+  file: lib/shop/cart.rb
+  start_line: 27
+  end_line: 29
+- id: ruby.basics.class_cart_shop_cart
+  kind: entity
+  entity_type: CLASS
+  qualified_name: Shop.Cart
+  file: lib/shop/cart.rb
+  start_line: 32
+  end_line: 73
+- id: ruby.basics.method_cart_shop_cart_initialize
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Shop.Cart.initialize
+  file: lib/shop/cart.rb
+  start_line: 35
+  end_line: 37
+- id: ruby.basics.method_cart_shop_cart_add
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Shop.Cart.add
+  file: lib/shop/cart.rb
+  start_line: 39
+  end_line: 43
+- id: ruby.basics.method_cart_shop_cart_line
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Shop.Cart.line
+  file: lib/shop/cart.rb
+  start_line: 46
+  end_line: 48
+- id: ruby.basics.method_cart_shop_cart_total
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Shop.Cart.total
+  file: lib/shop/cart.rb
+  start_line: 50
+  end_line: 52
+- id: ruby.basics.method_cart_shop_cart_to_json
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Shop.Cart.to_json
+  file: lib/shop/cart.rb
+  start_line: 54
+  end_line: 56
+- id: ruby.basics.method_cart_shop_cart_self_from
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Shop.Cart.self.from
+  file: lib/shop/cart.rb
+  start_line: 59
+  end_line: 61
+  note: inside class << self
+- id: ruby.basics.method_cart_shop_cart_subtotal
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Shop.Cart.subtotal
+  file: lib/shop/cart.rb
+  start_line: 66
+  end_line: 68
+- id: ruby.basics.method_cart_shop_cart_discount
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Shop.Cart.discount
+  file: lib/shop/cart.rb
+  start_line: 70
+  end_line: 72
+- id: ruby.basics.class_cart_shop_giftcart
+  kind: entity
+  entity_type: CLASS
+  qualified_name: Shop.GiftCart
+  file: lib/shop/cart.rb
+  start_line: 75
+  end_line: 80
+- id: ruby.basics.method_cart_shop_giftcart_add
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Shop.GiftCart.add
+  file: lib/shop/cart.rb
+  start_line: 76
+  end_line: 79
+- id: ruby.basics.interface_pricing_shop
+  kind: entity
+  entity_type: INTERFACE
+  qualified_name: Shop
+  file: lib/shop/pricing.rb
+  start_line: 1
+  end_line: 11
+- id: ruby.basics.interface_pricing_shop_pricing
+  kind: entity
+  entity_type: INTERFACE
+  qualified_name: Shop.Pricing
+  file: lib/shop/pricing.rb
+  start_line: 2
+  end_line: 10
+- id: ruby.basics.method_pricing_shop_pricing_self_round
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Shop.Pricing.self.round
+  file: lib/shop/pricing.rb
+  start_line: 3
+  end_line: 5
+- id: ruby.basics.method_pricing_shop_pricing_self_discount_for
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Shop.Pricing.self.discount_for
+  file: lib/shop/pricing.rb
+  start_line: 7
+  end_line: 9
+- id: ruby.basics.function_encoding_encode
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: encode
+  file: lib/shop/encoding.rb
+  start_line: 2
+  end_line: 2
+- id: ruby.basics.function_encoding_encode_2
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: encode#2
+  file: lib/shop/encoding.rb
+  start_line: 4
+  end_line: 4
+  note: the other branch
+- id: ruby.basics.function_encoding_export
+  kind: entity
+  entity_type: FUNCTION
+  qualified_name: export
+  file: lib/shop/encoding.rb
+  start_line: 7
+  end_line: 9
+- id: ruby.basics.imports_cart_rb_external_json_1
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:lib/shop/cart.rb
+  target_key: external:json
+  resolution: external
+  evidence:
+  - file: lib/shop/cart.rb
+    start_line: 1
+    end_line: 1
+  module: json
+- id: ruby.basics.imports_cart_rb_pricing_rb_2
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:lib/shop/cart.rb
+  target_key: file:lib/shop/pricing.rb
+  resolution: cross_file
+  evidence:
+  - file: lib/shop/cart.rb
+    start_line: 2
+    end_line: 2
+  module: pricing
+  basis: import_path
+  note: require_relative
+- id: ruby.basics.implements_shop_cart_shop_auditable_33
+  kind: relationship
+  relationship_type: IMPLEMENTS
+  source_key: class:lib/shop/cart.rb::Shop.Cart
+  target_key: interface:lib/shop/cart.rb::Shop.Auditable
+  resolution: same_file
+  evidence:
+  - file: lib/shop/cart.rb
+    start_line: 33
+    end_line: 33
+  basis: type_name
+  note: include
+- id: ruby.basics.extends_shop_giftcart_shop_cart_75
+  kind: relationship
+  relationship_type: EXTENDS
+  source_key: class:lib/shop/cart.rb::Shop.GiftCart
+  target_key: class:lib/shop/cart.rb::Shop.Cart
+  resolution: same_file
+  evidence:
+  - file: lib/shop/cart.rb
+    start_line: 75
+    end_line: 75
+  basis: type_name
+- id: ruby.basics.calls_shop_auditable_audit_shop_auditable_log_7
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/shop/cart.rb::Shop.Auditable.audit
+  target_key: method:lib/shop/cart.rb::Shop.Auditable.log
+  resolution: same_file
+  evidence:
+  - file: lib/shop/cart.rb
+    start_line: 7
+    end_line: 7
+  basis: enclosing_class
+- id: ruby.basics.calls_shop_auditable_log_external_puts_11
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/shop/cart.rb::Shop.Auditable.log
+  target_key: external:puts
+  resolution: external
+  evidence:
+  - file: lib/shop/cart.rb
+    start_line: 11
+    end_line: 11
+- id: ruby.basics.calls_shop_item_price_external_cents_24
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/shop/cart.rb::Shop.Item.price
+  target_key: external:cents
+  resolution: unresolvable
+  evidence:
+  - file: lib/shop/cart.rb
+    start_line: 24
+    end_line: 24
+  note: 'an attr_reader accessor: no declaration'
+- id: ruby.basics.calls_shop_item_self_parse_shop_item_initialize_28
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/shop/cart.rb::Shop.Item.self.parse
+  target_key: method:lib/shop/cart.rb::Shop.Item.initialize
+  resolution: same_file
+  evidence:
+  - file: lib/shop/cart.rb
+    start_line: 28
+    end_line: 28
+  basis: constructor
+  note: new inside a class method
+- id: ruby.basics.calls_shop_cart_add_shop_auditable_audit_41
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/shop/cart.rb::Shop.Cart.add
+  target_key: method:lib/shop/cart.rb::Shop.Auditable.audit
+  resolution: same_file
+  evidence:
+  - file: lib/shop/cart.rb
+    start_line: 41
+    end_line: 41
+  basis: enclosing_class
+  note: mixed in from Auditable
+- id: ruby.basics.calls_shop_cart_add_external_item_sku_41
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/shop/cart.rb::Shop.Cart.add
+  target_key: external:item.sku
+  resolution: unresolvable
+  evidence:
+  - file: lib/shop/cart.rb
+    start_line: 41
+    end_line: 41
+  note: untyped parameter
+- id: ruby.basics.calls_shop_cart_line_shop_pricing_self_round_47
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/shop/cart.rb::Shop.Cart.line
+  target_key: method:lib/shop/pricing.rb::Shop.Pricing.self.round
+  resolution: cross_file
+  evidence:
+  - file: lib/shop/cart.rb
+    start_line: 47
+    end_line: 47
+  basis: type_name
+- id: ruby.basics.calls_shop_cart_line_shop_item_price_47
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/shop/cart.rb::Shop.Cart.line
+  target_key: method:lib/shop/cart.rb::Shop.Item.price
+  resolution: same_file
+  evidence:
+  - file: lib/shop/cart.rb
+    start_line: 47
+    end_line: 47
+  basis: declared_type
+  note: YARD @param item [Item]
+- id: ruby.basics.calls_shop_cart_total_shop_cart_subtotal_51
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/shop/cart.rb::Shop.Cart.total
+  target_key: method:lib/shop/cart.rb::Shop.Cart.subtotal
+  resolution: same_file
+  evidence:
+  - file: lib/shop/cart.rb
+    start_line: 51
+    end_line: 51
+  basis: enclosing_class
+  note: bare method call
+- id: ruby.basics.calls_shop_cart_total_shop_cart_discount_51
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/shop/cart.rb::Shop.Cart.total
+  target_key: method:lib/shop/cart.rb::Shop.Cart.discount
+  resolution: same_file
+  evidence:
+  - file: lib/shop/cart.rb
+    start_line: 51
+    end_line: 51
+  basis: enclosing_class
+- id: ruby.basics.calls_shop_cart_to_json_external_json_generate_55
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/shop/cart.rb::Shop.Cart.to_json
+  target_key: external:JSON.generate
+  resolution: external
+  evidence:
+  - file: lib/shop/cart.rb
+    start_line: 55
+    end_line: 55
+- id: ruby.basics.calls_shop_cart_to_json_external_items_map_55
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/shop/cart.rb::Shop.Cart.to_json
+  target_key: external:@items.map
+  resolution: external
+  evidence:
+  - file: lib/shop/cart.rb
+    start_line: 55
+    end_line: 55
+  note: '&:sku is a method reference, not a call'
+- id: ruby.basics.calls_shop_cart_to_json_shop_cart_total_55
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/shop/cart.rb::Shop.Cart.to_json
+  target_key: method:lib/shop/cart.rb::Shop.Cart.total
+  resolution: same_file
+  evidence:
+  - file: lib/shop/cart.rb
+    start_line: 55
+    end_line: 55
+  basis: enclosing_class
+- id: ruby.basics.calls_shop_cart_self_from_external_skus_each_with_object_60
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/shop/cart.rb::Shop.Cart.self.from
+  target_key: external:skus.each_with_object
+  resolution: external
+  evidence:
+  - file: lib/shop/cart.rb
+    start_line: 60
+    end_line: 60
+- id: ruby.basics.calls_shop_cart_self_from_shop_cart_initialize_60
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/shop/cart.rb::Shop.Cart.self.from
+  target_key: method:lib/shop/cart.rb::Shop.Cart.initialize
+  resolution: same_file
+  evidence:
+  - file: lib/shop/cart.rb
+    start_line: 60
+    end_line: 60
+  basis: constructor
+- id: ruby.basics.calls_shop_cart_self_from_shop_cart_add_60
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/shop/cart.rb::Shop.Cart.self.from
+  target_key: method:lib/shop/cart.rb::Shop.Cart.add
+  resolution: same_file
+  evidence:
+  - file: lib/shop/cart.rb
+    start_line: 60
+    end_line: 60
+  basis: inferred_type
+  note: cart is the Cart accumulator
+- id: ruby.basics.calls_shop_cart_self_from_shop_item_self_parse_60
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/shop/cart.rb::Shop.Cart.self.from
+  target_key: method:lib/shop/cart.rb::Shop.Item.self.parse
+  resolution: same_file
+  evidence:
+  - file: lib/shop/cart.rb
+    start_line: 60
+    end_line: 60
+  basis: type_name
+- id: ruby.basics.calls_shop_cart_subtotal_external_items_sum_67
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/shop/cart.rb::Shop.Cart.subtotal
+  target_key: external:@items.sum
+  resolution: external
+  evidence:
+  - file: lib/shop/cart.rb
+    start_line: 67
+    end_line: 67
+- id: ruby.basics.calls_shop_cart_subtotal_shop_cart_line_67
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/shop/cart.rb::Shop.Cart.subtotal
+  target_key: method:lib/shop/cart.rb::Shop.Cart.line
+  resolution: same_file
+  evidence:
+  - file: lib/shop/cart.rb
+    start_line: 67
+    end_line: 67
+  basis: enclosing_class
+- id: ruby.basics.calls_shop_cart_discount_shop_pricing_self_discount_for_71
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/shop/cart.rb::Shop.Cart.discount
+  target_key: method:lib/shop/pricing.rb::Shop.Pricing.self.discount_for
+  resolution: cross_file
+  evidence:
+  - file: lib/shop/cart.rb
+    start_line: 71
+    end_line: 71
+  basis: type_name
+- id: ruby.basics.calls_shop_cart_discount_shop_cart_subtotal_71
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/shop/cart.rb::Shop.Cart.discount
+  target_key: method:lib/shop/cart.rb::Shop.Cart.subtotal
+  resolution: same_file
+  evidence:
+  - file: lib/shop/cart.rb
+    start_line: 71
+    end_line: 71
+  basis: enclosing_class
+- id: ruby.basics.calls_shop_giftcart_add_shop_cart_add_77
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/shop/cart.rb::Shop.GiftCart.add
+  target_key: method:lib/shop/cart.rb::Shop.Cart.add
+  resolution: same_file
+  evidence:
+  - file: lib/shop/cart.rb
+    start_line: 77
+    end_line: 77
+  basis: base_class
+  note: bare super
+- id: ruby.basics.calls_shop_giftcart_add_shop_auditable_log_78
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/shop/cart.rb::Shop.GiftCart.add
+  target_key: method:lib/shop/cart.rb::Shop.Auditable.log
+  resolution: same_file
+  evidence:
+  - file: lib/shop/cart.rb
+    start_line: 78
+    end_line: 78
+  basis: enclosing_class
+  note: mixed into the superclass
+- id: ruby.basics.calls_shop_giftcart_add_external_item_sku_78
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/shop/cart.rb::Shop.GiftCart.add
+  target_key: external:item.sku
+  resolution: unresolvable
+  evidence:
+  - file: lib/shop/cart.rb
+    start_line: 78
+    end_line: 78
+- id: ruby.basics.calls_shop_pricing_self_round_external_cents_round_4
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/shop/pricing.rb::Shop.Pricing.self.round
+  target_key: external:cents.round
+  resolution: unresolvable
+  evidence:
+  - file: lib/shop/pricing.rb
+    start_line: 4
+    end_line: 4
+  note: untyped parameter
+- id: ruby.basics.calls_shop_pricing_self_discount_for_shop_pricing_self_round_8
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/shop/pricing.rb::Shop.Pricing.self.discount_for
+  target_key: method:lib/shop/pricing.rb::Shop.Pricing.self.round
+  resolution: same_file
+  evidence:
+  - file: lib/shop/pricing.rb
+    start_line: 8
+    end_line: 8
+  basis: enclosing_class
+  note: singleton method calling another
+- id: ruby.basics.calls_encode_external_oj_dump_2
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:lib/shop/encoding.rb::encode
+  target_key: external:Oj.dump
+  resolution: external
+  evidence:
+  - file: lib/shop/encoding.rb
+    start_line: 2
+    end_line: 2
+- id: ruby.basics.calls_encode_2_external_value_to_s_4
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:lib/shop/encoding.rb::encode#2
+  target_key: external:value.to_s
+  resolution: unresolvable
+  evidence:
+  - file: lib/shop/encoding.rb
+    start_line: 4
+    end_line: 4
+- id: ruby.basics.calls_export_external_encode_8
+  kind: relationship
+  relationship_type: CALLS
+  source_key: function:lib/shop/encoding.rb::export
+  target_key: external:encode
+  resolution: ambiguous
+  evidence:
+  - file: lib/shop/encoding.rb
+    start_line: 8
+    end_line: 8
+  note: which encode exists depends on Oj

@@ -41,3 +41,11 @@ languages:
     interfaces: UNSUPPORTED
     dependencies: UNSUPPORTED
     decorators: UNSUPPORTED
+  ruby:
+    declarations: SUPPORTED
+    imports: SUPPORTED
+    calls: PARTIAL
+    inheritance: PARTIAL
+    interfaces: PARTIAL
+    dependencies: UNSUPPORTED
+    decorators: UNSUPPORTED

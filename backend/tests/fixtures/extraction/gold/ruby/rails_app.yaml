@@ -1,0 +1,372 @@
+# Gold labels for ruby/rails_app. Written from the fixture source, never from extractor output.
+# CONTAINS facts are derived from the entity structure below by the evaluator.
+gold_version: 2
+fixture: ruby/rails_app
+language: ruby
+split: development
+description: 'A Rails-shaped app: class-body DSL calls, an ActiveRecord base class, association accessors, a class method chaining query calls,
+  rescue with an exception variable, require_relative across directories, a Gemfile (Ruby code declaring gems), a generated protobuf module, a
+  vendored gem and a malformed file.'
+labelled_from: source
+review:
+  status: pending_independent_review
+  reviewer: null
+files:
+  Gemfile:
+    parse_status: PARSED
+    origin: first_party
+  app/models/order.rb:
+    parse_status: PARSED
+    origin: first_party
+  app/services/checkout.rb:
+    parse_status: PARSED
+    origin: first_party
+  app/models/legacy.rb:
+    parse_status: PARTIAL
+    syntax_error_lines:
+    - 6
+    origin: first_party
+  lib/generated/order_pb.rb:
+    parse_status: PARSED
+    origin: generated
+  vendor/receipts/lib/receipts.rb:
+    parse_status: PARSED
+    origin: vendored
+facts:
+- id: ruby.rails_app.class_order_order
+  kind: entity
+  entity_type: CLASS
+  qualified_name: Order
+  file: app/models/order.rb
+  start_line: 1
+  end_line: 12
+- id: ruby.rails_app.method_order_order_total
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Order.total
+  file: app/models/order.rb
+  start_line: 5
+  end_line: 7
+- id: ruby.rails_app.method_order_order_self_recent
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Order.self.recent
+  file: app/models/order.rb
+  start_line: 9
+  end_line: 11
+- id: ruby.rails_app.class_checkout_checkout
+  kind: entity
+  entity_type: CLASS
+  qualified_name: Checkout
+  file: app/services/checkout.rb
+  start_line: 4
+  end_line: 21
+- id: ruby.rails_app.method_checkout_checkout_initialize
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Checkout.initialize
+  file: app/services/checkout.rb
+  start_line: 5
+  end_line: 8
+- id: ruby.rails_app.method_checkout_checkout_call
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Checkout.call
+  file: app/services/checkout.rb
+  start_line: 10
+  end_line: 14
+- id: ruby.rails_app.method_checkout_checkout_report
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Checkout.report
+  file: app/services/checkout.rb
+  start_line: 18
+  end_line: 20
+- id: ruby.rails_app.class_legacy_legacy
+  kind: entity
+  entity_type: CLASS
+  qualified_name: Legacy
+  file: app/models/legacy.rb
+  start_line: 1
+  end_line: 11
+- id: ruby.rails_app.method_legacy_legacy_ok
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Legacy.ok
+  file: app/models/legacy.rb
+  start_line: 2
+  end_line: 4
+- id: ruby.rails_app.method_legacy_legacy_helper
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Legacy.helper
+  file: app/models/legacy.rb
+  start_line: 10
+  end_line: 10
+- id: ruby.rails_app.interface_order_pb_orderpb
+  kind: entity
+  entity_type: INTERFACE
+  qualified_name: OrderPb
+  file: lib/generated/order_pb.rb
+  start_line: 2
+  end_line: 6
+- id: ruby.rails_app.method_order_pb_orderpb_self_encode
+  kind: entity
+  entity_type: METHOD
+  qualified_name: OrderPb.self.encode
+  file: lib/generated/order_pb.rb
+  start_line: 3
+  end_line: 5
+- id: ruby.rails_app.interface_receipts_receipts
+  kind: entity
+  entity_type: INTERFACE
+  qualified_name: Receipts
+  file: vendor/receipts/lib/receipts.rb
+  start_line: 1
+  end_line: 5
+- id: ruby.rails_app.method_receipts_receipts_self_render
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Receipts.self.render
+  file: vendor/receipts/lib/receipts.rb
+  start_line: 2
+  end_line: 4
+- id: ruby.rails_app.imports_checkout_rb_order_rb_1
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:app/services/checkout.rb
+  target_key: file:app/models/order.rb
+  resolution: cross_file
+  evidence:
+  - file: app/services/checkout.rb
+    start_line: 1
+    end_line: 1
+  module: ../models/order
+  basis: import_path
+- id: ruby.rails_app.imports_checkout_rb_external_securerandom_2
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:app/services/checkout.rb
+  target_key: external:securerandom
+  resolution: external
+  evidence:
+  - file: app/services/checkout.rb
+    start_line: 2
+    end_line: 2
+  module: securerandom
+- id: ruby.rails_app.extends_order_external_applicationrecord_1
+  kind: relationship
+  relationship_type: EXTENDS
+  source_key: class:app/models/order.rb::Order
+  target_key: external:ApplicationRecord
+  resolution: external
+  evidence:
+  - file: app/models/order.rb
+    start_line: 1
+    end_line: 1
+- id: ruby.rails_app.calls_file_gemfile_external_source_1
+  kind: relationship
+  relationship_type: CALLS
+  source_key: file:Gemfile
+  target_key: external:source
+  resolution: external
+  evidence:
+  - file: Gemfile
+    start_line: 1
+    end_line: 1
+- id: ruby.rails_app.calls_file_gemfile_external_gem_3
+  kind: relationship
+  relationship_type: CALLS
+  source_key: file:Gemfile
+  target_key: external:gem
+  resolution: external
+  evidence:
+  - file: Gemfile
+    start_line: 3
+    end_line: 3
+- id: ruby.rails_app.calls_file_gemfile_external_gem_4
+  kind: relationship
+  relationship_type: CALLS
+  source_key: file:Gemfile
+  target_key: external:gem
+  resolution: external
+  evidence:
+  - file: Gemfile
+    start_line: 4
+    end_line: 4
+- id: ruby.rails_app.calls_order_external_has_many_2
+  kind: relationship
+  relationship_type: CALLS
+  source_key: class:app/models/order.rb::Order
+  target_key: external:has_many
+  resolution: external
+  evidence:
+  - file: app/models/order.rb
+    start_line: 2
+    end_line: 2
+  note: class-body DSL
+- id: ruby.rails_app.calls_order_external_validates_3
+  kind: relationship
+  relationship_type: CALLS
+  source_key: class:app/models/order.rb::Order
+  target_key: external:validates
+  resolution: external
+  evidence:
+  - file: app/models/order.rb
+    start_line: 3
+    end_line: 3
+- id: ruby.rails_app.calls_order_total_external_line_items_6
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:app/models/order.rb::Order.total
+  target_key: external:line_items
+  resolution: unresolvable
+  evidence:
+  - file: app/models/order.rb
+    start_line: 6
+    end_line: 6
+  note: 'association accessor: no declaration'
+- id: ruby.rails_app.calls_order_total_external_line_items_sum_6
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:app/models/order.rb::Order.total
+  target_key: external:line_items.sum
+  resolution: external
+  evidence:
+  - file: app/models/order.rb
+    start_line: 6
+    end_line: 6
+- id: ruby.rails_app.calls_order_self_recent_external_order_10
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:app/models/order.rb::Order.self.recent
+  target_key: external:order
+  resolution: external
+  evidence:
+  - file: app/models/order.rb
+    start_line: 10
+    end_line: 10
+  note: ActiveRecord class method
+- id: ruby.rails_app.calls_order_self_recent_external_expression_limit_10
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:app/models/order.rb::Order.self.recent
+  target_key: external:<expression>.limit
+  resolution: external
+  evidence:
+  - file: app/models/order.rb
+    start_line: 10
+    end_line: 10
+- id: ruby.rails_app.calls_checkout_initialize_external_securerandom_uuid_7
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:app/services/checkout.rb::Checkout.initialize
+  target_key: external:SecureRandom.uuid
+  resolution: external
+  evidence:
+  - file: app/services/checkout.rb
+    start_line: 7
+    end_line: 7
+- id: ruby.rails_app.calls_checkout_call_receipts_self_render_11
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:app/services/checkout.rb::Checkout.call
+  target_key: method:vendor/receipts/lib/receipts.rb::Receipts.self.render
+  resolution: cross_file
+  evidence:
+  - file: app/services/checkout.rb
+    start_line: 11
+    end_line: 11
+  basis: type_name
+  note: vendored gem
+- id: ruby.rails_app.calls_checkout_call_external_order_total_11
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:app/services/checkout.rb::Checkout.call
+  target_key: external:@order.total
+  resolution: unresolvable
+  evidence:
+  - file: app/services/checkout.rb
+    start_line: 11
+    end_line: 11
+  note: assigned from an untyped parameter
+- id: ruby.rails_app.calls_checkout_call_checkout_report_13
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:app/services/checkout.rb::Checkout.call
+  target_key: method:app/services/checkout.rb::Checkout.report
+  resolution: same_file
+  evidence:
+  - file: app/services/checkout.rb
+    start_line: 13
+    end_line: 13
+  basis: enclosing_class
+  note: e is the rescued exception
+- id: ruby.rails_app.calls_checkout_report_external_rails_logger_19
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:app/services/checkout.rb::Checkout.report
+  target_key: external:Rails.logger
+  resolution: external
+  evidence:
+  - file: app/services/checkout.rb
+    start_line: 19
+    end_line: 19
+- id: ruby.rails_app.calls_checkout_report_external_rails_logger_error_19
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:app/services/checkout.rb::Checkout.report
+  target_key: external:Rails.logger.error
+  resolution: external
+  evidence:
+  - file: app/services/checkout.rb
+    start_line: 19
+    end_line: 19
+- id: ruby.rails_app.calls_checkout_report_external_error_message_19
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:app/services/checkout.rb::Checkout.report
+  target_key: external:error.message
+  resolution: unresolvable
+  evidence:
+  - file: app/services/checkout.rb
+    start_line: 19
+    end_line: 19
+- id: ruby.rails_app.calls_legacy_ok_legacy_helper_3
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:app/models/legacy.rb::Legacy.ok
+  target_key: method:app/models/legacy.rb::Legacy.helper
+  resolution: same_file
+  evidence:
+  - file: app/models/legacy.rb
+    start_line: 3
+    end_line: 3
+  basis: enclosing_class
+- id: ruby.rails_app.calls_orderpb_self_encode_external_order_to_h_4
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/generated/order_pb.rb::OrderPb.self.encode
+  target_key: external:order.to_h
+  resolution: unresolvable
+  evidence:
+  - file: lib/generated/order_pb.rb
+    start_line: 4
+    end_line: 4
+- id: ruby.rails_app.calls_receipts_self_render_external_format_3
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:vendor/receipts/lib/receipts.rb::Receipts.self.render
+  target_key: external:format
+  resolution: external
+  evidence:
+  - file: vendor/receipts/lib/receipts.rb
+    start_line: 3
+    end_line: 3
+- id: ruby.rails_app.unsupported_rails
+  kind: unsupported
+  capability: dependencies
+  entity_type: DEPENDENCY
+  name: rails
+  file: Gemfile
+  note: declared gem; dependency extraction is UNSUPPORTED

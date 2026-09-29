@@ -167,7 +167,7 @@ def test_stale_attempt_of_finished_analysis_only_closes_the_attempt():
 # --- application startup ---------------------------------------------------------------------
 
 
-READY_ANALYZERS = {"required": ["go", "java", "javascript", "python", "scala"], "unavailable": {}}
+READY_ANALYZERS = {"required": ["go", "java", "javascript", "python", "ruby", "scala"], "unavailable": {}}
 
 
 def test_app_starts_the_worker_and_reports_health(monkeypatch):

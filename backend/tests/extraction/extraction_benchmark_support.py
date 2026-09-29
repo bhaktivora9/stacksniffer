@@ -14,16 +14,17 @@ from backend.services.extraction.analyzers import (
     JavaAnalyzer,
     JavaScriptAnalyzer,
     PythonAnalyzer,
+    RubyAnalyzer,
     ScalaAnalyzer,
 )
 
-ANALYZERS = (PythonAnalyzer, JavaAnalyzer, ScalaAnalyzer, GoAnalyzer, JavaScriptAnalyzer)
+ANALYZERS = (PythonAnalyzer, JavaAnalyzer, ScalaAnalyzer, GoAnalyzer, JavaScriptAnalyzer, RubyAnalyzer)
 requires_grammars = pytest.mark.skipif(
     not all(analyzer().available for analyzer in ANALYZERS),
     reason="tree-sitter grammars are not installed",
 )
 
-LANGUAGES = ("python", "java", "scala", "go", "javascript")
+LANGUAGES = ("python", "java", "scala", "go", "javascript", "ruby")
 REGENERATE = ("python -m backend.evaluation.extraction_metrics "
               "--json backend/evaluation/results/structural-extraction-baseline.json "
               "--markdown docs/evaluation/structural-extraction-baseline.md")

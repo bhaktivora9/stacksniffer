@@ -1,0 +1,304 @@
+# Gold labels for ruby/holdout_jobs. Written from the fixture source, never from extractor output.
+# CONTAINS facts are derived from the entity structure below by the evaluator.
+gold_version: 2
+fixture: ruby/holdout_jobs
+language: ruby
+split: holdout
+description: 'Held out (labelled before the Ruby analyzer was first run): a job worker with a retry mixin that yields, a class method constructing
+  and immediately running an instance, a block-passing call to a mixed-in method, an assignment inside a while condition, super without arguments,
+  and a queue in another file reached through a class method.'
+labelled_from: source
+review:
+  status: pending_independent_review
+  reviewer: null
+files:
+  lib/jobs/worker.rb:
+    parse_status: PARSED
+    origin: first_party
+  lib/jobs/queue.rb:
+    parse_status: PARSED
+    origin: first_party
+facts:
+- id: ruby.holdout_jobs.interface_worker_jobs
+  kind: entity
+  entity_type: INTERFACE
+  qualified_name: Jobs
+  file: lib/jobs/worker.rb
+  start_line: 3
+  end_line: 42
+- id: ruby.holdout_jobs.interface_worker_jobs_retryable
+  kind: entity
+  entity_type: INTERFACE
+  qualified_name: Jobs.Retryable
+  file: lib/jobs/worker.rb
+  start_line: 4
+  end_line: 12
+- id: ruby.holdout_jobs.method_worker_jobs_retryable_with_retries
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Jobs.Retryable.with_retries
+  file: lib/jobs/worker.rb
+  start_line: 5
+  end_line: 11
+- id: ruby.holdout_jobs.class_worker_jobs_worker
+  kind: entity
+  entity_type: CLASS
+  qualified_name: Jobs.Worker
+  file: lib/jobs/worker.rb
+  start_line: 14
+  end_line: 34
+- id: ruby.holdout_jobs.method_worker_jobs_worker_self_start
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Jobs.Worker.self.start
+  file: lib/jobs/worker.rb
+  start_line: 17
+  end_line: 19
+- id: ruby.holdout_jobs.method_worker_jobs_worker_initialize
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Jobs.Worker.initialize
+  file: lib/jobs/worker.rb
+  start_line: 21
+  end_line: 23
+- id: ruby.holdout_jobs.method_worker_jobs_worker_run
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Jobs.Worker.run
+  file: lib/jobs/worker.rb
+  start_line: 25
+  end_line: 29
+- id: ruby.holdout_jobs.method_worker_jobs_worker_perform
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Jobs.Worker.perform
+  file: lib/jobs/worker.rb
+  start_line: 31
+  end_line: 33
+- id: ruby.holdout_jobs.class_worker_jobs_loggingworker
+  kind: entity
+  entity_type: CLASS
+  qualified_name: Jobs.LoggingWorker
+  file: lib/jobs/worker.rb
+  start_line: 36
+  end_line: 41
+- id: ruby.holdout_jobs.method_worker_jobs_loggingworker_perform
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Jobs.LoggingWorker.perform
+  file: lib/jobs/worker.rb
+  start_line: 37
+  end_line: 40
+- id: ruby.holdout_jobs.interface_queue_jobs
+  kind: entity
+  entity_type: INTERFACE
+  qualified_name: Jobs
+  file: lib/jobs/queue.rb
+  start_line: 1
+  end_line: 14
+- id: ruby.holdout_jobs.class_queue_jobs_queue
+  kind: entity
+  entity_type: CLASS
+  qualified_name: Jobs.Queue
+  file: lib/jobs/queue.rb
+  start_line: 2
+  end_line: 13
+- id: ruby.holdout_jobs.method_queue_jobs_queue_self_connect
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Jobs.Queue.self.connect
+  file: lib/jobs/queue.rb
+  start_line: 3
+  end_line: 5
+- id: ruby.holdout_jobs.method_queue_jobs_queue_initialize
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Jobs.Queue.initialize
+  file: lib/jobs/queue.rb
+  start_line: 7
+  end_line: 10
+- id: ruby.holdout_jobs.method_queue_jobs_queue_pop
+  kind: entity
+  entity_type: METHOD
+  qualified_name: Jobs.Queue.pop
+  file: lib/jobs/queue.rb
+  start_line: 12
+  end_line: 12
+- id: ruby.holdout_jobs.imports_worker_rb_queue_rb_1
+  kind: relationship
+  relationship_type: IMPORTS
+  source_key: file:lib/jobs/worker.rb
+  target_key: file:lib/jobs/queue.rb
+  resolution: cross_file
+  evidence:
+  - file: lib/jobs/worker.rb
+    start_line: 1
+    end_line: 1
+  module: queue
+  basis: import_path
+  note: require_relative
+- id: ruby.holdout_jobs.implements_jobs_worker_jobs_retryable_15
+  kind: relationship
+  relationship_type: IMPLEMENTS
+  source_key: class:lib/jobs/worker.rb::Jobs.Worker
+  target_key: interface:lib/jobs/worker.rb::Jobs.Retryable
+  resolution: same_file
+  evidence:
+  - file: lib/jobs/worker.rb
+    start_line: 15
+    end_line: 15
+  basis: type_name
+  note: include
+- id: ruby.holdout_jobs.extends_jobs_loggingworker_jobs_worker_36
+  kind: relationship
+  relationship_type: EXTENDS
+  source_key: class:lib/jobs/worker.rb::Jobs.LoggingWorker
+  target_key: class:lib/jobs/worker.rb::Jobs.Worker
+  resolution: same_file
+  evidence:
+  - file: lib/jobs/worker.rb
+    start_line: 36
+    end_line: 36
+  basis: type_name
+- id: ruby.holdout_jobs.calls_jobs_retryable_with_retries_external_attempts_positive_9
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/jobs/worker.rb::Jobs.Retryable.with_retries
+  target_key: external:attempts.positive?
+  resolution: unresolvable
+  evidence:
+  - file: lib/jobs/worker.rb
+    start_line: 9
+    end_line: 9
+  note: untyped parameter
+- id: ruby.holdout_jobs.calls_jobs_retryable_with_retries_external_raise_10
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/jobs/worker.rb::Jobs.Retryable.with_retries
+  target_key: external:raise
+  resolution: external
+  evidence:
+  - file: lib/jobs/worker.rb
+    start_line: 10
+    end_line: 10
+- id: ruby.holdout_jobs.calls_jobs_worker_self_start_jobs_queue_self_connect_18
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/jobs/worker.rb::Jobs.Worker.self.start
+  target_key: method:lib/jobs/queue.rb::Jobs.Queue.self.connect
+  resolution: cross_file
+  evidence:
+  - file: lib/jobs/worker.rb
+    start_line: 18
+    end_line: 18
+  basis: type_name
+- id: ruby.holdout_jobs.calls_jobs_worker_self_start_jobs_worker_initialize_18
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/jobs/worker.rb::Jobs.Worker.self.start
+  target_key: method:lib/jobs/worker.rb::Jobs.Worker.initialize
+  resolution: same_file
+  evidence:
+  - file: lib/jobs/worker.rb
+    start_line: 18
+    end_line: 18
+  basis: constructor
+- id: ruby.holdout_jobs.calls_jobs_worker_self_start_jobs_worker_run_18
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/jobs/worker.rb::Jobs.Worker.self.start
+  target_key: method:lib/jobs/worker.rb::Jobs.Worker.run
+  resolution: same_file
+  evidence:
+  - file: lib/jobs/worker.rb
+    start_line: 18
+    end_line: 18
+  basis: constructed_instance
+  note: new(...).run
+- id: ruby.holdout_jobs.calls_jobs_worker_run_external_queue_pop_26
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/jobs/worker.rb::Jobs.Worker.run
+  target_key: external:@queue.pop
+  resolution: unresolvable
+  evidence:
+  - file: lib/jobs/worker.rb
+    start_line: 26
+    end_line: 26
+  note: assigned from an untyped parameter
+- id: ruby.holdout_jobs.calls_jobs_worker_run_jobs_retryable_with_retries_27
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/jobs/worker.rb::Jobs.Worker.run
+  target_key: method:lib/jobs/worker.rb::Jobs.Retryable.with_retries
+  resolution: same_file
+  evidence:
+  - file: lib/jobs/worker.rb
+    start_line: 27
+    end_line: 27
+  basis: enclosing_class
+  note: mixed in from Retryable
+- id: ruby.holdout_jobs.calls_jobs_worker_run_jobs_worker_perform_27
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/jobs/worker.rb::Jobs.Worker.run
+  target_key: method:lib/jobs/worker.rb::Jobs.Worker.perform
+  resolution: same_file
+  evidence:
+  - file: lib/jobs/worker.rb
+    start_line: 27
+    end_line: 27
+  basis: enclosing_class
+- id: ruby.holdout_jobs.calls_jobs_worker_perform_external_job_call_32
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/jobs/worker.rb::Jobs.Worker.perform
+  target_key: external:job.call
+  resolution: unresolvable
+  evidence:
+  - file: lib/jobs/worker.rb
+    start_line: 32
+    end_line: 32
+- id: ruby.holdout_jobs.calls_jobs_loggingworker_perform_external_warn_38
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/jobs/worker.rb::Jobs.LoggingWorker.perform
+  target_key: external:warn
+  resolution: external
+  evidence:
+  - file: lib/jobs/worker.rb
+    start_line: 38
+    end_line: 38
+- id: ruby.holdout_jobs.calls_jobs_loggingworker_perform_jobs_worker_perform_39
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/jobs/worker.rb::Jobs.LoggingWorker.perform
+  target_key: method:lib/jobs/worker.rb::Jobs.Worker.perform
+  resolution: same_file
+  evidence:
+  - file: lib/jobs/worker.rb
+    start_line: 39
+    end_line: 39
+  basis: base_class
+  note: bare super
+- id: ruby.holdout_jobs.calls_jobs_queue_self_connect_jobs_queue_initialize_4
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/jobs/queue.rb::Jobs.Queue.self.connect
+  target_key: method:lib/jobs/queue.rb::Jobs.Queue.initialize
+  resolution: same_file
+  evidence:
+  - file: lib/jobs/queue.rb
+    start_line: 4
+    end_line: 4
+  basis: constructor
+- id: ruby.holdout_jobs.calls_jobs_queue_pop_external_items_shift_12
+  kind: relationship
+  relationship_type: CALLS
+  source_key: method:lib/jobs/queue.rb::Jobs.Queue.pop
+  target_key: external:@items.shift
+  resolution: external
+  evidence:
+  - file: lib/jobs/queue.rb
+    start_line: 12
+    end_line: 12

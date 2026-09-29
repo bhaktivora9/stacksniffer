@@ -11,6 +11,7 @@ from .analyzers import (
     JavaAnalyzer,
     JavaScriptAnalyzer,
     PythonAnalyzer,
+    RubyAnalyzer,
     ScalaAnalyzer,
 )
 from .contracts import LanguageAnalyzer
@@ -56,7 +57,8 @@ class AnalyzerRegistry:
 
     @classmethod
     def default(cls) -> AnalyzerRegistry:
-        return cls([PythonAnalyzer(), JavaAnalyzer(), ScalaAnalyzer(), GoAnalyzer(), JavaScriptAnalyzer()])
+        return cls([PythonAnalyzer(), JavaAnalyzer(), ScalaAnalyzer(), GoAnalyzer(), JavaScriptAnalyzer(),
+                    RubyAnalyzer()])
 
     @property
     def analyzers(self) -> tuple[LanguageAnalyzer, ...]:

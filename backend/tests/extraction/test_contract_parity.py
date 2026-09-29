@@ -18,6 +18,7 @@ from backend.services.extraction.analyzers import (
     JavaAnalyzer,
     JavaScriptAnalyzer,
     PythonAnalyzer,
+    RubyAnalyzer,
     ScalaAnalyzer,
 )
 from backend.services.extraction.builder import FileFactsBuilder
@@ -33,9 +34,9 @@ pytestmark = requires_grammars
 
 # A multi-file fixture with a malformed file, per language.
 FIXTURE = {"python": "python/shop_app", "java": "java/orders_service", "scala": "scala/broker", "go": "go/service",
-           "javascript": "javascript/webapp"}
+           "javascript": "javascript/webapp", "ruby": "ruby/rails_app"}
 ANALYZER = {"python": PythonAnalyzer, "java": JavaAnalyzer, "scala": ScalaAnalyzer, "go": GoAnalyzer,
-            "javascript": JavaScriptAnalyzer}
+            "javascript": JavaScriptAnalyzer, "ruby": RubyAnalyzer}
 DUPLICATES = {
     "python": ("dup.py", b"def handler():\n    return 1\n\n\ndef handler():\n    return 2\n", "function", "handler"),
     "java": ("Dup.java", b"class Dup {\n  void go() {\n    new Runnable() { public void run() {} };\n"
@@ -45,6 +46,7 @@ DUPLICATES = {
     "go": ("dup.go", b"package dup\n\nfunc init() {}\n\nfunc init() {}\n", "function", "init"),
     "javascript": ("dup.js", b"function handler() { return 1; }\nfunction handler() { return 2; }\n",
                    "function", "handler"),
+    "ruby": ("dup.rb", b"def handler\n  1\nend\n\ndef handler\n  2\nend\n", "function", "handler"),
 }
 
 
@@ -261,6 +263,16 @@ def test_javascript_object_literal_functions_are_members_not_names_in_scope():
     assert targets["function:api.js::api.get"]["resolution_basis"] == "lexical_scope"
     assert targets[next(k for k in targets if k.startswith("external:") and k.endswith(":get"))]["resolution"] \
         == "unresolved"
+
+
+def test_ruby_singleton_and_instance_methods_stay_distinct():
+    source = b"class C\n  def self.build = new\n  def build = 1\nend\n"
+    file = analyze("ruby", "c.rb", source)
+    keys = {e.stable_key for e in file.entities}
+    assert {"method:c.rb::C.self.build", "method:c.rb::C.build"} <= keys
+    edge = next(r for r in file.relationships if r.relationship_type.value == "CALLS")
+    assert (edge.source_key, edge.target_key) == ("method:c.rb::C.self.build", "class:c.rb::C")
+    assert dict(edge.metadata)["resolution_basis"] == "constructor"
 
 
 @pytest.mark.parametrize("language", LANGUAGES)
@@ -481,6 +493,43 @@ function helper(x) {}
         "this.add": ("method:repo.js::Repo.add", "enclosing_class", "MEDIUM"),
         "typed.add": ("method:repo.js::Repo.add", "declared_type", "LOW"),
     }),
+    "ruby": ("repo.rb", b"""class Repo
+  def add(x); end
+
+  def via_untyped_parameter(other)
+    other.add(1)
+  end
+
+  def via_inferred_local
+    local = Repo.new
+    local.add(2)
+  end
+
+  def via_block(items)
+    items.each { |x| x.add(3) }
+  end
+
+  def via_bare_call
+    helper(4)
+  end
+
+  def via_self
+    self.add(5)
+  end
+
+  # @param typed [Repo]
+  def via_typed_parameter(typed)
+    typed.add(6)
+  end
+
+  def helper(x); end
+end
+""", {
+        "other.add": None, "local.add": None, "x.add": None,
+        "helper": ("method:repo.rb::Repo.helper", "enclosing_class", "MEDIUM"),
+        "self.add": ("method:repo.rb::Repo.add", "enclosing_class", "MEDIUM"),
+        "typed.add": ("method:repo.rb::Repo.add", "declared_type", "LOW"),
+    }),
 }
 
 
@@ -540,6 +589,8 @@ def test_an_edge_is_as_certain_as_its_strongest_site_regardless_of_order(languag
                        b"\tother.M()\n\ta.M()\n}\n"),
         "javascript": ("a.js", b"class A {\n  m() {}\n  /** @param {A} other */\n  run(other) {\n    other.m();\n"
                                b"    this.m();\n  }\n}\n"),
+        "ruby": ("a.rb", b"class A\n  def m; end\n\n  # @param other [A]\n  def run(other)\n    other.m\n    m\n"
+                         b"  end\nend\n"),
     }[language]
     edge = next(r for r in analyze(language, path, source).relationships
                 if r.relationship_type.value == "CALLS" and "run" in r.source_key.lower()

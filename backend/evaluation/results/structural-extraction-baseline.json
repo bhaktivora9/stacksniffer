@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "baseline_version": 5,
+  "baseline_version": 6,
   "gold_version": 2,
   "review_status": [
     "pending_independent_review"
@@ -4135,6 +4135,830 @@
             "area": "relationships",
             "outcome": "unexpected",
             "detail": "IMPORTS file:app/util/__init__.py external:.text (label: IMPORTS file:app/util/__init__.py file:app/util/text.py)",
+            "category": "cross-file limitation"
+          }
+        ]
+      }
+    },
+    "ruby": {
+      "cases": [
+        "ruby/basics",
+        "ruby/holdout_jobs",
+        "ruby/rails_app"
+      ],
+      "extractor_versions": {
+        "ruby": "stacksniffer-ruby/1+tree-sitter-ruby@0.23.1"
+      },
+      "entities": {
+        "overall": {
+          "tp": 55,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "CLASS": {
+          "tp": 9,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "INTERFACE": {
+          "tp": 9,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "FUNCTION": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "METHOD": {
+          "tp": 34,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "relationships": {
+        "overall": {
+          "tp": 116,
+          "fp": 9,
+          "fn": 9,
+          "precision": 0.928,
+          "recall": 0.928,
+          "f1": 0.928
+        },
+        "CONTAINS": {
+          "tp": 55,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "IMPORTS": {
+          "tp": 2,
+          "fp": 3,
+          "fn": 3,
+          "precision": 0.4,
+          "recall": 0.4,
+          "f1": 0.4
+        },
+        "CALLS": {
+          "tp": 54,
+          "fp": 6,
+          "fn": 6,
+          "precision": 0.9,
+          "recall": 0.9,
+          "f1": 0.9
+        },
+        "EXTENDS": {
+          "tp": 3,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "IMPLEMENTS": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "import_statements": {
+        "tp": 5,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "resolution": {
+        "CALLS": {
+          "same_file": {
+            "tp": 21,
+            "fp": 0,
+            "fn": 2,
+            "precision": 1.0,
+            "recall": 0.913,
+            "f1": 0.9545
+          },
+          "cross_file": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 4,
+            "precision": 1.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "overall": {
+            "tp": 21,
+            "fp": 0,
+            "fn": 6,
+            "precision": 1.0,
+            "recall": 0.7778,
+            "f1": 0.875
+          }
+        },
+        "EXTENDS": {
+          "same_file": {
+            "tp": 2,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "cross_file": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "overall": {
+            "tp": 2,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          }
+        },
+        "IMPLEMENTS": {
+          "same_file": {
+            "tp": 2,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "cross_file": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "overall": {
+            "tp": 2,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          }
+        },
+        "IMPORTS": {
+          "same_file": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "cross_file": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 3,
+            "precision": 1.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          "overall": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 3,
+            "precision": 1.0,
+            "recall": 0.0,
+            "f1": 0.0
+          }
+        }
+      },
+      "resolved_edge_precision": {
+        "tp": 25,
+        "fp": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "resolution_recall_by_expected_basis": {
+        "enclosing_class": {
+          "tp": 13,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "base_class": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "type_name": {
+          "tp": 5,
+          "fp": 0,
+          "fn": 4,
+          "precision": 1.0,
+          "recall": 0.5556,
+          "f1": 0.7143
+        },
+        "constructor": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "declared_type": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "constructed_instance": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 1,
+          "precision": 1.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        "import_path": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 3,
+          "precision": 1.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        "inferred_type": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 1,
+          "precision": 1.0,
+          "recall": 0.0,
+          "f1": 0.0
+        }
+      },
+      "basis_accuracy": {
+        "valid": 25,
+        "total": 25,
+        "rate": 1.0
+      },
+      "certainty_accuracy": {
+        "valid": 25,
+        "total": 25,
+        "rate": 1.0
+      },
+      "by_origin": {
+        "entities": {
+          "first_party": {
+            "tp": 51,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "generated": {
+            "tp": 2,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "vendored": {
+            "tp": 2,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          }
+        },
+        "relationships": {
+          "first_party": {
+            "tp": 110,
+            "fp": 9,
+            "fn": 9,
+            "precision": 0.9244,
+            "recall": 0.9244,
+            "f1": 0.9244
+          },
+          "generated": {
+            "tp": 3,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "vendored": {
+            "tp": 3,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          }
+        },
+        "classification": {
+          "valid": 11,
+          "total": 11,
+          "rate": 1.0
+        }
+      },
+      "by_capability_level": {
+        "PARTIAL": {
+          "capabilities": [
+            "calls",
+            "inheritance",
+            "interfaces"
+          ],
+          "tp": 68,
+          "fp": 6,
+          "fn": 6,
+          "precision": 0.9189,
+          "recall": 0.9189,
+          "f1": 0.9189
+        },
+        "SUPPORTED": {
+          "capabilities": [
+            "declarations",
+            "imports"
+          ],
+          "tp": 106,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "resolved_edge_precision_by_basis": {
+        "base_class": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "constructor": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "declared_type": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "enclosing_class": {
+          "tp": 13,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "type_name": {
+          "tp": 5,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "unresolved_edges": {
+        "overall": {
+          "tp": 36,
+          "fp": 9,
+          "fn": 0,
+          "precision": 0.8,
+          "recall": 1.0,
+          "f1": 0.8889
+        },
+        "ambiguous": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "external": {
+          "tp": 23,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "unresolvable": {
+          "tp": 12,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      },
+      "evidence": {
+        "path_validity": {
+          "valid": 171,
+          "total": 171,
+          "rate": 1.0
+        },
+        "line_range_validity": {
+          "valid": 171,
+          "total": 171,
+          "rate": 1.0
+        },
+        "source_integrity": {
+          "valid": 137,
+          "total": 137,
+          "rate": 1.0
+        }
+      },
+      "decorators": {
+        "valid": 55,
+        "total": 55,
+        "rate": 1.0
+      },
+      "parse_status": {
+        "valid": 11,
+        "total": 11,
+        "rate": 1.0
+      },
+      "syntax_error_location": {
+        "valid": 1,
+        "total": 1,
+        "rate": 1.0
+      },
+      "malformed_isolation": {
+        "malformed_files": 1,
+        "isolated": 1,
+        "rate": 1.0,
+        "repository_failures": 0
+      },
+      "determinism": {
+        "identical_runs": {
+          "valid": 3,
+          "total": 3,
+          "rate": 1.0
+        },
+        "stable_keys": {
+          "valid": 110,
+          "total": 110,
+          "rate": 1.0
+        }
+      },
+      "unsupported_leakage": {
+        "count": 0,
+        "facts": []
+      },
+      "capabilities": {
+        "declared": {
+          "declarations": "SUPPORTED",
+          "imports": "SUPPORTED",
+          "calls": "PARTIAL",
+          "inheritance": "PARTIAL",
+          "interfaces": "PARTIAL",
+          "dependencies": "UNSUPPORTED",
+          "decorators": "UNSUPPORTED"
+        },
+        "expected": {
+          "declarations": "SUPPORTED",
+          "imports": "SUPPORTED",
+          "calls": "PARTIAL",
+          "inheritance": "PARTIAL",
+          "interfaces": "PARTIAL",
+          "dependencies": "UNSUPPORTED",
+          "decorators": "UNSUPPORTED"
+        },
+        "accuracy": 1.0,
+        "mismatched": [],
+        "consistency_issues": []
+      },
+      "splits": {
+        "development": {
+          "entities": {
+            "tp": 40,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "relationships": {
+            "tp": 88,
+            "fp": 6,
+            "fn": 6,
+            "precision": 0.9362,
+            "recall": 0.9362,
+            "f1": 0.9362
+          },
+          "calls_resolution": {
+            "tp": 16,
+            "fp": 0,
+            "fn": 4,
+            "precision": 1.0,
+            "recall": 0.8,
+            "f1": 0.8889
+          }
+        },
+        "holdout": {
+          "entities": {
+            "tp": 15,
+            "fp": 0,
+            "fn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0
+          },
+          "relationships": {
+            "tp": 28,
+            "fp": 3,
+            "fn": 3,
+            "precision": 0.9032,
+            "recall": 0.9032,
+            "f1": 0.9032
+          },
+          "calls_resolution": {
+            "tp": 5,
+            "fp": 0,
+            "fn": 2,
+            "precision": 1.0,
+            "recall": 0.7143,
+            "f1": 0.8333
+          }
+        }
+      },
+      "gates": [
+        {
+          "gate": "declaration_precision",
+          "required": ">= 0.98",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "declaration_recall",
+          "required": ">= 0.95",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "import_precision",
+          "required": ">= 0.95",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "import_recall",
+          "required": ">= 0.95",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "resolved_edge_precision",
+          "required": ">= 0.9",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "evidence_path_validity",
+          "required": ">= 1.0",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "evidence_line_range_validity",
+          "required": ">= 1.0",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "deterministic_stable_keys",
+          "required": ">= 1.0",
+          "actual": 1.0,
+          "passed": true
+        },
+        {
+          "gate": "unsupported_fact_leakage",
+          "required": "<= 0",
+          "actual": 0,
+          "passed": true
+        },
+        {
+          "gate": "repository_failures_from_malformed_files",
+          "required": "<= 0",
+          "actual": 0,
+          "passed": true
+        }
+      ],
+      "gates_passed": true,
+      "errors": {
+        "by_category": {
+          "parser query gap": 0,
+          "normalization error": 0,
+          "receiver-resolution error": 4,
+          "ambiguity": 0,
+          "cross-file limitation": 14,
+          "evidence-range error": 0,
+          "incorrect fixture label": 0,
+          "parser error recovery": 0,
+          "unsupported-fact leakage": 0
+        },
+        "items": [
+          {
+            "id": "ruby/basics:relationships:missed:CALLS method:lib/shop/cart.rb::Shop.Cart.discount method:lib/shop/pricing.rb::Shop.Pricing.self.discount_for (emitted as external:Pricing.discount_for)",
+            "case": "ruby/basics",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:lib/shop/cart.rb::Shop.Cart.discount method:lib/shop/pricing.rb::Shop.Pricing.self.discount_for (emitted as external:Pricing.discount_for)",
+            "category": "cross-file limitation",
+            "fact_id": "ruby.basics.calls_shop_cart_discount_shop_pricing_self_discount_for_71"
+          },
+          {
+            "id": "ruby/basics:relationships:missed:CALLS method:lib/shop/cart.rb::Shop.Cart.line method:lib/shop/pricing.rb::Shop.Pricing.self.round (emitted as external:Pricing.round)",
+            "case": "ruby/basics",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:lib/shop/cart.rb::Shop.Cart.line method:lib/shop/pricing.rb::Shop.Pricing.self.round (emitted as external:Pricing.round)",
+            "category": "cross-file limitation",
+            "fact_id": "ruby.basics.calls_shop_cart_line_shop_pricing_self_round_47"
+          },
+          {
+            "id": "ruby/basics:relationships:missed:CALLS method:lib/shop/cart.rb::Shop.Cart.self.from method:lib/shop/cart.rb::Shop.Cart.add (emitted as external:cart.add)",
+            "case": "ruby/basics",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:lib/shop/cart.rb::Shop.Cart.self.from method:lib/shop/cart.rb::Shop.Cart.add (emitted as external:cart.add)",
+            "category": "receiver-resolution error",
+            "fact_id": "ruby.basics.calls_shop_cart_self_from_shop_cart_add_60"
+          },
+          {
+            "id": "ruby/basics:relationships:missed:IMPORTS file:lib/shop/cart.rb file:lib/shop/pricing.rb (emitted as external:pricing)",
+            "case": "ruby/basics",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "IMPORTS file:lib/shop/cart.rb file:lib/shop/pricing.rb (emitted as external:pricing)",
+            "category": "cross-file limitation",
+            "fact_id": "ruby.basics.imports_cart_rb_pricing_rb_2"
+          },
+          {
+            "id": "ruby/basics:relationships:unexpected:CALLS method:lib/shop/cart.rb::Shop.Cart.discount external:Pricing.discount_for (label: CALLS method:lib/shop/cart.rb::Shop.Cart.discount method:lib/shop/pricing.rb::Shop.Pricing.self.discount_for)",
+            "case": "ruby/basics",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:lib/shop/cart.rb::Shop.Cart.discount external:Pricing.discount_for (label: CALLS method:lib/shop/cart.rb::Shop.Cart.discount method:lib/shop/pricing.rb::Shop.Pricing.self.discount_for)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "ruby/basics:relationships:unexpected:CALLS method:lib/shop/cart.rb::Shop.Cart.line external:Pricing.round (label: CALLS method:lib/shop/cart.rb::Shop.Cart.line method:lib/shop/pricing.rb::Shop.Pricing.self.round)",
+            "case": "ruby/basics",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:lib/shop/cart.rb::Shop.Cart.line external:Pricing.round (label: CALLS method:lib/shop/cart.rb::Shop.Cart.line method:lib/shop/pricing.rb::Shop.Pricing.self.round)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "ruby/basics:relationships:unexpected:CALLS method:lib/shop/cart.rb::Shop.Cart.self.from external:cart.add (label: CALLS method:lib/shop/cart.rb::Shop.Cart.self.from method:lib/shop/cart.rb::Shop.Cart.add)",
+            "case": "ruby/basics",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:lib/shop/cart.rb::Shop.Cart.self.from external:cart.add (label: CALLS method:lib/shop/cart.rb::Shop.Cart.self.from method:lib/shop/cart.rb::Shop.Cart.add)",
+            "category": "receiver-resolution error"
+          },
+          {
+            "id": "ruby/basics:relationships:unexpected:IMPORTS file:lib/shop/cart.rb external:pricing (label: IMPORTS file:lib/shop/cart.rb file:lib/shop/pricing.rb)",
+            "case": "ruby/basics",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPORTS file:lib/shop/cart.rb external:pricing (label: IMPORTS file:lib/shop/cart.rb file:lib/shop/pricing.rb)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "ruby/holdout_jobs:relationships:missed:CALLS method:lib/jobs/worker.rb::Jobs.Worker.self.start method:lib/jobs/queue.rb::Jobs.Queue.self.connect (emitted as external:Queue.connect)",
+            "case": "ruby/holdout_jobs",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:lib/jobs/worker.rb::Jobs.Worker.self.start method:lib/jobs/queue.rb::Jobs.Queue.self.connect (emitted as external:Queue.connect)",
+            "category": "cross-file limitation",
+            "fact_id": "ruby.holdout_jobs.calls_jobs_worker_self_start_jobs_queue_self_connect_18"
+          },
+          {
+            "id": "ruby/holdout_jobs:relationships:missed:CALLS method:lib/jobs/worker.rb::Jobs.Worker.self.start method:lib/jobs/worker.rb::Jobs.Worker.run (emitted as external:<expression>.run)",
+            "case": "ruby/holdout_jobs",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:lib/jobs/worker.rb::Jobs.Worker.self.start method:lib/jobs/worker.rb::Jobs.Worker.run (emitted as external:<expression>.run)",
+            "category": "receiver-resolution error",
+            "fact_id": "ruby.holdout_jobs.calls_jobs_worker_self_start_jobs_worker_run_18"
+          },
+          {
+            "id": "ruby/holdout_jobs:relationships:missed:IMPORTS file:lib/jobs/worker.rb file:lib/jobs/queue.rb (emitted as external:queue)",
+            "case": "ruby/holdout_jobs",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "IMPORTS file:lib/jobs/worker.rb file:lib/jobs/queue.rb (emitted as external:queue)",
+            "category": "cross-file limitation",
+            "fact_id": "ruby.holdout_jobs.imports_worker_rb_queue_rb_1"
+          },
+          {
+            "id": "ruby/holdout_jobs:relationships:unexpected:CALLS method:lib/jobs/worker.rb::Jobs.Worker.self.start external:<expression>.run (label: CALLS method:lib/jobs/worker.rb::Jobs.Worker.self.start method:lib/jobs/worker.rb::Jobs.Worker.run)",
+            "case": "ruby/holdout_jobs",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:lib/jobs/worker.rb::Jobs.Worker.self.start external:<expression>.run (label: CALLS method:lib/jobs/worker.rb::Jobs.Worker.self.start method:lib/jobs/worker.rb::Jobs.Worker.run)",
+            "category": "receiver-resolution error"
+          },
+          {
+            "id": "ruby/holdout_jobs:relationships:unexpected:CALLS method:lib/jobs/worker.rb::Jobs.Worker.self.start external:Queue.connect (label: CALLS method:lib/jobs/worker.rb::Jobs.Worker.self.start method:lib/jobs/queue.rb::Jobs.Queue.self.connect)",
+            "case": "ruby/holdout_jobs",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:lib/jobs/worker.rb::Jobs.Worker.self.start external:Queue.connect (label: CALLS method:lib/jobs/worker.rb::Jobs.Worker.self.start method:lib/jobs/queue.rb::Jobs.Queue.self.connect)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "ruby/holdout_jobs:relationships:unexpected:IMPORTS file:lib/jobs/worker.rb external:queue (label: IMPORTS file:lib/jobs/worker.rb file:lib/jobs/queue.rb)",
+            "case": "ruby/holdout_jobs",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPORTS file:lib/jobs/worker.rb external:queue (label: IMPORTS file:lib/jobs/worker.rb file:lib/jobs/queue.rb)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "ruby/rails_app:relationships:missed:CALLS method:app/services/checkout.rb::Checkout.call method:vendor/receipts/lib/receipts.rb::Receipts.self.render (emitted as external:Receipts.render)",
+            "case": "ruby/rails_app",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "CALLS method:app/services/checkout.rb::Checkout.call method:vendor/receipts/lib/receipts.rb::Receipts.self.render (emitted as external:Receipts.render)",
+            "category": "cross-file limitation",
+            "fact_id": "ruby.rails_app.calls_checkout_call_receipts_self_render_11"
+          },
+          {
+            "id": "ruby/rails_app:relationships:missed:IMPORTS file:app/services/checkout.rb file:app/models/order.rb (emitted as external:../models/order)",
+            "case": "ruby/rails_app",
+            "area": "relationships",
+            "outcome": "missed",
+            "detail": "IMPORTS file:app/services/checkout.rb file:app/models/order.rb (emitted as external:../models/order)",
+            "category": "cross-file limitation",
+            "fact_id": "ruby.rails_app.imports_checkout_rb_order_rb_1"
+          },
+          {
+            "id": "ruby/rails_app:relationships:unexpected:CALLS method:app/services/checkout.rb::Checkout.call external:Receipts.render (label: CALLS method:app/services/checkout.rb::Checkout.call method:vendor/receipts/lib/receipts.rb::Receipts.self.render)",
+            "case": "ruby/rails_app",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "CALLS method:app/services/checkout.rb::Checkout.call external:Receipts.render (label: CALLS method:app/services/checkout.rb::Checkout.call method:vendor/receipts/lib/receipts.rb::Receipts.self.render)",
+            "category": "cross-file limitation"
+          },
+          {
+            "id": "ruby/rails_app:relationships:unexpected:IMPORTS file:app/services/checkout.rb external:../models/order (label: IMPORTS file:app/services/checkout.rb file:app/models/order.rb)",
+            "case": "ruby/rails_app",
+            "area": "relationships",
+            "outcome": "unexpected",
+            "detail": "IMPORTS file:app/services/checkout.rb external:../models/order (label: IMPORTS file:app/services/checkout.rb file:app/models/order.rb)",
             "category": "cross-file limitation"
           }
         ]

@@ -62,7 +62,7 @@ RESULTS_PATH = REPOSITORY_ROOT / "backend" / "evaluation" / "results" / "structu
 REPORT_PATH = REPOSITORY_ROOT / "docs" / "evaluation" / "structural-extraction-baseline.md"
 RESULT_SCHEMA_VERSION = 2
 # Bump when the gold set, the scoring rules or the published format change meaningfully.
-BASELINE_VERSION = 5  # 3: Scala; 4: Go and the method_set basis; 5: JavaScript
+BASELINE_VERSION = 6  # 3: Scala; 4: Go and the method_set basis; 5: JavaScript; 6: Ruby
 
 DECLARATION_TYPES = ("CLASS", "INTERFACE", "FUNCTION", "METHOD")
 RELATIONSHIP_TYPES = ("CONTAINS", "IMPORTS", "CALLS", "EXTENDS", "IMPLEMENTS")

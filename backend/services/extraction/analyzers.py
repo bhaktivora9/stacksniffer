@@ -1,4 +1,4 @@
-"""Language analyzers: Python, Java, Scala, Go and JavaScript over Tree-sitter, plus the file-level fallback.
+"""Language analyzers: Python, Java, Scala, Go, JavaScript and Ruby over Tree-sitter, plus the file-level fallback.
 
 Resolution is deliberately local to one file. A reference is linked to an
 entity only when the file's own declarations determine it: lexical scopes and
@@ -2263,5 +2263,366 @@ class JavaScriptAnalyzer(TreeSitterAnalyzer):
             keys = state.types.get(name, [])
             if len(keys) == 1:
                 state.superclass[class_key] = keys[0]
+            else:
+                del state.superclass[class_key]
+
+
+# --- Ruby ------------------------------------------------------------------------------------
+
+_RUBY_IMPORTS = frozenset({"require", "require_relative", "load"})
+_RUBY_MIXINS = {"include": "instance", "prepend": "instance", "extend": "singleton"}
+# Class-body declarations written as method calls; they are structure, not calls.
+_RUBY_MACROS = frozenset({
+    "private", "protected", "public", "module_function", "private_constant", "attr_reader", "attr_writer",
+    "attr_accessor", "include", "extend", "prepend", "require", "require_relative", "load",
+})
+# Parents in which a bare identifier is an expression, so a name that is not a local variable is a
+# call to a method on self (Ruby decides the same way).
+_RUBY_EXPRESSION_PARENTS = frozenset({
+    "binary", "unary", "argument_list", "body_statement", "then", "else", "begin", "return",
+    "parenthesized_statements", "conditional", "array", "pair", "interpolation", "element_reference",
+    "if", "unless", "while", "until", "if_modifier", "unless_modifier", "while_modifier", "until_modifier",
+    "method", "singleton_method", "block_body", "do_block", "block", "program", "range", "splat_argument",
+})
+_RUBY_YARD_PARAM = re.compile(r"@param\s+(?:\[([\w:]+)\]\s+(\w+)|(\w+)\s+\[([\w:]+)\])")
+
+
+def _ruby_constant(node: Any) -> str | None:
+    """`Foo` or `A::B` as a dotted name; None for any other expression."""
+    if node is None:
+        return None
+    if node.type == "constant":
+        return text_of(node)
+    if node.type == "scope_resolution":
+        scope, name = node.child_by_field_name("scope"), node.child_by_field_name("name")
+        prefix = _ruby_constant(scope) if scope is not None else ""
+        return f"{prefix}.{text_of(name)}" if prefix else text_of(name)
+    return None
+
+
+def _ruby_string(node: Any) -> str | None:
+    if node is None or node.type != "string":
+        return None
+    if any(c.type == "interpolation" for c in node.named_children):
+        return None
+    return "".join(text_of(c) for c in node.named_children if c.type == "string_content")
+
+
+def _ruby_chain_is_simple(node: Any) -> bool:
+    while node.type == "call" and node.child_by_field_name("arguments") is None \
+            and node.child_by_field_name("block") is None and node.child_by_field_name("receiver") is not None:
+        node = node.child_by_field_name("receiver")
+    return node.type in ("identifier", "constant", "scope_resolution", "self", "instance_variable",
+                         "class_variable", "global_variable")
+
+
+def _ruby_parameter_names(parameters: Any) -> list[str]:
+    names = []
+    for parameter in parameters.named_children if parameters is not None else []:
+        if parameter.type == "identifier":
+            names.append(text_of(parameter))
+        else:
+            name = parameter.child_by_field_name("name")
+            if name is not None:
+                names.append(text_of(name))
+            elif parameter.type in ("destructured_parameter", "block_parameters"):
+                names.extend(_ruby_parameter_names(parameter))
+    return names
+
+
+def _ruby_yard(node: Any) -> dict[str, str]:
+    """`@param name [Type]` (or `@param [Type] name`) from the comments directly above a method."""
+    types, previous = {}, node.prev_sibling
+    line = node.start_point[0]
+    while previous is not None and previous.type == "comment" and previous.end_point[0] + 1 >= line:
+        for match in _RUBY_YARD_PARAM.finditer(text_of(previous)):
+            type_name, name = (match.group(1), match.group(2)) if match.group(1) else (match.group(4), match.group(3))
+            types[name] = type_name.split("::")[-1]
+        line = previous.start_point[0]
+        previous = previous.prev_sibling
+    return types
+
+
+class RubyAnalyzer(TreeSitterAnalyzer):
+    """Ruby classes, modules and methods. Modules are INTERFACEs (mixins); `include`/`prepend`/
+    `extend` are IMPLEMENTS. Singleton methods are `<Class>.self.<name>`. Metaprogramming
+    (`define_method`, `attr_*`, `method_missing`, `send`) declares nothing the analyzer reports."""
+
+    language = "ruby"
+    extractor = "tree-sitter-ruby"
+    analyzer_version = "stacksniffer-ruby/1"
+    capabilities = AnalyzerCapabilities({
+        Capability.DECLARATIONS: S,
+        Capability.IMPORTS: S,
+        Capability.CALLS: P,
+        Capability.INHERITANCE: P,
+        Capability.INTERFACES: P,  # modules mixed in
+        Capability.DEPENDENCIES: U,  # Gemfile is analyzed as Ruby code, not as dependencies
+        Capability.DECORATORS: U,
+    })
+
+    def __init__(self, adapter: TreeSitterParserAdapter | None = None):
+        super().__init__(adapter or TreeSitterParserAdapter("ruby", "tree_sitter_ruby", "tree-sitter-ruby"))
+
+    def visit(self, node, scope, state, builder):
+        kind = node.type
+        if kind == "ERROR" and node.parent is not None:
+            return None
+        if kind in ("class", "module"):
+            return self._namespace(node, scope, state, builder)
+        if kind == "singleton_class":  # class << self
+            return _Scope(scope.key, "class", scope.qualified_name, scope.class_key, None,
+                          f"{scope.class_key}|self" if scope.class_key else scope.namespace, None) \
+                if scope.class_key else scope
+        if kind in ("method", "singleton_method"):
+            return self._method(node, scope, state, builder)
+        if kind in ("assignment", "operator_assignment"):
+            left = node.child_by_field_name("left")
+            targets = [left] if left is not None and left.type == "identifier" else \
+                [n for n in walk(left) if n.type == "identifier"] if left is not None and \
+                left.type in ("left_assignment_list", "destructured_left_assignment") else []
+            state.bound[self._locals(scope)].update(text_of(t) for t in targets)
+        elif kind in ("block_parameters", "lambda_parameters"):
+            state.bound[self._locals(scope)].update(_ruby_parameter_names(node))
+            return None
+        elif kind == "exception_variable":  # rescue Error => e
+            state.bound[self._locals(scope)].update(text_of(n) for n in walk(node) if n.type == "identifier")
+            return None
+        elif kind == "call":
+            return self._call(node, scope, state, builder)
+        elif kind == "identifier":
+            self._bare(node, scope, state)
+        elif kind == "super":
+            self._super(node, scope, state)
+        return scope
+
+    @staticmethod
+    def _locals(scope) -> str:
+        return scope.callable_key or scope.namespace
+
+    # -- declarations -----------------------------------------------------------------------
+
+    def _namespace(self, node, scope, state, builder):
+        if _scala_header_broken(node):
+            return None
+        name = _ruby_constant(node.child_by_field_name("name"))
+        if not name:
+            return None
+        module = node.type == "module"
+        qualified = f"{scope.qualified_name}.{name}" if scope.qualified_name else name
+        key = builder.entity(EntityType.INTERFACE if module else EntityType.CLASS, name.rsplit(".", 1)[-1],
+                             span_of(node), parent_key=scope.key, qualified_name=qualified,
+                             metadata={"kind": node.type})
+        state.types[name.rsplit(".", 1)[-1]].append(key)
+        state.classes.add(key)
+        state.parent_namespace[key] = scope.namespace
+        state.parent_namespace[f"{key}|self"] = scope.namespace
+        if module:
+            state.traits.add(key)
+        superclass = node.child_by_field_name("superclass")
+        if superclass is not None:
+            base = next((c for c in superclass.named_children), None)
+            base_name = _ruby_constant(base)
+            if base_name:
+                simple = "." not in base_name
+                state.references.append(_Reference(RelationshipType.EXTENDS, key, span_of(base), "type",
+                                                   base_name.replace(".", "::"), lookup="type" if simple else "none",
+                                                   name=base_name, scope=scope))
+                if simple:
+                    state.bases[key].append(base_name)
+                    state.bases[f"{key}|self"].append(f"{base_name}|self")
+                    state.superclass[key] = base_name
+        return _Scope(key, "class", qualified, key, None, key, None)
+
+    def _method(self, node, scope, state, builder):
+        if _scala_header_broken(node):
+            return None
+        name = text_of(node.child_by_field_name("name"))
+        singleton = node.type == "singleton_method" or (scope.namespace or "").endswith("|self")
+        owner = scope.class_key
+        if node.type == "singleton_method":
+            target = node.child_by_field_name("object")
+            if target is None or target.type != "self":
+                owner = None  # def obj.method: a singleton of some other object
+        if owner:
+            qualified = f"{scope.qualified_name}.{'self.' if singleton else ''}{name}"
+            entity_type = EntityType.METHOD
+        else:
+            qualified = f"{scope.qualified_name}.{name}" if scope.qualified_name else name
+            entity_type = EntityType.FUNCTION
+        key = builder.entity(entity_type, name, span_of(node), parent_key=scope.key, qualified_name=qualified,
+                             metadata={"singleton": True} if singleton and owner else {})
+        member_table = f"{owner}|self" if singleton and owner else owner
+        if owner:
+            state.members[member_table][name].append(key)
+            if name == "initialize" and not singleton:
+                state.constructors[owner].append(key)
+        else:
+            state.names[scope.namespace][name].append(_Declaration(key, span_of(node).start_line, True))
+        parameters = node.child_by_field_name("parameters")
+        state.bound[key].update(_ruby_parameter_names(parameters))
+        for parameter, type_name in _ruby_yard(node).items():
+            state.variables[key][parameter] = type_name
+        state.parent_namespace[key] = scope.namespace
+        state.ruby_methods = getattr(state, "ruby_methods", {})
+        state.ruby_methods[key] = (name, member_table if owner else None, owner)
+        return _Scope(key, "callable", qualified, member_table if owner else None, key, key, None)
+
+    # -- references -------------------------------------------------------------------------
+
+    def _call(self, node, scope, state, builder):
+        receiver = node.child_by_field_name("receiver")
+        method = node.child_by_field_name("method")
+        if method is None:
+            return scope
+        if method.type == "super":  # super(...) with arguments
+            self._super(node, scope, state)
+            return scope
+        name = _name(text_of(method))
+        arguments = node.child_by_field_name("arguments")
+        span = span_of(node)
+        source = scope.callable_key or scope.key
+        if receiver is None:
+            if name in _RUBY_IMPORTS:
+                module = _ruby_string(arguments.named_children[0]) if arguments is not None and \
+                    arguments.named_children else None
+                if module:
+                    target = builder.external("import", module, span)
+                    builder.relationship(RelationshipType.IMPORTS, builder.file_key, target, span,
+                                         certainty=Certainty.EXACT,
+                                         metadata={"module": module, "relative": name == "require_relative",
+                                                   "resolution": "unresolved"})
+                return None
+            if name in _RUBY_MIXINS and scope.kind == "class" and scope.class_key:
+                for argument in arguments.named_children if arguments is not None else []:
+                    module = _ruby_constant(argument)
+                    if module:
+                        simple = "." not in module
+                        state.references.append(_Reference(
+                            RelationshipType.IMPLEMENTS, scope.class_key, span_of(argument), "type",
+                            module.replace(".", "::"), lookup="type" if simple else "none", name=module, scope=scope,
+                            metadata={"mixin": name}))
+                        if simple:
+                            table = scope.class_key if _RUBY_MIXINS[name] == "instance" else f"{scope.class_key}|self"
+                            state.bases[table].append(module)
+                return None
+            if name in _RUBY_MACROS:
+                return None
+            state.references.append(_Reference(RelationshipType.CALLS, source, span, "call", name,
+                                               lookup="unqualified", name=name, scope=scope))
+            return scope
+        display = f"{_name(text_of(receiver)).replace('&.', '.') if _ruby_chain_is_simple(receiver) else EXPRESSION}" \
+                  f".{name}"
+        lookup, receiver_name = "none", None
+        if receiver.type == "self":
+            lookup = "this"
+        elif receiver.type in ("constant", "scope_resolution"):
+            constant = _ruby_constant(receiver)
+            lookup, receiver_name = ("new" if name == "new" else "type"), constant
+        elif receiver.type == "identifier":
+            lookup, receiver_name = "receiver", text_of(receiver)
+        state.references.append(_Reference(RelationshipType.CALLS, source, span, "call", display, lookup=lookup,
+                                           name=name, scope=scope, receiver=receiver_name))
+        return scope
+
+    def _bare(self, node, scope, state):
+        """`subtotal` alone is a call to self.subtotal unless a local variable of that name exists."""
+        parent = node.parent
+        if parent is None or scope.callable_key is None:
+            return
+        if parent.type == "call":
+            if parent.child_by_field_name("receiver") != node:
+                return  # the called method's own name
+        elif parent.type in ("assignment", "operator_assignment"):
+            if parent.child_by_field_name("right") != node:
+                return
+        elif parent.type not in _RUBY_EXPRESSION_PARENTS:
+            return
+        if parent.type in ("method", "singleton_method") and parent.child_by_field_name("body") != node:
+            return  # the method's name
+        if parent.type == "pair" and parent.child_by_field_name("value") != node:
+            return
+        name = text_of(node)
+        if name in _RUBY_MACROS or self._is_local(state, scope, name):
+            return
+        state.references.append(_Reference(RelationshipType.CALLS, scope.callable_key, span_of(node), "call", name,
+                                           lookup="unqualified", name=name, scope=scope))
+
+    def _super(self, node, scope, state):
+        methods = getattr(state, "ruby_methods", {})
+        if scope.callable_key not in methods:
+            return
+        name, table, owner = methods[scope.callable_key]
+        constructor = name == "initialize" and table == owner
+        state.references.append(_Reference(RelationshipType.CALLS, scope.callable_key, span_of(node), "call",
+                                           "super", lookup="super_constructor" if constructor else "super",
+                                           name=name, scope=scope))
+
+    @staticmethod
+    def _is_local(state, scope, name) -> bool:
+        namespace = scope.callable_key
+        return name in state.bound[namespace] or name in state.variables.get(namespace, {})
+
+    # -- resolution -------------------------------------------------------------------------
+
+    def candidates(self, ref, state):
+        scope = ref.scope
+        if ref.lookup == "type" and ref.relationship_type is not RelationshipType.CALLS:
+            return list(state.types.get(ref.name, []))
+        if ref.lookup == "unqualified":
+            if ref.name == "new" and scope.class_key and scope.class_key.endswith("|self"):
+                state.basis_override[id(ref)] = "new"  # `new` inside a class method
+                return self._constructor(state, scope.class_key[:-5])
+            if scope.class_key:
+                found = self._members(state, scope.class_key, ref.name)
+                if found:
+                    return found
+            found = []
+            namespace = scope.namespace
+            while namespace is not None and not found:
+                found = [d.key for d in state.names[namespace].get(ref.name, [])]
+                namespace = state.parent_namespace.get(namespace)
+            if found:
+                state.basis_override[id(ref)] = "lexical"  # a top-level method
+            return found
+        if ref.lookup == "this":
+            return self._members(state, scope.class_key, ref.name) if scope.class_key else []
+        if ref.lookup == "super":
+            return self._members(state, scope.class_key, ref.name, bases_only=True) if scope.class_key else []
+        if ref.lookup == "super_constructor":
+            base = state.superclass.get(scope.class_key)
+            return self._constructor(state, base) if base else []
+        if ref.lookup in ("new", "type") and ref.relationship_type is RelationshipType.CALLS:
+            classes = [k for k in state.types.get((ref.receiver or "").rsplit(".", 1)[-1], [])]
+            if len(classes) != 1:
+                return []
+            if ref.lookup == "new":
+                return self._constructor(state, classes[0]) if classes[0] not in state.traits else []
+            return self._members(state, f"{classes[0]}|self", ref.name)
+        if ref.lookup == "receiver":
+            type_name = state.variables.get(scope.callable_key, {}).get(ref.receiver)
+            keys = state.types.get(type_name, []) if type_name else []
+            return self._members(state, keys[0], ref.name) if len(keys) == 1 else []
+        return []
+
+    @staticmethod
+    def _constructor(state, class_key) -> list[str]:
+        constructors = state.constructors.get(class_key, [])
+        return constructors[:1] if constructors else [class_key]
+
+    def prepare(self, state) -> None:
+        def resolve(name):
+            singleton = name.endswith("|self")
+            keys = state.types.get(name[:-5] if singleton else name, [])
+            if len(keys) != 1:
+                return None
+            return f"{keys[0]}|self" if singleton else keys[0]
+
+        for table, names in list(state.bases.items()):
+            state.bases[table] = [key for key in map(resolve, names) if key]
+        for class_key, name in list(state.superclass.items()):
+            key = resolve(name)
+            if key is not None:
+                state.superclass[class_key] = key
             else:
                 del state.superclass[class_key]

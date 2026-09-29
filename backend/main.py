@@ -50,9 +50,8 @@ except ModuleNotFoundError:
 logger = logging.getLogger(__name__)
 
 WORKER_SHUTDOWN_SECONDS = 10.0
-# Languages whose structural analyzer must be available for the service to be ready; ruby joins
-# when its analyzer ships.
-DEFAULT_REQUIRED_LANGUAGES = "python,java,scala,go,javascript"
+# Languages whose structural analyzer must be available for the service to be ready.
+DEFAULT_REQUIRED_LANGUAGES = "python,java,scala,go,javascript,ruby"
 
 
 def load_environment() -> bool:
