@@ -1,5 +1,5 @@
 # Direct runtime dependencies of the backend; development/test ones are in requirements-dev.in.
-# Edit the .in files, never a lock. All locks are hashed and compiled under Python 3.12.7
+# Edit the .in files, never a lock. All locks are hashed and compiled under Python 3.13.7
 # (runtime.txt) with pip-tools 7.6.1 and the flags
 #   --generate-hashes --allow-unsafe --strip-extras --no-header
 #
@@ -7,10 +7,10 @@
 #   requirements-dev.lock.txt          runtime + dev; CI (Linux)
 #   requirements-dev.windows.lock.txt  the same versions plus Windows-only packages; local dev
 #
-# The Linux locks are compiled in python:3.12.7-slim from this directory:
+# The Linux locks are compiled in python:3.13.7-slim from this directory:
 #   pip-compile <flags> -o requirements.lock.txt requirements.in
 #   pip-compile <flags> -o requirements-dev.lock.txt requirements-dev.in
-# The Windows lock is compiled on Windows under 3.12.7, seeded from the Linux dev lock so the
+# The Windows lock is compiled on Windows under 3.13.7, seeded from the Linux dev lock so the
 # shared versions stay identical:
 #   copy requirements-dev.lock.txt requirements-dev.windows.lock.txt
 #   pip-compile <flags> -o requirements-dev.windows.lock.txt requirements-dev.in
@@ -21,8 +21,6 @@ httpx==0.28.1
 python-dotenv==1.2.3
 google-generativeai==0.8.6
 pydantic==2.13.5
-motor==3.3.2
-pymongo==4.6.1
 sse-starlette==3.4.11
 psycopg[binary]==3.3.6
 pyyaml==6.0.3
