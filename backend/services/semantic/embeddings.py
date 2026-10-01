@@ -9,9 +9,12 @@ from __future__ import annotations
 
 import hashlib
 import math
+import os
 from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Any, Protocol
+from typing import Any, Protocol, Self
+
+from google import genai
 
 from .profiles import EmbeddingProfile
 
@@ -56,30 +59,118 @@ def vector_literal(vector: Sequence[float]) -> str:
     return "[" + ",".join(repr(float(v)) for v in vector) + "]"
 
 
+class EmbeddingRequestError(EmbeddingError):
+    """The provider rejected the request (4xx other than rate limiting); retrying will not help."""
+
+
+class EmbeddingRateLimited(EmbeddingError):
+    """The provider's quota or rate limit was exhausted after the client's own retries."""
+
+
+class EmbeddingProviderUnavailable(EmbeddingError):
+    """A server error, network failure or timeout persisted through the client's retries."""
+
+
+# Gemini API limits (gemini-embedding-001): 2,048 input tokens per text, 100 texts per batch.
+GEMINI_MAX_INPUT_TOKENS = 2048
+GEMINI_MAX_BATCH = 100
+# The chunker's conservative estimate (code averages ~4 UTF-8 bytes per token; we assume 3), so a
+# text that passes cannot be silently truncated: the Developer API has no auto_truncate=False.
+_MAX_INPUT_BYTES = GEMINI_MAX_INPUT_TOKENS * 3
+_RETRYABLE_STATUS = (408, 429, 500, 502, 503, 504)
+
+
 class GeminiEmbeddingProvider:
-    """Google Gemini embeddings through the google-generativeai client already in the backend."""
+    """Gemini embeddings through the google-genai SDK (`genai.Client`, `client.models.embed_content`).
 
-    def __init__(self, api_key: str | None = None, client: Any = None):
+    The profile's dimension is requested explicitly (`output_dimensionality`) and every returned
+    vector is checked against it; provider defaults are never relied on. The client retries
+    transient failures (timeouts, 408/429/5xx) with exponential backoff; what remains is raised as
+    an EmbeddingError subclass whose message carries the status, never the input or credentials.
+    Close the provider (or use it as a context manager) to release the client's HTTP connections.
+    """
+
+    def __init__(self, api_key: str | None = None, *, client: Any = None, timeout_seconds: float = 60.0,
+                 retry_attempts: int = 4):
         if client is None:
-            import google.generativeai as client
+            from google import genai
+            from google.genai import types
 
-            if api_key:
-                client.configure(api_key=api_key)
+            client = genai.Client(
+                api_key=api_key or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY"),
+                http_options=types.HttpOptions(
+                    timeout=int(timeout_seconds * 1000),  # milliseconds
+                    retry_options=types.HttpRetryOptions(
+                        attempts=retry_attempts, initial_delay=1.0, max_delay=30.0, exp_base=2.0, jitter=1.0,
+                        http_status_codes=list(_RETRYABLE_STATUS)),
+                ))
         self._client = client
 
+    def close(self) -> None:
+        close = getattr(self._client, "close", None)
+        if close is not None:
+            close()
+
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(self, *exc_info) -> None:
+        self.close()
+
     def embed(self, texts, *, profile, task):
-        if not texts:
-            return []
-        options = dict(profile.provider_options)
-        response = self._client.embed_content(
-            model=f"models/{profile.model_name}", content=list(texts), task_type=task, **options)
-        vectors = response["embedding"]
-        if texts and vectors and not isinstance(vectors[0], (list, tuple)):
-            vectors = [vectors]  # a single text returns one flat vector
-        if len(vectors) != len(texts):
-            raise EmbeddingError(f"asked for {len(texts)} embeddings, received {len(vectors)}")
-        metadata = {"provider": "google", "model": profile.model_name, "task_type": task, **options}
-        return [ProviderEmbedding(vector, dict(metadata)) for vector in vectors]
+        texts = list(texts)
+        for text in texts:
+            if len(text.encode("utf-8")) > _MAX_INPUT_BYTES:
+                raise EmbeddingRequestError(f"a text of {len(text.encode('utf-8'))} UTF-8 bytes may exceed "
+                                            f"{GEMINI_MAX_INPUT_TOKENS} input tokens and would be truncated")
+        results: list[ProviderEmbedding] = []
+        for start in range(0, len(texts), GEMINI_MAX_BATCH):
+            results.extend(self._embed_batch(texts[start:start + GEMINI_MAX_BATCH], profile, task))
+        return results
+
+    def _embed_batch(self, texts, profile, task) -> list[ProviderEmbedding]:
+        from google.genai import errors, types
+
+        config = types.EmbedContentConfig(task_type=task, output_dimensionality=profile.dimension)
+        try:
+            response = self._client.models.embed_content(model=profile.model_name, contents=texts, config=config)
+        except errors.APIError as exc:
+            raise _translate(exc) from exc
+        except Exception as exc:  # network errors and timeouts from the HTTP layer
+            if type(exc).__module__.startswith(("httpx", "httpcore", "requests", "urllib3")):
+                raise EmbeddingProviderUnavailable(f"{type(exc).__name__} calling {profile.model_name}") from exc
+            raise
+        embeddings = list(response.embeddings or [])
+        if len(embeddings) != len(texts):
+            raise EmbeddingError(f"asked for {len(texts)} embeddings, received {len(embeddings)}")
+        metadata = {"provider": "google", "sdk": "google-genai", "model": profile.model_name, "task_type": task,
+                    "output_dimensionality": profile.dimension}
+        results = []
+        for embedding in embeddings:
+            values = list(embedding.values or [])
+            if len(values) != profile.dimension:
+                raise EmbeddingDimensionError(
+                    f"{profile.model_name} returned a {len(values)}-dimensional vector although "
+                    f"{profile.dimension} were requested")
+            statistics = getattr(embedding, "statistics", None)
+            if statistics is not None and getattr(statistics, "truncated", None):
+                raise EmbeddingRequestError("the provider truncated an input; it would not represent the chunk")
+            item = dict(metadata)
+            if statistics is not None and getattr(statistics, "token_count", None) is not None:
+                item["token_count"] = statistics.token_count
+            results.append(ProviderEmbedding(values, item))
+        return results
+
+
+def _translate(exc: Any) -> EmbeddingError:
+    code = getattr(exc, "code", None)
+    status = getattr(exc, "status", None)
+    detail = f"{code} {status or ''}".strip()
+    if code == 429:
+        return EmbeddingRateLimited(f"rate limited ({detail})")
+    if isinstance(code, int) and 400 <= code < 500 and code != 408:
+        return EmbeddingRequestError(f"request rejected ({detail})")
+    return EmbeddingProviderUnavailable(f"provider unavailable ({detail})")
 
 
 class DeterministicFakeProvider:

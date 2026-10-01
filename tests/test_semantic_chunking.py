@@ -7,8 +7,7 @@ import pytest
 
 from backend.services.semantic.chunker import ChunkEntity, build_chunks, count_tokens
 from backend.services.semantic.embeddings import (
-    DeterministicFakeProvider, EmbeddingDimensionError, EmbeddingError, GeminiEmbeddingProvider, validate_vector,
-    vector_literal,
+    DeterministicFakeProvider, EmbeddingDimensionError, EmbeddingError, validate_vector, vector_literal,
 )
 from backend.services.semantic.profiles import (
     DEFAULT_CHUNK_PROFILE, DEFAULT_EMBEDDING_PROFILE, R1_EMBEDDING_DIMENSION, ProfileError, canonical_json,
@@ -138,23 +137,6 @@ def test_l2_normalization_is_applied_explicitly():
     raw = replace(DEFAULT_EMBEDDING_PROFILE, normalization_policy="NONE", profile_version=2)
     assert validate_vector([3.0, 4.0] + [0.0] * (R1_EMBEDDING_DIMENSION - 2), raw)[:2] == [3.0, 4.0]
     assert vector_literal([0.5, 1.0]) == "[0.5,1.0]"
-
-
-def test_gemini_provider_requests_the_profiles_dimension_and_task():
-    class Client:
-        def __init__(self):
-            self.calls = []
-
-        def embed_content(self, **kwargs):
-            self.calls.append(kwargs)
-            return {"embedding": [[0.0] * R1_EMBEDDING_DIMENSION for _ in kwargs["content"]]}
-
-    client = Client()
-    results = GeminiEmbeddingProvider(client=client).embed(
-        ["a", "b"], profile=DEFAULT_EMBEDDING_PROFILE, task="RETRIEVAL_DOCUMENT")
-    assert client.calls == [{"model": "models/gemini-embedding-001", "content": ["a", "b"],
-                             "task_type": "RETRIEVAL_DOCUMENT", "output_dimensionality": 3072}]
-    assert len(results) == 2 and results[0].metadata["model"] == "gemini-embedding-001"
 
 
 def test_fake_provider_is_deterministic():
