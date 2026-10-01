@@ -40,9 +40,8 @@ Apply each migration set once to a new database. The runner uses the direct Neon
 
 - Begin with exact cosine search for the frozen retrieval baseline.
 - Add approximate indexes only after corpus size and latency justify them.
-- `semantic.embedding.embedding` deliberately uses unbounded `vector` so several model dimensions can coexist.
-- Call `semantic.create_profile_hnsw_index('<profile-key>')` after inserting the relevant embedding profile and vectors.
-- Profiles up to 2,000 dimensions use `vector` HNSW indexing.
-- Profiles from 2,001 through 4,000 dimensions use a `halfvec` expression index.
+- R1 stores every vector in one physical dimension: `semantic.embedding.embedding vector(3072)` (gemini-embedding-001 at its native size). Every embedding profile must declare 3,072; a vector of any other dimension is rejected, never truncated, padded or coerced.
+- Chunk and embedding profiles are versioned and fingerprinted, and immutable once used (an embedding profile's status can still change).
+- Call `semantic.create_profile_hnsw_index('<profile-key>', <version>)` after inserting the profile's vectors. pgvector's `vector` HNSW stops at 2,000 dimensions, so the index is a per-profile `halfvec(3072)` expression index.
 
 The application must use the same cast as the selected index when querying.

@@ -61,7 +61,9 @@ CREATE TABLE core.analysis (
     CONSTRAINT analysis_awaiting_stage_complete_ck CHECK (
         status <> 'AWAITING_STAGE' OR (last_completed_stage IS NOT NULL AND awaiting_stage IS NOT NULL)
     ),
-    CONSTRAINT analysis_identity_uq UNIQUE (repository_version_id, structural_pipeline_version)
+    CONSTRAINT analysis_identity_uq UNIQUE (repository_version_id, structural_pipeline_version),
+    -- Lets derived rows (semantic.chunk) record the repository version under a foreign key.
+    CONSTRAINT analysis_id_version_uq UNIQUE (id, repository_version_id)
 );
 
 CREATE INDEX analysis_status_created_idx
@@ -107,7 +109,9 @@ CREATE TABLE core.source_file (
         parse_status IN ('PENDING', 'PARSED', 'PARTIAL', 'UNSUPPORTED', 'FAILED', 'SKIPPED')
     ),
     CONSTRAINT source_file_analysis_path_uq UNIQUE (analysis_id, path),
-    CONSTRAINT source_file_id_analysis_uq UNIQUE (id, analysis_id)
+    CONSTRAINT source_file_id_analysis_uq UNIQUE (id, analysis_id),
+    -- Lets derived rows (semantic.chunk) carry the file's origin flags under a foreign key.
+    CONSTRAINT source_file_origin_uq UNIQUE (id, analysis_id, is_generated, is_vendored)
 );
 
 CREATE INDEX source_file_analysis_language_idx

@@ -39,7 +39,7 @@ inserted_analysis AS (
     INSERT INTO core.analysis (repository_version_id, structural_pipeline_version, status)
     SELECT id, 'smoke-v1', 'INDEXING'
       FROM inserted_version
-    RETURNING id
+    RETURNING id, repository_version_id
 ),
 inserted_file AS (
     INSERT INTO core.source_file (
@@ -59,30 +59,53 @@ inserted_entity AS (
       FROM inserted_file
     RETURNING id, analysis_id, file_id
 ),
+chunk_configuration AS (
+    SELECT '{"profile_key":"smoke-chunks","profile_version":1}'::TEXT AS canonical
+),
+inserted_chunk_profile AS (
+    INSERT INTO semantic.chunk_profile (
+        profile_key, profile_version, chunking_strategy, tokenizer, max_tokens, overlap_policy,
+        symbol_boundary_policy, included_entity_types, include_generated, include_vendored, code_version,
+        canonical_configuration, configuration, configuration_fingerprint
+    )
+    SELECT 'smoke-chunks', 1, 'symbol', 'smoke', 512, '{"lines":0}'::jsonb, 'innermost_declaration',
+           ARRAY['CLASS'], false, false, 'smoke-v1',
+           canonical, canonical::jsonb, encode(sha256(convert_to(canonical, 'UTF8')), 'hex')
+      FROM chunk_configuration
+    RETURNING id
+),
 inserted_chunk AS (
     INSERT INTO semantic.chunk (
-        analysis_id, file_id, primary_entity_id, chunk_type, content, content_hash,
-        start_line, end_line, token_count, chunking_strategy, semantic_schema_version
+        analysis_id, repository_version_id, file_id, entity_id, chunk_profile_id, stable_chunk_key,
+        content, content_hash, token_count, ordinal, start_line, end_line, is_generated, is_vendored
     )
-    SELECT analysis_id, file_id, id, 'CLASS', 'class Smoke {}', 'smoke-chunk-hash',
-           1, 3, 4, 'symbol-aware-smoke-v1', 'v1'
-      FROM inserted_entity
-    RETURNING id
+    SELECT e.analysis_id, a.repository_version_id, e.file_id, e.id, p.id, 'class:example.Smoke@0',
+           'class Smoke {}', encode(sha256(convert_to('class Smoke {}', 'UTF8')), 'hex'),
+           4, 0, 1, 3, false, false
+      FROM inserted_entity e
+      JOIN inserted_analysis a ON a.id = e.analysis_id
+     CROSS JOIN inserted_chunk_profile p
+    RETURNING id, content_hash
+),
+embedding_configuration AS (
+    SELECT '{"profile_key":"smoke-3072","profile_version":1}'::TEXT AS canonical
 ),
 inserted_profile AS (
     INSERT INTO semantic.embedding_profile (
-        profile_key, provider, model_name, dimension, distance_metric, status
-    ) VALUES (
-        'smoke-3d-v1', 'test', 'deterministic-fake', 3, 'COSINE', 'CANDIDATE'
+        profile_key, profile_version, provider, model_name, model_revision, dimension, distance_metric,
+        normalization_policy, text_template, code_version,
+        canonical_configuration, configuration, configuration_fingerprint
     )
+    SELECT 'smoke-3072', 1, 'test', 'deterministic-fake', 'fake-1', 3072, 'COSINE', 'L2', '{text}', 'smoke-v1',
+           canonical, canonical::jsonb, encode(sha256(convert_to(canonical, 'UTF8')), 'hex')
+      FROM embedding_configuration
     RETURNING id
 )
-INSERT INTO semantic.embedding (chunk_id, profile_id, dimension, embedding, content_hash)
+INSERT INTO semantic.embedding (chunk_id, embedding_profile_id, chunk_content_hash, embedding)
 SELECT inserted_chunk.id,
        inserted_profile.id,
-       3,
-       '[1,0,0]'::vector,
-       'smoke-chunk-hash'
+       inserted_chunk.content_hash,
+       ('[1,' || repeat('0,', 3070) || '0]')::vector(3072)
   FROM inserted_chunk
  CROSS JOIN inserted_profile;
 
@@ -93,21 +116,36 @@ DECLARE
 BEGIN
     SELECT id INTO nearest_profile_id
       FROM semantic.embedding_profile
-     WHERE profile_key = 'smoke-3d-v1';
+     WHERE profile_key = 'smoke-3072';
 
     SELECT count(*)
       INTO nearest_count
       FROM (
           SELECT e.id
             FROM semantic.embedding e
-           WHERE e.profile_id = nearest_profile_id
-           ORDER BY e.embedding <=> '[1,0,0]'::vector
+           WHERE e.embedding_profile_id = nearest_profile_id
+           ORDER BY e.embedding <=> ('[1,' || repeat('0,', 3070) || '0]')::vector(3072)
            LIMIT 1
       ) nearest;
 
     IF nearest_count <> 1 THEN
         RAISE EXCEPTION 'Vector nearest-neighbor smoke test failed';
     END IF;
+END;
+$$;
+
+-- A vector of any other dimension cannot be stored.
+DO $$
+BEGIN
+    BEGIN
+        INSERT INTO semantic.embedding (chunk_id, embedding_profile_id, chunk_content_hash, embedding)
+        SELECT chunk_id, embedding_profile_id, chunk_content_hash, '[1,0,0]'::vector
+          FROM semantic.embedding
+         LIMIT 1;
+        RAISE EXCEPTION 'a 3-dimensional vector was accepted';
+    EXCEPTION
+        WHEN data_exception THEN NULL;  -- expected: expected 3072 dimensions, not 3
+    END;
 END;
 $$;
 
