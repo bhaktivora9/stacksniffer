@@ -32,7 +32,8 @@ CREATE TABLE semantic.chunk_profile (
     CONSTRAINT chunk_profile_max_tokens_ck CHECK (max_tokens > 0),
     CONSTRAINT chunk_profile_entity_types_ck CHECK (
         cardinality(included_entity_types) > 0
-        AND included_entity_types <@ ARRAY['CLASS', 'INTERFACE', 'FUNCTION', 'METHOD', 'FILE']::TEXT[]
+        AND included_entity_types <@ ARRAY['CLASS', 'INTERFACE', 'FUNCTION', 'METHOD', 'FILE', 'CONFIGURATION',
+                                           'DOCUMENTATION']::TEXT[]
     ),
     CONSTRAINT chunk_profile_configuration_ck CHECK (configuration = canonical_configuration::jsonb),
     CONSTRAINT chunk_profile_fingerprint_ck CHECK (
@@ -54,6 +55,9 @@ CREATE TABLE semantic.chunk (
     entity_id UUID,
     chunk_profile_id UUID NOT NULL REFERENCES semantic.chunk_profile(id) ON DELETE RESTRICT,
     stable_chunk_key TEXT NOT NULL,
+    -- METHOD/FUNCTION/CLASS/INTERFACE: a declaration; CODE: file-level code outside one;
+    -- CONFIGURATION and DOCUMENTATION: config and docs files. entity_id is the declaration, else the FILE entity.
+    chunk_kind TEXT NOT NULL,
     content TEXT NOT NULL,
     content_hash TEXT NOT NULL,
     token_count INTEGER NOT NULL,
@@ -70,6 +74,9 @@ CREATE TABLE semantic.chunk (
     metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     CONSTRAINT chunk_key_not_blank CHECK (btrim(stable_chunk_key) <> ''),
+    CONSTRAINT chunk_kind_ck CHECK (
+        chunk_kind IN ('METHOD', 'FUNCTION', 'CLASS', 'INTERFACE', 'CODE', 'CONFIGURATION', 'DOCUMENTATION')
+    ),
     CONSTRAINT chunk_first_party_ck CHECK (is_first_party = NOT (is_generated OR is_vendored)),
     CONSTRAINT chunk_content_not_blank CHECK (btrim(content) <> ''),
     CONSTRAINT chunk_content_hash_ck CHECK (
@@ -116,6 +123,22 @@ CREATE INDEX chunk_file_range_idx
     ON semantic.chunk (file_id, start_line, end_line);
 CREATE INDEX chunk_profile_idx
     ON semantic.chunk (chunk_profile_id);
+
+-- Why a file produced no chunks under a profile, recorded so exclusions stay explainable.
+CREATE TABLE semantic.chunk_exclusion (
+    analysis_id UUID NOT NULL,
+    chunk_profile_id UUID NOT NULL REFERENCES semantic.chunk_profile(id) ON DELETE RESTRICT,
+    file_id UUID NOT NULL,
+    reason TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (analysis_id, chunk_profile_id, file_id),
+    CONSTRAINT chunk_exclusion_file_fk
+        FOREIGN KEY (file_id, analysis_id) REFERENCES core.source_file (id, analysis_id) ON DELETE CASCADE,
+    CONSTRAINT chunk_exclusion_reason_ck CHECK (reason IN (
+        'GENERATED', 'VENDORED', 'SECRET', 'BINARY', 'OVERSIZED', 'CONTENT_NOT_RETAINED', 'NOT_EXTRACTED',
+        'KIND_NOT_INCLUDED', 'NO_INDEXABLE_CONTENT'
+    ))
+);
 
 CREATE TABLE semantic.chunk_entity (
     chunk_id UUID NOT NULL REFERENCES semantic.chunk(id) ON DELETE CASCADE,

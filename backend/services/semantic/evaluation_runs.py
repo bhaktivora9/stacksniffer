@@ -18,7 +18,7 @@ from types import SimpleNamespace
 from typing import Any
 from uuid import UUID
 
-from .embeddings import EmbeddingProvider, validate_vector
+from .embeddings import EmbeddingProvider, check_compatibility, validate_vector
 from .profiles import ChunkProfile, EmbeddingProfile
 from .retrieval import Judgment, RetrievedChunk, matching_judgments, vector_search
 
@@ -182,6 +182,7 @@ def run_vector_evaluation(conn: Any, dataset_id: UUID, chunk_profile: ChunkProfi
                           embedding_profile: EmbeddingProfile, config: RunConfiguration,
                           analyses: dict[UUID, UUID], provider: EmbeddingProvider) -> UUID:
     """Evaluate vector retrieval on a frozen dataset and persist everything; returns the run id."""
+    check_compatibility(provider, embedding_profile)
     run_id = start_run(conn, dataset_id, chunk_profile, embedding_profile, config, analyses)
     # Savepoints keep the transaction usable after a database error, so the failure is recorded.
     conn.execute("SAVEPOINT evaluation_body")
@@ -216,8 +217,8 @@ def _evaluate_question(conn, run_id, dataset_id, question, profile_ids, embeddin
     started = time.perf_counter()
     conn.execute("SAVEPOINT evaluation_question")
     try:
-        query = provider.embed([embedding_profile.render(text)], profile=embedding_profile,
-                               task=embedding_profile.query_task)[0]
+        # The template frames documents; a question is embedded as written, under the query task.
+        query = provider.embed([text], profile=embedding_profile, task=embedding_profile.query_task)[0]
         vector = validate_vector(query.values, embedding_profile)
         ranked = vector_search(conn, analyses[repository_version_id], profile_ids[0], profile_ids[1],
                                embedding_profile.distance_metric, vector, config.depth,

@@ -10,16 +10,22 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from dataclasses import dataclass, field
 from typing import Any
 
 # The one physical dimension of semantic.embedding.embedding in R1 (vector(3072)).
 R1_EMBEDDING_DIMENSION = 3072
 
-ENTITY_TYPES = frozenset({"CLASS", "INTERFACE", "FUNCTION", "METHOD", "FILE"})
+# Declarations, FILE (code outside any included declaration), and whole configuration and
+# documentation files, which are chunked as their FILE entity.
+ENTITY_TYPES = frozenset({"CLASS", "INTERFACE", "FUNCTION", "METHOD", "FILE", "CONFIGURATION", "DOCUMENTATION"})
 SYMBOL_BOUNDARY_POLICIES = frozenset({"innermost_declaration"})
 DISTANCE_METRICS = frozenset({"COSINE", "L2", "INNER_PRODUCT"})
 NORMALIZATION_POLICIES = frozenset({"NONE", "L2"})
+# Document templates may name these; queries are embedded as the bare question.
+TEMPLATE_FIELDS = ("path", "kind", "symbol", "text")
+_TEMPLATE_FIELD = re.compile(r"\{([a-z_]+)\}")
 
 
 class ProfileError(ValueError):
@@ -113,6 +119,9 @@ class EmbeddingProfile:
             raise ProfileError("unknown distance metric or normalization policy")
         if "{text}" not in self.text_template:
             raise ProfileError("the text template must contain {text}")
+        unknown = set(_TEMPLATE_FIELD.findall(self.text_template)) - set(TEMPLATE_FIELDS)
+        if unknown:
+            raise ProfileError(f"unknown template fields {sorted(unknown)}; allowed: {list(TEMPLATE_FIELDS)}")
 
     def configuration(self) -> dict:
         return {
@@ -133,8 +142,10 @@ class EmbeddingProfile:
     def fingerprint(self) -> str:
         return fingerprint(self.canonical_configuration)
 
-    def render(self, text: str) -> str:
-        return self.text_template.replace("{text}", text)
+    def render(self, text: str, *, path: str = "", kind: str = "", symbol: str = "") -> str:
+        """The document text sent to the provider: the chunk plus its minimal identifiers."""
+        fields = {"path": path, "kind": kind, "symbol": symbol, "text": text}
+        return _TEMPLATE_FIELD.sub(lambda m: fields[m.group(1)], self.text_template)
 
 
 DEFAULT_CHUNK_PROFILE = ChunkProfile(
@@ -147,11 +158,14 @@ DEFAULT_CHUNK_PROFILE = ChunkProfile(
     max_tokens=512,
     overlap_lines=3,
     symbol_boundary_policy="innermost_declaration",
-    included_entity_types=("CLASS", "INTERFACE", "FUNCTION", "METHOD", "FILE"),
+    included_entity_types=("CLASS", "INTERFACE", "FUNCTION", "METHOD", "FILE", "CONFIGURATION", "DOCUMENTATION"),
     include_generated=False,
     include_vendored=False,
-    code_version="stacksniffer-chunker/1",
+    code_version="stacksniffer-chunker/2",
 )
+
+# Identifiers only: enough to tell two similar snippets apart, never more source text.
+DOCUMENT_TEMPLATE = "path: {path}\nkind: {kind}\nsymbol: {symbol}\n\n{text}"
 
 DEFAULT_EMBEDDING_PROFILE = EmbeddingProfile(
     profile_key="gemini-embedding-001-3072",
@@ -165,6 +179,24 @@ DEFAULT_EMBEDDING_PROFILE = EmbeddingProfile(
     normalization_policy="L2",
     document_task="RETRIEVAL_DOCUMENT",
     query_task="RETRIEVAL_QUERY",
+    text_template=DOCUMENT_TEMPLATE,
     code_version="stacksniffer-embedder/1",
     provider_options={"output_dimensionality": R1_EMBEDDING_DIMENSION},
+)
+
+# The deterministic offline provider (tests and local runs without a key); never mixed with
+# Gemini vectors because profiles, not providers, key every stored vector.
+OFFLINE_EMBEDDING_PROFILE = EmbeddingProfile(
+    profile_key="offline-sha256-3072",
+    profile_version=1,
+    provider="offline",
+    model_name="stacksniffer-offline-hash",
+    model_revision="sha256-v1",
+    dimension=R1_EMBEDDING_DIMENSION,
+    distance_metric="COSINE",
+    normalization_policy="L2",
+    document_task="RETRIEVAL_DOCUMENT",
+    query_task="RETRIEVAL_QUERY",
+    text_template=DOCUMENT_TEMPLATE,
+    code_version="stacksniffer-embedder/1",
 )

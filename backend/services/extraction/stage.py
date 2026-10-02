@@ -6,10 +6,12 @@ import asyncio
 import logging
 from collections.abc import Awaitable, Callable
 from contextlib import suppress
+from pathlib import Path
 from typing import Any
 from uuid import UUID
 
 from ..analysis_lifecycle import AWAITING_STAGE, AnalysisState, transition_analysis
+from ..semantic.source_content import retain_source_content
 from .contracts import ExtractionContext, ExtractionResult
 from .extractor import ExtractionStore, RepositoryExtractor
 from .registry import AnalyzerRegistry
@@ -57,6 +59,11 @@ class StructuralExtractionStage:
                 await work
             raise
         context.cancellation_token.raise_if_cancelled()
+        # Keep the source bytes later stages need, while the snapshot still exists.
+        retention = await asyncio.to_thread(self._retain_source, context)
+        context.cancellation_token.raise_if_cancelled()
+        logger.info("Retained source of analysis %s: %s (%d bytes)", context.analysis_id, retention.by_status,
+                    retention.retained_bytes)
         await self._finish_extraction(result, advance=self._next_stage is not None)
         logger.info(
             "Extracted analysis %s attempt %s: files=%d statuses=%s entities=%d relationships=%d errors=%d duration_ms=%d",
@@ -108,12 +115,30 @@ class StructuralExtractionStage:
         logger.info("Analysis %s attempt %s resumed after extraction", analysis_id, attempt_id)
         return await self._next_stage(result)
 
+    def _retain_source(self, context: ExtractionContext):
+        root = Path(context.checkout_path)
+        conn = self._connection_factory()
+        try:
+            result = retain_source_content(conn, context.analysis_id,
+                                           lambda path: root.joinpath(*path.split("/")).read_bytes())
+            conn.commit()
+            return result
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
     async def _finish_extraction(self, result: ExtractionResult, *, advance: bool) -> None:
         conn = self._connection_factory()
         try:
             record_extraction_metrics(conn, result)
             if advance:
                 await transition_analysis(conn, result.analysis_id, AnalysisState.EXTRACTING, AnalysisState.INDEXING)
+                # Extraction is persisted: if indexing fails, a retry resumes at INDEXING
+                # (requeue_failed_analysis) instead of acquiring and extracting again.
+                conn.execute("UPDATE core.analysis SET last_completed_stage = 'EXTRACTING', "
+                             "awaiting_stage = 'INDEXING' WHERE id = %s", str(result.analysis_id))
             conn.commit()
         except Exception:
             conn.rollback()

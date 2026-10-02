@@ -91,6 +91,18 @@ CREATE TABLE core.analysis_attempt (
     CONSTRAINT analysis_attempt_uq UNIQUE (analysis_id, attempt_number)
 );
 
+-- Source bytes retained at extraction, content-addressed, so later stages (semantic indexing)
+-- work after the attempt's snapshot is gone without acquiring the repository again. Secrets
+-- are never retained; see core.source_file.content_status.
+CREATE TABLE core.source_content (
+    content_hash TEXT PRIMARY KEY,
+    content BYTEA NOT NULL,
+    byte_size INTEGER NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT source_content_hash_ck CHECK (content_hash = encode(sha256(content), 'hex')),
+    CONSTRAINT source_content_size_ck CHECK (byte_size = octet_length(content))
+);
+
 CREATE TABLE core.source_file (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     analysis_id UUID NOT NULL REFERENCES core.analysis(id) ON DELETE CASCADE,
@@ -101,9 +113,21 @@ CREATE TABLE core.source_file (
     is_generated BOOLEAN NOT NULL DEFAULT false,
     is_vendored BOOLEAN NOT NULL DEFAULT false,
     parse_status TEXT NOT NULL DEFAULT 'PENDING',
+    -- Whether the file's bytes were retained (core.source_content) and, if not, why.
+    -- NULL: not assessed (extracted before content retention existed).
+    content_status TEXT,
+    retained_content_hash TEXT REFERENCES core.source_content(content_hash) ON DELETE RESTRICT,
     metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     CONSTRAINT source_file_path_not_blank CHECK (btrim(path) <> ''),
+    CONSTRAINT source_file_content_status_ck CHECK (
+        content_status IS NULL OR content_status IN ('RETAINED', 'SECRET', 'BINARY', 'OVERSIZED')
+    ),
+    -- Retained content is exactly the file's own bytes; nothing else is retained.
+    CONSTRAINT source_file_retained_content_ck CHECK (
+        COALESCE(content_status = 'RETAINED', false) = (retained_content_hash IS NOT NULL)
+        AND (retained_content_hash IS NULL OR retained_content_hash = content_hash)
+    ),
     CONSTRAINT source_file_size_nonnegative CHECK (size_bytes >= 0),
     CONSTRAINT source_file_parse_status_ck CHECK (
         parse_status IN ('PENDING', 'PARSED', 'PARTIAL', 'UNSUPPORTED', 'FAILED', 'SKIPPED')

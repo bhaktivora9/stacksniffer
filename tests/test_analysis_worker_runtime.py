@@ -235,6 +235,58 @@ def test_a_missing_required_grammar_fails_readiness_but_not_liveness(monkeypatch
     assert summary["status"] == "degraded"
 
 
+def test_the_offline_provider_enables_indexing(monkeypatch):
+    monkeypatch.setenv("DATABASE_URL", "postgresql://fake")
+    monkeypatch.setenv("ANALYSIS_EMBEDDING_PROVIDER", "offline")
+    monkeypatch.setattr(app_module, "make_connection_factory", lambda: (lambda: RecordingConnection()))
+
+    with TestClient(app_module.app) as client:
+        ready = client.get("/api/health/ready")
+    assert ready.status_code == 200
+    assert ready.json()["indexing"] == {"status": "enabled", "provider": "offline",
+                                        "embedding_profile": "offline-sha256-3072/1"}
+
+
+def test_without_a_gemini_key_analyses_wait_for_indexing_and_the_service_stays_ready(monkeypatch):
+    monkeypatch.setenv("DATABASE_URL", "postgresql://fake")
+    monkeypatch.delenv("ANALYSIS_EMBEDDING_PROVIDER", raising=False)
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
+    monkeypatch.setattr(app_module, "make_connection_factory", lambda: (lambda: RecordingConnection()))
+
+    with TestClient(app_module.app) as client:
+        ready = client.get("/api/health/ready")
+    assert ready.status_code == 200
+    assert ready.json()["indexing"]["status"] == "unconfigured"
+    assert "GEMINI_API_KEY is not set" in ready.json()["indexing"]["reason"]
+
+
+def test_the_gemini_provider_is_closed_on_shutdown(monkeypatch):
+    closed = []
+
+    class FakeGemini:
+        name = "google"
+
+        def __init__(self, **options):
+            pass
+
+        def close(self):
+            closed.append(True)
+
+    monkeypatch.setenv("DATABASE_URL", "postgresql://fake")
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key-not-real")
+    monkeypatch.delenv("ANALYSIS_EMBEDDING_PROVIDER", raising=False)
+    monkeypatch.setattr(app_module, "GeminiEmbeddingProvider", FakeGemini)
+    monkeypatch.setattr(app_module, "make_connection_factory", lambda: (lambda: RecordingConnection()))
+
+    with TestClient(app_module.app) as client:
+        indexing = client.get("/api/health/ready").json()["indexing"]
+        assert indexing == {"status": "enabled", "provider": "google",
+                            "embedding_profile": "gemini-embedding-001-3072/1"}
+        assert "test-key-not-real" not in str(client.get("/api/health/ready").json())
+    assert closed == [True]
+
+
 def test_required_languages_are_configurable(monkeypatch):
     monkeypatch.setenv("ANALYSIS_REQUIRED_LANGUAGES", "python, java, kotlin")
     monkeypatch.delenv("DATABASE_URL", raising=False)

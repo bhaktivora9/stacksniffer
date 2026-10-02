@@ -6,8 +6,8 @@ from uuid import uuid4
 
 import pytest
 
-from backend.services.semantic.embeddings import DeterministicFakeProvider, EmbeddingDimensionError, vector_literal
-from backend.services.semantic.profiles import DEFAULT_CHUNK_PROFILE, DEFAULT_EMBEDDING_PROFILE
+from backend.services.semantic.embeddings import OfflineEmbeddingProvider, EmbeddingDimensionError, vector_literal
+from backend.services.semantic.profiles import DEFAULT_CHUNK_PROFILE, OFFLINE_EMBEDDING_PROFILE
 from backend.services.semantic.store import (
     ProfileConflict, SourceMismatch, embed_analysis_chunks, index_analysis_chunks, register_chunk_profile,
     register_embedding_profile,
@@ -86,7 +86,7 @@ def test_chunks_carry_their_analysis_version_file_entity_and_origin(conn, analys
     keys = [row[0] for row in rows]
     assert keys[0] == "file:app/cart.py#0" and "method:app/cart.py::Cart.total#0" in keys
     assert all(row[1] and row[5] and row[3] is False and row[4] is False for row in rows)
-    assert all(row[2] is None if row[0].startswith("file:") else row[0].startswith(row[2] + "#") for row in rows)
+    assert all(row[0].startswith(row[2] + "#") for row in rows)  # every chunk names its entity, FILE included
 
 
 def test_generated_and_vendored_files_follow_the_profile_policy(conn, analysis):
@@ -112,8 +112,9 @@ def test_the_schema_enforces_version_origin_and_content_hash(conn, analysis):
     other = create_analysis(conn, sha="e" * 40)
     other_version = conn.fetch_scalar("SELECT repository_version_id FROM core.analysis WHERE id = %s", str(other))
     insert = ("INSERT INTO semantic.chunk (analysis_id, repository_version_id, file_id, chunk_profile_id, "
-              "stable_chunk_key, content, content_hash, token_count, ordinal, start_line, end_line, is_generated, "
-              "is_vendored) VALUES (%s, %s, %s, %s, 'k', 'x', %s, 1, 0, 1, 1, %s, false)")
+              "stable_chunk_key, chunk_kind, content, content_hash, token_count, ordinal, start_line, end_line, "
+              "is_generated, "
+              "is_vendored) VALUES (%s, %s, %s, %s, 'k', 'CODE', 'x', %s, 1, 0, 1, 1, %s, false)")
     x_hash = "2d711642b726b04401627ca9fbac32f5c8530fb1903cc4db02258717921a4881"  # sha256("x")
     version = conn.fetch_scalar("SELECT repository_version_id FROM core.analysis WHERE id = %s", str(analysis))
     assert other_version != version
@@ -146,9 +147,9 @@ def test_a_profile_version_cannot_be_reused_for_another_configuration(conn):
 
 def test_one_current_vector_per_chunk_profile_and_content(conn, analysis):
     chunks = index_analysis_chunks(conn, analysis, DEFAULT_CHUNK_PROFILE, read_source).chunks
-    provider = DeterministicFakeProvider()
-    first = embed_analysis_chunks(conn, analysis, DEFAULT_CHUNK_PROFILE, DEFAULT_EMBEDDING_PROFILE, provider)
-    second = embed_analysis_chunks(conn, analysis, DEFAULT_CHUNK_PROFILE, DEFAULT_EMBEDDING_PROFILE, provider)
+    provider = OfflineEmbeddingProvider()
+    first = embed_analysis_chunks(conn, analysis, DEFAULT_CHUNK_PROFILE, OFFLINE_EMBEDDING_PROFILE, provider)
+    second = embed_analysis_chunks(conn, analysis, DEFAULT_CHUNK_PROFILE, OFFLINE_EMBEDDING_PROFILE, provider)
     assert (first.embedded, second.embedded, second.already_current) == (chunks, 0, chunks)
     assert len(provider.calls) == 1  # nothing left to embed on the second run
     assert count(conn, "embedding", analysis) == chunks
@@ -159,10 +160,10 @@ def test_one_current_vector_per_chunk_profile_and_content(conn, analysis):
 
 def test_a_new_embedding_profile_needs_neither_the_snapshot_nor_extraction(conn, analysis):
     chunks = index_analysis_chunks(conn, analysis, DEFAULT_CHUNK_PROFILE, read_source).chunks
-    embed_analysis_chunks(conn, analysis, DEFAULT_CHUNK_PROFILE, DEFAULT_EMBEDDING_PROFILE, DeterministicFakeProvider())
+    embed_analysis_chunks(conn, analysis, DEFAULT_CHUNK_PROFILE, OFFLINE_EMBEDDING_PROFILE, OfflineEmbeddingProvider())
     entities_before = conn.fetch_scalar("SELECT count(*) FROM core.entity WHERE analysis_id = %s", str(analysis))
-    v2 = replace(DEFAULT_EMBEDDING_PROFILE, profile_version=2, text_template="passage: {text}")
-    result = embed_analysis_chunks(conn, analysis, DEFAULT_CHUNK_PROFILE, v2, DeterministicFakeProvider())
+    v2 = replace(OFFLINE_EMBEDDING_PROFILE, profile_version=2, text_template="passage: {text}")
+    result = embed_analysis_chunks(conn, analysis, DEFAULT_CHUNK_PROFILE, v2, OfflineEmbeddingProvider())
     assert result.embedded == chunks
     assert count(conn, "embedding", analysis) == 2 * chunks
     assert conn.fetch_scalar("SELECT count(*) FROM core.entity WHERE analysis_id = %s", str(analysis)) \
@@ -172,8 +173,8 @@ def test_a_new_embedding_profile_needs_neither_the_snapshot_nor_extraction(conn,
 def test_a_provider_returning_another_dimension_fails_and_writes_nothing(conn, analysis):
     index_analysis_chunks(conn, analysis, DEFAULT_CHUNK_PROFILE, read_source)
     with pytest.raises(EmbeddingDimensionError, match="768-dimensional"):
-        embed_analysis_chunks(conn, analysis, DEFAULT_CHUNK_PROFILE, DEFAULT_EMBEDDING_PROFILE,
-                              DeterministicFakeProvider(dimension=768))
+        embed_analysis_chunks(conn, analysis, DEFAULT_CHUNK_PROFILE, OFFLINE_EMBEDDING_PROFILE,
+                              OfflineEmbeddingProvider(dimension=768))
     assert count(conn, "embedding", analysis) == 0
 
 
@@ -181,7 +182,7 @@ def test_the_schema_rejects_other_dimensions_and_stale_content(conn, analysis):
     index_analysis_chunks(conn, analysis, DEFAULT_CHUNK_PROFILE, read_source)
     chunk_id, content_hash = conn.fetch_one("SELECT id, content_hash FROM semantic.chunk WHERE analysis_id = %s "
                                             "LIMIT 1", str(analysis))
-    profile_id = register_embedding_profile(conn, DEFAULT_EMBEDDING_PROFILE)
+    profile_id = register_embedding_profile(conn, OFFLINE_EMBEDDING_PROFILE)
     insert = ("INSERT INTO semantic.embedding (chunk_id, embedding_profile_id, chunk_content_hash, embedding) "
               "VALUES (%s, %s, %s, %s::vector)")
     savepoint_raises(conn, "DataError", insert, str(chunk_id), str(profile_id), content_hash,
@@ -192,8 +193,8 @@ def test_the_schema_rejects_other_dimensions_and_stale_content(conn, analysis):
 
 def test_a_used_embedding_profile_only_changes_status(conn, analysis):
     index_analysis_chunks(conn, analysis, DEFAULT_CHUNK_PROFILE, read_source)
-    embed_analysis_chunks(conn, analysis, DEFAULT_CHUNK_PROFILE, DEFAULT_EMBEDDING_PROFILE, DeterministicFakeProvider())
-    profile_id = register_embedding_profile(conn, DEFAULT_EMBEDDING_PROFILE)
+    embed_analysis_chunks(conn, analysis, DEFAULT_CHUNK_PROFILE, OFFLINE_EMBEDDING_PROFILE, OfflineEmbeddingProvider())
+    profile_id = register_embedding_profile(conn, OFFLINE_EMBEDDING_PROFILE)
     conn.execute("UPDATE semantic.embedding_profile SET status = 'RETIRED' WHERE id = %s", str(profile_id))
     savepoint_raises(conn, "IntegrityError",
                      "UPDATE semantic.embedding_profile SET model_revision = 'other' WHERE id = %s", str(profile_id))
@@ -203,7 +204,7 @@ def test_a_used_embedding_profile_only_changes_status(conn, analysis):
 
 
 def test_an_embedding_needs_an_existing_chunk(conn, analysis):
-    profile_id = register_embedding_profile(conn, DEFAULT_EMBEDDING_PROFILE)
+    profile_id = register_embedding_profile(conn, OFFLINE_EMBEDDING_PROFILE)
     savepoint_raises(conn, "IntegrityError",
                      "INSERT INTO semantic.embedding (chunk_id, embedding_profile_id, chunk_content_hash, "
                      "is_first_party, embedding) VALUES (%s, %s, %s, true, %s::vector)",
@@ -212,7 +213,7 @@ def test_an_embedding_needs_an_existing_chunk(conn, analysis):
 
 def test_a_duplicate_embedding_is_rejected(conn, analysis):
     index_analysis_chunks(conn, analysis, DEFAULT_CHUNK_PROFILE, read_source)
-    embed_analysis_chunks(conn, analysis, DEFAULT_CHUNK_PROFILE, DEFAULT_EMBEDDING_PROFILE, DeterministicFakeProvider())
+    embed_analysis_chunks(conn, analysis, DEFAULT_CHUNK_PROFILE, OFFLINE_EMBEDDING_PROFILE, OfflineEmbeddingProvider())
     chunk_id, profile_id, content_hash = conn.fetch_one(
         "SELECT e.chunk_id, e.embedding_profile_id, e.chunk_content_hash FROM semantic.embedding e "
         "JOIN semantic.chunk c ON c.id = e.chunk_id WHERE c.analysis_id = %s LIMIT 1", str(analysis))
@@ -223,11 +224,11 @@ def test_a_duplicate_embedding_is_rejected(conn, analysis):
 
 
 def test_an_embedding_profile_cannot_change_its_dimension_or_revision(conn, analysis):
-    profile_id = str(register_embedding_profile(conn, DEFAULT_EMBEDDING_PROFILE))
+    profile_id = str(register_embedding_profile(conn, OFFLINE_EMBEDDING_PROFILE))
     savepoint_raises(conn, "IntegrityError", "UPDATE semantic.embedding_profile SET dimension = 768 WHERE id = %s",
                      profile_id)  # R1 has one physical dimension, used or not
     index_analysis_chunks(conn, analysis, DEFAULT_CHUNK_PROFILE, read_source)
-    embed_analysis_chunks(conn, analysis, DEFAULT_CHUNK_PROFILE, DEFAULT_EMBEDDING_PROFILE, DeterministicFakeProvider())
+    embed_analysis_chunks(conn, analysis, DEFAULT_CHUNK_PROFILE, OFFLINE_EMBEDDING_PROFILE, OfflineEmbeddingProvider())
     for change in ("model_revision = 'gemini-embedding-002'", "model_name = 'other'", "distance_metric = 'L2'",
                    "normalization_policy = 'NONE'", "text_template = 'q: {text}'"):
         savepoint_raises(conn, "IntegrityError", f"UPDATE semantic.embedding_profile SET {change} WHERE id = %s",
@@ -248,8 +249,9 @@ def test_chunks_cannot_reference_another_analysis_file_or_entity(conn, analysis,
     foreign_entity = str(conn.fetch_scalar("SELECT id FROM core.entity WHERE analysis_id = %s AND entity_type = 'CLASS'",
                                            str(other)))
     insert = ("INSERT INTO semantic.chunk (analysis_id, repository_version_id, file_id, entity_id, chunk_profile_id, "
-              "stable_chunk_key, content, content_hash, token_count, ordinal, start_line, end_line, is_generated, "
-              "is_vendored) VALUES (%s, %s, %s, %s, %s, 'k', 'x', %s, 1, 0, 1, 1, false, false)")
+              "stable_chunk_key, chunk_kind, content, content_hash, token_count, ordinal, start_line, end_line, "
+              "is_generated, "
+              "is_vendored) VALUES (%s, %s, %s, %s, %s, 'k', 'CODE', 'x', %s, 1, 0, 1, 1, false, false)")
     x_hash = "2d711642b726b04401627ca9fbac32f5c8530fb1903cc4db02258717921a4881"
     savepoint_raises(conn, "IntegrityError", insert, str(analysis), version, foreign_file, None, profile_id, x_hash)
     savepoint_raises(conn, "IntegrityError", insert, str(analysis), version, own_file, foreign_entity, profile_id,
@@ -263,7 +265,7 @@ def structural_counts(conn, analysis_id):
 
 def test_deleting_derived_semantic_data_keeps_structural_facts(conn, analysis):
     index_analysis_chunks(conn, analysis, DEFAULT_CHUNK_PROFILE, read_source)
-    embed_analysis_chunks(conn, analysis, DEFAULT_CHUNK_PROFILE, DEFAULT_EMBEDDING_PROFILE, DeterministicFakeProvider())
+    embed_analysis_chunks(conn, analysis, DEFAULT_CHUNK_PROFILE, OFFLINE_EMBEDDING_PROFILE, OfflineEmbeddingProvider())
     before = structural_counts(conn, analysis)
     conn.execute("DELETE FROM semantic.chunk WHERE analysis_id = %s", str(analysis))  # cascades to embeddings
     assert count(conn, "chunk", analysis) == 0 and count(conn, "embedding", analysis) == 0
@@ -272,7 +274,7 @@ def test_deleting_derived_semantic_data_keeps_structural_facts(conn, analysis):
 
 def test_deleting_an_analysis_cascades_to_its_chunks_and_vectors(conn, analysis):
     index_analysis_chunks(conn, analysis, DEFAULT_CHUNK_PROFILE, read_source)
-    embed_analysis_chunks(conn, analysis, DEFAULT_CHUNK_PROFILE, DEFAULT_EMBEDDING_PROFILE, DeterministicFakeProvider())
+    embed_analysis_chunks(conn, analysis, DEFAULT_CHUNK_PROFILE, OFFLINE_EMBEDDING_PROFILE, OfflineEmbeddingProvider())
     chunk_ids = [str(row[0]) for row in conn.fetch_all("SELECT id FROM semantic.chunk WHERE analysis_id = %s",
                                                       str(analysis))]
     conn.execute("DELETE FROM core.analysis WHERE id = %s", str(analysis))
@@ -283,8 +285,8 @@ def test_deleting_an_analysis_cascades_to_its_chunks_and_vectors(conn, analysis)
 
 def test_profiles_in_use_cannot_be_deleted(conn, analysis):
     index_analysis_chunks(conn, analysis, DEFAULT_CHUNK_PROFILE, read_source)
-    embed_analysis_chunks(conn, analysis, DEFAULT_CHUNK_PROFILE, DEFAULT_EMBEDDING_PROFILE, DeterministicFakeProvider())
+    embed_analysis_chunks(conn, analysis, DEFAULT_CHUNK_PROFILE, OFFLINE_EMBEDDING_PROFILE, OfflineEmbeddingProvider())
     savepoint_raises(conn, "IntegrityError", "DELETE FROM semantic.chunk_profile WHERE id = %s",
                      str(register_chunk_profile(conn, DEFAULT_CHUNK_PROFILE)))
     savepoint_raises(conn, "IntegrityError", "DELETE FROM semantic.embedding_profile WHERE id = %s",
-                     str(register_embedding_profile(conn, DEFAULT_EMBEDDING_PROFILE)))
+                     str(register_embedding_profile(conn, OFFLINE_EMBEDDING_PROFILE)))

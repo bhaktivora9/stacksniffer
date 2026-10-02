@@ -22,9 +22,17 @@ from .profiles import EmbeddingProfile
 class EmbeddingError(RuntimeError):
     """The provider's output cannot be stored under the profile."""
 
+    failure_code = "EMBEDDING_FAILED"
+
 
 class EmbeddingDimensionError(EmbeddingError):
-    pass
+    failure_code = "EMBEDDING_DIMENSION_MISMATCH"
+
+
+class EmbeddingProfileIncompatible(EmbeddingError):
+    """The provider cannot produce vectors for the profile; nothing is requested or stored."""
+
+    failure_code = "EMBEDDING_PROFILE_INCOMPATIBLE"
 
 
 @dataclass(frozen=True)
@@ -34,8 +42,21 @@ class ProviderEmbedding:
 
 
 class EmbeddingProvider(Protocol):
+    """Provider-neutral interface: ``name`` must equal the profile's ``provider``."""
+
+    name: str
+
     def embed(self, texts: Sequence[str], *, profile: EmbeddingProfile, task: str | None) -> list[ProviderEmbedding]:
         ...
+
+
+def check_compatibility(provider: EmbeddingProvider, profile: EmbeddingProfile) -> None:
+    """Refuse, before any request or write, a provider that is not the one the profile names."""
+    name = getattr(provider, "name", None)
+    if name != profile.provider:
+        raise EmbeddingProfileIncompatible(
+            f"profile {profile.profile_key}/{profile.profile_version} needs a {profile.provider!r} provider, "
+            f"not {name!r}")
 
 
 def validate_vector(values: Sequence[float], profile: EmbeddingProfile) -> list[float]:
@@ -62,13 +83,19 @@ def vector_literal(vector: Sequence[float]) -> str:
 class EmbeddingRequestError(EmbeddingError):
     """The provider rejected the request (4xx other than rate limiting); retrying will not help."""
 
+    failure_code = "EMBEDDING_REQUEST_REJECTED"
+
 
 class EmbeddingRateLimited(EmbeddingError):
     """The provider's quota or rate limit was exhausted after the client's own retries."""
 
+    failure_code = "EMBEDDING_RATE_LIMITED"
+
 
 class EmbeddingProviderUnavailable(EmbeddingError):
     """A server error, network failure or timeout persisted through the client's retries."""
+
+    failure_code = "EMBEDDING_PROVIDER_UNAVAILABLE"
 
 
 # Gemini API limits (gemini-embedding-001): 2,048 input tokens per text, 100 texts per batch.
@@ -89,6 +116,8 @@ class GeminiEmbeddingProvider:
     an EmbeddingError subclass whose message carries the status, never the input or credentials.
     Close the provider (or use it as a context manager) to release the client's HTTP connections.
     """
+
+    name = "google"
 
     def __init__(self, api_key: str | None = None, *, client: Any = None, timeout_seconds: float = 60.0,
                  retry_attempts: int = 4):
@@ -173,11 +202,15 @@ def _translate(exc: Any) -> EmbeddingError:
     return EmbeddingProviderUnavailable(f"provider unavailable ({detail})")
 
 
-class DeterministicFakeProvider:
-    """Offline provider for tests and local runs: a stable pseudo-random vector per text."""
+class OfflineEmbeddingProvider:
+    """Deterministic offline provider (tests, local runs without a key): the same text and task
+    always give the same 3,072-dimensional vector, derived from SHA-256. It carries no meaning;
+    it exercises every path from chunk to stored vector without a network."""
+
+    name = "offline"
 
     def __init__(self, dimension: int | None = None):
-        self.dimension = dimension
+        self.dimension = dimension  # only to simulate a misbehaving provider in tests
         self.calls: list[list[str]] = []
 
     def embed(self, texts, *, profile, task):
@@ -187,5 +220,9 @@ class DeterministicFakeProvider:
         for text in texts:
             seed = hashlib.sha256(f"{task}:{text}".encode("utf-8")).digest()
             values = [((seed[i % 32] + i * 31) % 251) / 250.0 - 0.5 for i in range(dimension)]
-            results.append(ProviderEmbedding(values, {"provider": "fake", "task_type": task}))
+            results.append(ProviderEmbedding(values, {"provider": self.name, "model": profile.model_name,
+                                                      "task_type": task}))
         return results
+
+    def close(self) -> None:
+        pass

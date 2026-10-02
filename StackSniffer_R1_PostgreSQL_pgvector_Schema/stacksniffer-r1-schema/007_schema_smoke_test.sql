@@ -76,10 +76,10 @@ inserted_chunk_profile AS (
 ),
 inserted_chunk AS (
     INSERT INTO semantic.chunk (
-        analysis_id, repository_version_id, file_id, entity_id, chunk_profile_id, stable_chunk_key,
+        analysis_id, repository_version_id, file_id, entity_id, chunk_profile_id, stable_chunk_key, chunk_kind,
         content, content_hash, token_count, ordinal, start_line, end_line, is_generated, is_vendored
     )
-    SELECT e.analysis_id, a.repository_version_id, e.file_id, e.id, p.id, 'class:example.Smoke@0',
+    SELECT e.analysis_id, a.repository_version_id, e.file_id, e.id, p.id, 'class:example.Smoke@0', 'CLASS',
            'class Smoke {}', encode(sha256(convert_to('class Smoke {}', 'UTF8')), 'hex'),
            4, 0, 1, 3, false, false
       FROM inserted_entity e

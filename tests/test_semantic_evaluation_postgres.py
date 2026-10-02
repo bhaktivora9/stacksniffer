@@ -13,7 +13,7 @@ from backend.services.semantic.benchmark import (
 )
 from backend.services.semantic.embeddings import ProviderEmbedding
 from backend.services.semantic.evaluation_runs import RunConfiguration, run_vector_evaluation, start_run
-from backend.services.semantic.profiles import DEFAULT_CHUNK_PROFILE, DEFAULT_EMBEDDING_PROFILE, canonical_json
+from backend.services.semantic.profiles import DEFAULT_CHUNK_PROFILE, OFFLINE_EMBEDDING_PROFILE, canonical_json
 from backend.services.semantic.retrieval import search_query, vector_search
 from backend.services.semantic.store import (
     embed_analysis_chunks, index_analysis_chunks, register_chunk_profile, register_embedding_profile,
@@ -33,6 +33,8 @@ CONFIG = RunConfiguration(retriever_profile="vector-cosine", retriever_version="
 
 class KeywordProvider:
     """A bag-of-words vector, so chunks sharing words with the query rank first."""
+
+    name = "offline"
 
     def embed(self, texts, *, profile, task):
         results = []
@@ -68,7 +70,7 @@ def indexed(conn, tmp_path):
     extract_into(conn, tmp_path, analysis_id, FILES)
     chunks = replace(DEFAULT_CHUNK_PROFILE, profile_version=7, include_vendored=True)
     index_analysis_chunks(conn, analysis_id, chunks, FILES.__getitem__)
-    embed_analysis_chunks(conn, analysis_id, chunks, DEFAULT_EMBEDDING_PROFILE, KeywordProvider())
+    embed_analysis_chunks(conn, analysis_id, chunks, OFFLINE_EMBEDDING_PROFILE, KeywordProvider())
     version = conn.fetch_scalar("SELECT repository_version_id FROM core.analysis WHERE id = %s", str(analysis_id))
     return analysis_id, version, chunks
 
@@ -183,13 +185,13 @@ def test_a_run_records_every_input_ranking_and_metric(conn, indexed):
     analysis_id, version, chunks = indexed
     dataset_id, _ = build_dataset(conn, version)
     fingerprint = freeze_dataset(conn, dataset_id)
-    run_id = run_vector_evaluation(conn, dataset_id, chunks, DEFAULT_EMBEDDING_PROFILE, CONFIG, {version: analysis_id},
+    run_id = run_vector_evaluation(conn, dataset_id, chunks, OFFLINE_EMBEDDING_PROFILE, CONFIG, {version: analysis_id},
                                    KeywordProvider())
     run = conn.fetch_one(
         "SELECT status, dataset_fingerprint, chunk_profile_fingerprint, embedding_profile_fingerprint, "
         "retriever_version, query_transformation_version, evaluation_code_version, git_commit, metric_configuration, "
         "completed_at IS NOT NULL FROM evaluation.run WHERE id = %s", str(run_id))
-    assert run[:8] == ("SUCCEEDED", fingerprint, chunks.fingerprint, DEFAULT_EMBEDDING_PROFILE.fingerprint, "1",
+    assert run[:8] == ("SUCCEEDED", fingerprint, chunks.fingerprint, OFFLINE_EMBEDDING_PROFILE.fingerprint, "1",
                        "none/1", "stacksniffer-eval/1", "a" * 40)
     assert run[8]["recall_ks"] == [5, 10] and run[9]
     assert conn.fetch_all("SELECT analysis_id FROM evaluation.run_analysis WHERE evaluation_run_id = %s",
@@ -210,8 +212,8 @@ def test_a_run_records_every_input_ranking_and_metric(conn, indexed):
 def test_default_retrieval_excludes_vendored_chunks(conn, indexed):
     analysis_id, _, chunks = indexed
     chunk_profile = register_chunk_profile(conn, chunks)
-    embedding_profile = register_embedding_profile(conn, DEFAULT_EMBEDDING_PROFILE)
-    query = KeywordProvider().embed(["tax rate"], profile=DEFAULT_EMBEDDING_PROFILE, task="q")[0].values
+    embedding_profile = register_embedding_profile(conn, OFFLINE_EMBEDDING_PROFILE)
+    query = KeywordProvider().embed(["tax rate"], profile=OFFLINE_EMBEDDING_PROFILE, task="q")[0].values
     default = vector_search(conn, analysis_id, chunk_profile, embedding_profile, "COSINE", query, 10)
     everything = vector_search(conn, analysis_id, chunk_profile, embedding_profile, "COSINE", query, 10,
                                first_party_only=False)
@@ -225,13 +227,13 @@ def test_default_retrieval_excludes_vendored_chunks(conn, indexed):
 def test_retrieval_uses_the_first_party_hnsw_index(conn, indexed):
     analysis_id, _, chunks = indexed
     index = conn.fetch_scalar("SELECT semantic.create_profile_hnsw_index(%s, %s)",
-                              DEFAULT_EMBEDDING_PROFILE.profile_key, DEFAULT_EMBEDDING_PROFILE.profile_version)
+                              OFFLINE_EMBEDDING_PROFILE.profile_key, OFFLINE_EMBEDDING_PROFILE.profile_version)
     # With sorting disabled, only an index matching the query's expression and predicate can order it.
     conn.execute("SET LOCAL enable_seqscan = off")
     conn.execute("SET LOCAL enable_sort = off")
     query = "[" + ",".join(["0.01"] * 3072) + "]"
     plan = "\n".join(row[0] for row in conn.fetch_all(
-        "EXPLAIN " + search_query("COSINE"), query, str(register_embedding_profile(conn, DEFAULT_EMBEDDING_PROFILE)),
+        "EXPLAIN " + search_query("COSINE"), query, str(register_embedding_profile(conn, OFFLINE_EMBEDDING_PROFILE)),
         str(analysis_id), str(register_chunk_profile(conn, chunks)), 10))
     assert index in plan and index.endswith("_fp")
 
@@ -241,11 +243,11 @@ def test_runs_need_a_frozen_dataset_and_are_immutable_once_complete(conn, indexe
     draft, _ = build_dataset(conn, version)
     conn.execute("SAVEPOINT draft_run")
     with pytest.raises(Exception):
-        start_run(conn, draft, chunks, DEFAULT_EMBEDDING_PROFILE, CONFIG, {version: analysis_id})
+        start_run(conn, draft, chunks, OFFLINE_EMBEDDING_PROFILE, CONFIG, {version: analysis_id})
     conn.execute("ROLLBACK TO SAVEPOINT draft_run")
     dataset_id, question_id = build_dataset(conn, version)
     freeze_dataset(conn, dataset_id)
-    run_id = str(run_vector_evaluation(conn, dataset_id, chunks, DEFAULT_EMBEDDING_PROFILE, CONFIG,
+    run_id = str(run_vector_evaluation(conn, dataset_id, chunks, OFFLINE_EMBEDDING_PROFILE, CONFIG,
                                        {version: analysis_id}, KeywordProvider()))
     raises(conn, "UPDATE evaluation.run SET retriever_version = '2' WHERE id = %s", run_id)
     raises(conn, "UPDATE evaluation.ranked_result SET score = 0 WHERE evaluation_run_id = %s", run_id)
@@ -265,7 +267,7 @@ def test_a_failing_question_degrades_the_run_without_aborting_it(conn, indexed):
                 return [ProviderEmbedding([0.1] * 768)]  # the wrong dimension: rejected, never coerced
             return super().embed(texts, profile=profile, task=task)
 
-    run_id = run_vector_evaluation(conn, dataset_id, chunks, DEFAULT_EMBEDDING_PROFILE, CONFIG,
+    run_id = run_vector_evaluation(conn, dataset_id, chunks, OFFLINE_EMBEDDING_PROFILE, CONFIG,
                                    {version: analysis_id}, FlakyProvider())
     assert conn.fetch_scalar("SELECT status FROM evaluation.run WHERE id = %s", str(run_id)) == "DEGRADED"
     failed = conn.fetch_one("SELECT r.failure_detail FROM evaluation.question_result r JOIN evaluation.question q "
@@ -283,7 +285,7 @@ def completed_run(conn, indexed):
     analysis_id, version, chunks = indexed
     dataset_id, _ = build_dataset(conn, version)
     freeze_dataset(conn, dataset_id)
-    run_id = run_vector_evaluation(conn, dataset_id, chunks, DEFAULT_EMBEDDING_PROFILE, CONFIG,
+    run_id = run_vector_evaluation(conn, dataset_id, chunks, OFFLINE_EMBEDDING_PROFILE, CONFIG,
                                    {version: analysis_id}, KeywordProvider())
     return dataset_id, run_id
 
@@ -310,8 +312,8 @@ def test_a_run_missing_a_material_version_is_rejected(conn, indexed):
         "dataset_id": str(dataset_id), "dataset_fingerprint": fingerprint,
         "chunk_profile_id": str(register_chunk_profile(conn, chunks)),
         "chunk_profile_fingerprint": chunks.fingerprint,
-        "embedding_profile_id": str(register_embedding_profile(conn, DEFAULT_EMBEDDING_PROFILE)),
-        "embedding_profile_fingerprint": DEFAULT_EMBEDDING_PROFILE.fingerprint, "retrieval_mode": "VECTOR_ONLY",
+        "embedding_profile_id": str(register_embedding_profile(conn, OFFLINE_EMBEDDING_PROFILE)),
+        "embedding_profile_fingerprint": OFFLINE_EMBEDDING_PROFILE.fingerprint, "retrieval_mode": "VECTOR_ONLY",
         "retriever_profile": "vector-cosine", "retriever_version": "1", "query_transformation_version": "none/1",
         "evaluation_code_version": "eval/1", "git_commit": "a" * 40, "metric_configuration": "{}",
     }
@@ -339,7 +341,7 @@ def test_a_run_against_a_draft_dataset_is_rejected(conn, indexed):
     draft, _ = build_dataset(conn, version)
     conn.execute("SAVEPOINT draft_run")
     with pytest.raises(psycopg.IntegrityError):
-        start_run(conn, draft, chunks, DEFAULT_EMBEDDING_PROFILE, CONFIG, {version: analysis_id})
+        start_run(conn, draft, chunks, OFFLINE_EMBEDDING_PROFILE, CONFIG, {version: analysis_id})
     conn.execute("ROLLBACK TO SAVEPOINT draft_run")
     # Even a guessed fingerprint cannot reference a draft: the key requires FROZEN.
     raises(conn, "INSERT INTO evaluation.run (dataset_id, dataset_fingerprint, chunk_profile_id, "
@@ -348,7 +350,7 @@ def test_a_run_against_a_draft_dataset_is_rejected(conn, indexed):
                  "git_commit, metric_configuration) VALUES (%s, %s, %s, %s, %s, %s, 'VECTOR_ONLY', 'v', '1', 'n', "
                  "'e', 'g', '{}')",
            str(draft), "0" * 64, str(register_chunk_profile(conn, chunks)), chunks.fingerprint,
-           str(register_embedding_profile(conn, DEFAULT_EMBEDDING_PROFILE)), DEFAULT_EMBEDDING_PROFILE.fingerprint)
+           str(register_embedding_profile(conn, OFFLINE_EMBEDDING_PROFILE)), OFFLINE_EMBEDDING_PROFILE.fingerprint)
 
 
 def test_the_fingerprint_does_not_depend_on_insertion_order(conn, indexed):
@@ -376,11 +378,11 @@ def test_the_fingerprint_does_not_depend_on_insertion_order(conn, indexed):
 def test_exact_and_approximate_search_return_the_same_neighbours(conn, indexed):
     analysis_id, _, chunks = indexed
     chunk_profile = register_chunk_profile(conn, chunks)
-    embedding_profile = register_embedding_profile(conn, DEFAULT_EMBEDDING_PROFILE)
-    query = KeywordProvider().embed(["total of the prices"], profile=DEFAULT_EMBEDDING_PROFILE, task="q")[0].values
+    embedding_profile = register_embedding_profile(conn, OFFLINE_EMBEDDING_PROFILE)
+    query = KeywordProvider().embed(["total of the prices"], profile=OFFLINE_EMBEDDING_PROFILE, task="q")[0].values
     exact = vector_search(conn, analysis_id, chunk_profile, embedding_profile, "COSINE", query, 3)
-    conn.fetch_scalar("SELECT semantic.create_profile_hnsw_index(%s, %s)", DEFAULT_EMBEDDING_PROFILE.profile_key,
-                      DEFAULT_EMBEDDING_PROFILE.profile_version)
+    conn.fetch_scalar("SELECT semantic.create_profile_hnsw_index(%s, %s)", OFFLINE_EMBEDDING_PROFILE.profile_key,
+                      OFFLINE_EMBEDDING_PROFILE.profile_version)
     conn.execute("SET LOCAL enable_seqscan = off")
     conn.execute("SET LOCAL enable_sort = off")
     approximate = vector_search(conn, analysis_id, chunk_profile, embedding_profile, "COSINE", query, 3)

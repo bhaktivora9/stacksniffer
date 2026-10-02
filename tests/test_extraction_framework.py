@@ -471,6 +471,10 @@ class FakeConnection:
         self.statements.append((" ".join(query.split()), args))
         return Result()
 
+    def fetch_all(self, query, *args):  # source retention finds no recorded files
+        self.statements.append((" ".join(query.split()), args))
+        return []
+
     def commit(self):
         pass
 

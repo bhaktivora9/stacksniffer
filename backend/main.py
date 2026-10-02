@@ -1,8 +1,15 @@
 """ASGI entry point for repository and analysis APIs.
 
-Run with ``uvicorn main:app`` from backend/ or ``uvicorn backend.main:app`` from
-the repository root. When DATABASE_URL is set, the same process also runs the
-analysis worker that moves QUEUED analyses through the pipeline.
+Run from the repository root, with the project's virtual environment, so that the
+``backend`` package is importable::
+
+    .venv/Scripts/python.exe -m uvicorn backend.main:app --reload --port 8000
+
+When DATABASE_URL is set, the same process also runs the analysis worker that
+moves QUEUED analyses through the pipeline. Indexing (chunking and embedding) runs after
+extraction with the provider named by ANALYSIS_EMBEDDING_PROVIDER: "gemini" (default; needs
+GEMINI_API_KEY) or "offline" (deterministic vectors, no network). Without a usable provider,
+extracted analyses park awaiting INDEXING and resume once one is configured.
 
 ``create_app`` loads backend/.env before building the app. Setting
 STACKSNIFFER_LOAD_DOTENV=0 skips that; the test suite does so (see conftest.py)
@@ -29,6 +36,9 @@ try:
     from services.analysis_worker import supervise_worker
     from services.extraction.registry import AnalyzerRegistry
     from services.extraction.stage import StructuralExtractionStage
+    from services.semantic.embeddings import GeminiEmbeddingProvider, OfflineEmbeddingProvider
+    from services.semantic.profiles import DEFAULT_EMBEDDING_PROFILE, OFFLINE_EMBEDDING_PROFILE
+    from services.semantic.stage import SemanticIndexingStage
     from services.postgres import PostgresUnavailable, make_connection_factory
     from services.repository_acquisition import AcquisitionLimits, GitRepositoryAcquirer
     from services.repository_resolver import github_reported_size_bytes
@@ -40,6 +50,9 @@ except ModuleNotFoundError:
     from backend.services.analysis_worker import supervise_worker
     from backend.services.extraction.registry import AnalyzerRegistry
     from backend.services.extraction.stage import StructuralExtractionStage
+    from backend.services.semantic.embeddings import GeminiEmbeddingProvider, OfflineEmbeddingProvider
+    from backend.services.semantic.profiles import DEFAULT_EMBEDDING_PROFILE, OFFLINE_EMBEDDING_PROFILE
+    from backend.services.semantic.stage import SemanticIndexingStage
     from backend.services.postgres import PostgresUnavailable, make_connection_factory
     from backend.services.repository_acquisition import (
         AcquisitionLimits,
@@ -121,7 +134,35 @@ def unavailable_languages(registry: AnalyzerRegistry, required: list[str]) -> di
     return missing
 
 
-def _structural_stage(connection_factory, registry: AnalyzerRegistry) -> StructuralExtractionStage:
+def _indexing_stage(connection_factory) -> tuple[SemanticIndexingStage | None, dict, object | None]:
+    """The INDEXING stage, its readiness report, and the provider to close on shutdown."""
+    if not _env_flag("ANALYSIS_INDEXING_ENABLED", True):
+        logger.warning("ANALYSIS_INDEXING_ENABLED is off; extracted analyses will wait for indexing")
+        return None, {"status": "disabled"}, None
+    choice = os.getenv("ANALYSIS_EMBEDDING_PROVIDER", "gemini").strip().lower()
+    if choice == "offline":
+        provider, profile = OfflineEmbeddingProvider(), OFFLINE_EMBEDDING_PROFILE
+    elif choice == "gemini":
+        if not (os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")):
+            logger.warning("GEMINI_API_KEY is not set; extracted analyses will wait for indexing")
+            return None, {"status": "unconfigured", "provider": "gemini", "reason": "GEMINI_API_KEY is not set"}, None
+        provider = GeminiEmbeddingProvider(
+            timeout_seconds=float(os.getenv("ANALYSIS_EMBEDDING_TIMEOUT_SECONDS", "60")),
+            retry_attempts=int(os.getenv("ANALYSIS_EMBEDDING_RETRY_ATTEMPTS", "4")))
+        profile = DEFAULT_EMBEDDING_PROFILE
+    else:
+        logger.error("Unknown ANALYSIS_EMBEDDING_PROVIDER %r; extracted analyses will wait for indexing", choice)
+        return None, {"status": "unconfigured", "provider": choice, "reason": "unknown provider"}, None
+    stage = SemanticIndexingStage(connection_factory, provider, embedding_profile=profile,
+                                  batch_size=int(os.getenv("ANALYSIS_EMBEDDING_BATCH_SIZE", "64")))
+    logger.info("Indexing enabled: provider %s, embedding profile %s/%s", provider.name, profile.profile_key,
+                profile.profile_version)
+    return stage, {"status": "enabled", "provider": provider.name,
+                   "embedding_profile": f"{profile.profile_key}/{profile.profile_version}"}, provider
+
+
+def _structural_stage(connection_factory, registry: AnalyzerRegistry,
+                      next_stage=None) -> StructuralExtractionStage:
     for analyzer in registry.analyzers:
         if analyzer.available:
             logger.info("Structural analyzer for %s: %s", analyzer.language, analyzer.extractor_version)
@@ -131,6 +172,7 @@ def _structural_stage(connection_factory, registry: AnalyzerRegistry) -> Structu
     return StructuralExtractionStage(
         connection_factory,
         registry,
+        next_stage=next_stage,
         batch_size=int(os.getenv("ANALYSIS_EXTRACTION_BATCH_FILES", "100")),
     )
 
@@ -140,6 +182,8 @@ async def lifespan(app: FastAPI):
     """Configure PostgreSQL persistence and run the analysis worker alongside the API."""
     app.state.connection_factory = None
     app.state.worker_task = None
+    app.state.indexing = {"status": "unconfigured"}
+    embedding_provider = None
     app.state.analyzer_registry = AnalyzerRegistry.default()
     app.state.required_languages = _required_languages()
     if missing := unavailable_languages(app.state.analyzer_registry, app.state.required_languages):
@@ -160,13 +204,15 @@ async def lifespan(app: FastAPI):
         if _env_flag("ANALYSIS_WORKER_ENABLED", True):
             acquirer = _acquirer()
             await _remove_orphaned_acquisitions(acquirer)
+            indexing, app.state.indexing, embedding_provider = _indexing_stage(app.state.connection_factory)
             app.state.worker_task = asyncio.create_task(
                 supervise_worker(
                     app.state.connection_factory,
                     AnalysisPipeline(
                         app.state.connection_factory,
                         acquirer,
-                        structural_stage=_structural_stage(app.state.connection_factory, app.state.analyzer_registry),
+                        structural_stage=_structural_stage(app.state.connection_factory, app.state.analyzer_registry,
+                                                           next_stage=indexing),
                     ),
                     stop_event=stop_event,
                     **_worker_options(),
@@ -186,6 +232,8 @@ async def lifespan(app: FastAPI):
                 await asyncio.wait_for(task, timeout=WORKER_SHUTDOWN_SECONDS)
             except (TimeoutError, asyncio.CancelledError):
                 task.cancel()
+        if embedding_provider is not None:
+            embedding_provider.close()
 
 
 def _check_database(factory) -> None:
@@ -227,6 +275,8 @@ async def _readiness(state) -> dict:
         "database": database,
         "worker": worker,
         "analyzers": {"required": required, "unavailable": missing},
+        # Not a readiness failure: without indexing, analyses park safely and resume later.
+        "indexing": getattr(state, "indexing", None) or {"status": "unconfigured"},
         "failing": failures,
     }
 
