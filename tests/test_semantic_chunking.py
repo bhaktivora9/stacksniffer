@@ -176,9 +176,15 @@ def test_documents_carry_identifiers_only_and_queries_are_bare():
     ("build.gradle", "groovy", "CONFIGURATION"), (".env.example", None, "CONFIGURATION"),
     ("README.md", "markdown", "DOCUMENTATION"), ("docs/guide.rst", None, "DOCUMENTATION"),
     ("LICENSE", None, "DOCUMENTATION"), ("main.rs", "rust", "CODE"),
+    ("static/fonts/varela_round-webfont.svg", None, "ASSET"), ("img/Logo.SVG", "xml", "ASSET"),
 ])
 def test_files_are_classified_by_name_and_language(path, language, kind):
     assert file_kind(path, language) == kind
+
+
+def test_assets_are_never_chunked():
+    font = b'<svg xmlns="http://www.w3.org/2000/svg"><defs><font id="v">\n<glyph unicode="a" d="M0 0z"/>\n</font>\n'
+    assert build_chunks("static/fonts/v-webfont.svg", font, [], DEFAULT_CHUNK_PROFILE) == []
 
 
 def test_a_configuration_file_is_chunked_whole_as_its_file_entity():

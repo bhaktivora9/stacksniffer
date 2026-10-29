@@ -150,7 +150,7 @@ class EmbeddingProfile:
 
 DEFAULT_CHUNK_PROFILE = ChunkProfile(
     profile_key="symbol-windows",
-    profile_version=1,
+    profile_version=2,
     chunking_strategy="symbol_windows",
     # Conservative estimate (code averages ~4 UTF-8 bytes per Gemini token), so a chunk never
     # exceeds the model's input limit; the exact tokenizer is not available offline.
@@ -161,7 +161,7 @@ DEFAULT_CHUNK_PROFILE = ChunkProfile(
     included_entity_types=("CLASS", "INTERFACE", "FUNCTION", "METHOD", "FILE", "CONFIGURATION", "DOCUMENTATION"),
     include_generated=False,
     include_vendored=False,
-    code_version="stacksniffer-chunker/2",
+    code_version="stacksniffer-chunker/3",  # /3: SVG assets are never chunked
 )
 
 # Identifiers only: enough to tell two similar snippets apart, never more source text.

@@ -1,0 +1,502 @@
+# DRAFT: model-assisted first pass. Every judgment needs the human second pass described in
+# docs/evaluation/retrieval-benchmark-rubric.md before this dataset is loaded and frozen.
+# Targets: an entity stable key at the manifest's frozen commit, or a file with an inclusive line range.
+dataset_key: r1-retrieval-validation
+dataset_version: 1
+status: draft
+description: 'R1 retrieval benchmark, validation split: questions used for tuning and miss analysis.'
+rubric: docs/evaluation/retrieval-benchmark-rubric.md
+annotator_version: rubric/1
+judgment_source: MODEL_ASSISTED
+annotator: claude-opus-5-5
+repositories:
+- manifest_id: spring-boot-realworld
+  role: VALIDATION
+  questions:
+  - key: rw-l01
+    class: local
+    task_category: flow
+    scope: SYMBOL
+    lexical_overlap: low
+    text: How is the token in a request header turned into an authenticated user?
+    judgments:
+    - entity: method:src/main/java/io/spring/api/security/JwtTokenFilter.java::io.spring.api.security.JwtTokenFilter.doFilterInternal(HttpServletRequest,HttpServletResponse,FilterChain)
+      grade: 3
+    - entity: method:src/main/java/io/spring/api/security/JwtTokenFilter.java::io.spring.api.security.JwtTokenFilter.getTokenString(String)
+      grade: 2
+    - entity: method:src/main/java/io/spring/infrastructure/service/DefaultJwtService.java::io.spring.infrastructure.service.DefaultJwtService.getSubFromToken(String)
+      grade: 2
+  - key: rw-l02
+    class: local
+    task_category: code_search
+    scope: SYMBOL
+    lexical_overlap: low
+    text: How are login tokens created, and how long do they stay valid?
+    judgments:
+    - entity: method:src/main/java/io/spring/infrastructure/service/DefaultJwtService.java::io.spring.infrastructure.service.DefaultJwtService.toToken(User)
+      grade: 3
+    - entity: method:src/main/java/io/spring/infrastructure/service/DefaultJwtService.java::io.spring.infrastructure.service.DefaultJwtService.expireTimeFromNow()
+      grade: 2
+    - file: src/main/resources/application.properties
+      lines:
+      - 9
+      - 10
+      grade: 2
+      note: jwt.secret and jwt.sessionTime
+  - key: rw-l03
+    class: local
+    task_category: code_search
+    scope: SYMBOL
+    lexical_overlap: low
+    text: Who may edit or delete an article, and who may delete a comment?
+    judgments:
+    - entity: method:src/main/java/io/spring/core/service/AuthorizationService.java::io.spring.core.service.AuthorizationService.canWriteArticle(User,Article)
+      grade: 3
+    - entity: method:src/main/java/io/spring/core/service/AuthorizationService.java::io.spring.core.service.AuthorizationService.canWriteComment(User,Article,Comment)
+      grade: 3
+    - entity: method:src/main/java/io/spring/api/ArticleApi.java::io.spring.api.ArticleApi.updateArticle(String,User,UpdateArticleParam)
+      grade: 1
+    - entity: method:src/main/java/io/spring/api/ArticleApi.java::io.spring.api.ArticleApi.deleteArticle(String,User)
+      grade: 1
+    - entity: method:src/main/java/io/spring/api/CommentsApi.java::io.spring.api.CommentsApi.deleteComment(String,String,User)
+      grade: 1
+  - key: rw-l04
+    class: local
+    task_category: code_search
+    scope: SYMBOL
+    lexical_overlap: low
+    text: How is an article's URL slug derived from its title?
+    judgments:
+    - entity: method:src/main/java/io/spring/core/article/Article.java::io.spring.core.article.Article.toSlug(String)
+      grade: 3
+    - entity: method:src/main/java/io/spring/core/article/Article.java::io.spring.core.article.Article.update(String,String,String)
+      grade: 2
+      note: a new title regenerates the slug
+  - key: rw-l05
+    class: local
+    task_category: flow
+    scope: SYMBOL
+    lexical_overlap: low
+    text: How does the app reject a new article whose title is already taken?
+    judgments:
+    - entity: method:src/main/java/io/spring/application/article/DuplicatedArticleValidator.java::io.spring.application.article.DuplicatedArticleValidator.isValid(String,ConstraintValidatorContext)
+      grade: 3
+    - entity: interface:src/main/java/io/spring/application/article/DuplicatedArticleConstraint.java::io.spring.application.article.DuplicatedArticleConstraint
+      grade: 2
+    - entity: class:src/main/java/io/spring/application/article/NewArticleParam.java::io.spring.application.article.NewArticleParam
+      grade: 1
+  - key: rw-l06
+    class: local
+    task_category: flow
+    scope: SYMBOL
+    lexical_overlap: low
+    text: When users update their profile, how are email and username conflicts detected?
+    judgments:
+    - entity: method:src/main/java/io/spring/application/user/UserService.java::io.spring.application.user.UpdateUserValidator.isValid(UpdateUserCommand,ConstraintValidatorContext)
+      grade: 3
+    - entity: method:src/main/java/io/spring/application/user/UserService.java::io.spring.application.user.UserService.updateUser(UpdateUserCommand)
+      grade: 2
+  - key: rw-l07
+    class: local
+    task_category: flow
+    scope: SYMBOL
+    lexical_overlap: low
+    text: How are an article's tags stored when it is saved for the first time?
+    judgments:
+    - entity: method:src/main/java/io/spring/infrastructure/repository/MyBatisArticleRepository.java::io.spring.infrastructure.repository.MyBatisArticleRepository.createNew(Article)
+      grade: 3
+    - entity: method:src/main/java/io/spring/infrastructure/repository/MyBatisArticleRepository.java::io.spring.infrastructure.repository.MyBatisArticleRepository.save(Article)
+      grade: 2
+    - entity: method:src/main/java/io/spring/infrastructure/mybatis/mapper/ArticleMapper.java::io.spring.infrastructure.mybatis.mapper.ArticleMapper.insertTag(Tag)
+      grade: 1
+    - entity: method:src/main/java/io/spring/infrastructure/mybatis/mapper/ArticleMapper.java::io.spring.infrastructure.mybatis.mapper.ArticleMapper.insertArticleTagRelation(String,String)
+      grade: 1
+  - key: rw-l08
+    class: local
+    task_category: code_search
+    scope: SYMBOL
+    lexical_overlap: low
+    text: How is the page size of cursor-based pagination limited?
+    judgments:
+    - entity: method:src/main/java/io/spring/application/CursorPageParameter.java::io.spring.application.CursorPageParameter.setLimit(int)
+      grade: 3
+    - entity: method:src/main/java/io/spring/application/CursorPageParameter.java::io.spring.application.CursorPageParameter.getQueryLimit()
+      grade: 2
+      note: fetches one extra row to detect a next page
+  - key: rw-l09
+    class: local
+    task_category: flow
+    scope: SYMBOL
+    lexical_overlap: low
+    text: How does an article listing know whether the current user follows each author?
+    judgments:
+    - entity: method:src/main/java/io/spring/application/ArticleQueryService.java::io.spring.application.ArticleQueryService.setIsFollowingAuthor(List<ArticleData>,User)
+      grade: 3
+    - entity: method:src/main/java/io/spring/application/ArticleQueryService.java::io.spring.application.ArticleQueryService.fillExtraInfo(List<ArticleData>,User)
+      grade: 2
+  - key: rw-l10
+    class: local
+    task_category: flow
+    scope: SYMBOL
+    lexical_overlap: low
+    text: How are new users registered, and how are their passwords stored?
+    judgments:
+    - entity: method:src/main/java/io/spring/application/user/UserService.java::io.spring.application.user.UserService.createUser(RegisterParam)
+      grade: 3
+    - entity: method:src/main/java/io/spring/api/UsersApi.java::io.spring.api.UsersApi.createUser(RegisterParam)
+      grade: 2
+    - entity: method:src/main/java/io/spring/api/security/WebSecurityConfig.java::io.spring.api.security.WebSecurityConfig.passwordEncoder()
+      grade: 2
+  - key: rw-g01
+    class: global
+    task_category: architecture
+    scope: REPOSITORY
+    lexical_overlap: low
+    text: Which endpoints can be called without authentication?
+    judgments:
+    - entity: method:src/main/java/io/spring/api/security/WebSecurityConfig.java::io.spring.api.security.WebSecurityConfig.configure(HttpSecurity)
+      grade: 3
+  - key: rw-g02
+    class: global
+    task_category: architecture
+    scope: REPOSITORY
+    lexical_overlap: low
+    text: How do the REST and GraphQL APIs share the same business logic?
+    judgments:
+    - entity: class:src/main/java/io/spring/application/article/ArticleCommandService.java::io.spring.application.article.ArticleCommandService
+      grade: 3
+    - entity: class:src/main/java/io/spring/application/ArticleQueryService.java::io.spring.application.ArticleQueryService
+      grade: 3
+    - entity: class:src/main/java/io/spring/api/ArticleApi.java::io.spring.api.ArticleApi
+      grade: 2
+    - entity: class:src/main/java/io/spring/graphql/ArticleMutation.java::io.spring.graphql.ArticleMutation
+      grade: 2
+    - entity: class:src/main/java/io/spring/graphql/ArticleDatafetcher.java::io.spring.graphql.ArticleDatafetcher
+      grade: 1
+  - key: rw-g03
+    class: global
+    task_category: architecture
+    scope: REPOSITORY
+    lexical_overlap: low
+    text: How is persistence implemented, and where do the SQL statements live?
+    judgments:
+    - entity: class:src/main/java/io/spring/infrastructure/repository/MyBatisArticleRepository.java::io.spring.infrastructure.repository.MyBatisArticleRepository
+      grade: 3
+    - file: src/main/resources/mapper/ArticleMapper.xml
+      lines:
+      - 1
+      - 82
+      grade: 3
+    - entity: interface:src/main/java/io/spring/infrastructure/mybatis/mapper/ArticleMapper.java::io.spring.infrastructure.mybatis.mapper.ArticleMapper
+      grade: 2
+    - file: src/main/resources/application.properties
+      lines:
+      - 12
+      - 17
+      grade: 2
+      note: MyBatis settings and mapper locations
+  - key: rw-g04
+    class: global
+    task_category: data_model
+    scope: REPOSITORY
+    lexical_overlap: low
+    text: What does the database schema look like?
+    judgments:
+    - file: src/main/resources/db/migration/V1__create_tables.sql
+      lines:
+      - 1
+      - 49
+      grade: 3
+  - key: rw-g05
+    class: global
+    task_category: architecture
+    scope: REPOSITORY
+    lexical_overlap: low
+    text: How are validation errors turned into API error responses?
+    judgments:
+    - entity: method:src/main/java/io/spring/api/exception/CustomizeExceptionHandler.java::io.spring.api.exception.CustomizeExceptionHandler.handleMethodArgumentNotValid(MethodArgumentNotValidException,HttpHeaders,HttpStatus,WebRequest)
+      grade: 3
+    - entity: method:src/main/java/io/spring/api/exception/CustomizeExceptionHandler.java::io.spring.api.exception.CustomizeExceptionHandler.handleConstraintViolation(ConstraintViolationException,WebRequest)
+      grade: 3
+    - entity: method:src/main/java/io/spring/api/exception/ErrorResourceSerializer.java::io.spring.api.exception.ErrorResourceSerializer.serialize(ErrorResource,JsonGenerator,SerializerProvider)
+      grade: 2
+    - entity: method:src/main/java/io/spring/graphql/exception/GraphQLCustomizeExceptionHandler.java::io.spring.graphql.exception.GraphQLCustomizeExceptionHandler.onException(DataFetcherExceptionHandlerParameters)
+      grade: 2
+  - key: rw-g06
+    class: global
+    task_category: configuration
+    scope: REPOSITORY
+    lexical_overlap: low
+    text: Which database does the application use by default, and how is it configured?
+    judgments:
+    - file: src/main/resources/application.properties
+      lines:
+      - 1
+      - 4
+      grade: 3
+- manifest_id: flask
+  role: VALIDATION
+  questions:
+  - key: fl-l01
+    class: local
+    task_category: flow
+    scope: SYMBOL
+    lexical_overlap: low
+    text: What happens, step by step, when a WSGI request reaches the application?
+    judgments:
+    - entity: method:src/flask/app.py::Flask.wsgi_app
+      grade: 3
+    - entity: method:src/flask/app.py::Flask.full_dispatch_request
+      grade: 3
+    - entity: method:src/flask/ctx.py::RequestContext.push
+      grade: 2
+    - entity: method:src/flask/app.py::Flask.finalize_request
+      grade: 1
+    - entity: method:src/flask/app.py::Flask.__call__
+      grade: 1
+  - key: fl-l02
+    class: local
+    task_category: flow
+    scope: SYMBOL
+    lexical_overlap: low
+    text: What happens to an unhandled exception during a request, in debug mode and in production?
+    judgments:
+    - entity: method:src/flask/app.py::Flask.handle_exception
+      grade: 3
+    - entity: method:src/flask/app.py::Flask.handle_user_exception
+      grade: 2
+    - entity: method:src/flask/app.py::Flask.finalize_request
+      grade: 1
+  - key: fl-l03
+    class: local
+    task_category: code_search
+    scope: SYMBOL
+    lexical_overlap: low
+    text: In what order are error handlers looked up?
+    judgments:
+    - entity: method:src/flask/sansio/app.py::App._find_error_handler
+      grade: 3
+    - entity: method:src/flask/sansio/scaffold.py::Scaffold.errorhandler
+      grade: 1
+    - entity: method:src/flask/sansio/scaffold.py::Scaffold.register_error_handler
+      grade: 1
+  - key: fl-l04
+    class: local
+    task_category: code_search
+    scope: SYMBOL
+    lexical_overlap: low
+    text: How are session cookies signed, and how can the secret key be rotated?
+    judgments:
+    - entity: method:src/flask/sessions.py::SecureCookieSessionInterface.get_signing_serializer
+      grade: 3
+    - entity: method:src/flask/sessions.py::SecureCookieSessionInterface.open_session
+      grade: 2
+    - entity: method:src/flask/sessions.py::SecureCookieSessionInterface.save_session
+      grade: 2
+  - key: fl-l05
+    class: local
+    task_category: flow
+    scope: SYMBOL
+    lexical_overlap: low
+    text: When is the session cookie written back to the response?
+    judgments:
+    - entity: method:src/flask/sessions.py::SessionInterface.should_set_cookie
+      grade: 3
+    - entity: method:src/flask/sessions.py::SecureCookieSessionInterface.save_session
+      grade: 3
+  - key: fl-l06
+    class: local
+    task_category: flow
+    scope: SYMBOL
+    lexical_overlap: low
+    text: How does the command line find the application to run when none is named?
+    judgments:
+    - entity: function:src/flask/cli.py::find_best_app
+      grade: 3
+    - entity: function:src/flask/cli.py::prepare_import
+      grade: 2
+    - entity: function:src/flask/cli.py::locate_app
+      grade: 2
+    - entity: method:src/flask/cli.py::ScriptInfo.load_app
+      grade: 2
+  - key: fl-l07
+    class: local
+    task_category: configuration
+    scope: SYMBOL
+    lexical_overlap: low
+    text: How can configuration be loaded from environment variables?
+    judgments:
+    - entity: method:src/flask/config.py::Config.from_prefixed_env
+      grade: 3
+    - entity: method:src/flask/config.py::Config.from_envvar
+      grade: 3
+    - entity: function:src/flask/cli.py::load_dotenv
+      grade: 1
+  - key: fl-l08
+    class: local
+    task_category: flow
+    scope: SYMBOL
+    lexical_overlap: low
+    text: How does registering a blueprint add its routes to the application?
+    judgments:
+    - entity: method:src/flask/sansio/blueprints.py::Blueprint.register
+      grade: 3
+    - entity: method:src/flask/sansio/blueprints.py::BlueprintSetupState.add_url_rule
+      grade: 3
+    - entity: method:src/flask/sansio/app.py::App.register_blueprint
+      grade: 2
+    - entity: method:src/flask/sansio/blueprints.py::Blueprint.record
+      grade: 1
+    - entity: method:src/flask/sansio/blueprints.py::Blueprint.make_setup_state
+      grade: 1
+  - key: fl-l09
+    class: local
+    task_category: code_search
+    scope: SYMBOL
+    lexical_overlap: low
+    text: How are templates found across the application and its blueprints?
+    judgments:
+    - entity: method:src/flask/templating.py::DispatchingJinjaLoader._iter_loaders
+      grade: 3
+    - entity: method:src/flask/templating.py::DispatchingJinjaLoader.get_source
+      grade: 2
+    - entity: method:src/flask/templating.py::DispatchingJinjaLoader._get_source_fast
+      grade: 2
+    - entity: method:src/flask/templating.py::DispatchingJinjaLoader._get_source_explained
+      grade: 1
+  - key: fl-l10
+    class: local
+    task_category: code_search
+    scope: SYMBOL
+    lexical_overlap: low
+    text: How do class-based views dispatch a request to a method per HTTP verb?
+    judgments:
+    - entity: method:src/flask/views.py::MethodView.dispatch_request
+      grade: 3
+    - entity: method:src/flask/views.py::MethodView.__init_subclass__
+      grade: 2
+    - entity: method:src/flask/views.py::View.as_view
+      grade: 2
+  - key: fl-l11
+    class: local
+    task_category: code_search
+    scope: SYMBOL
+    lexical_overlap: low
+    text: How are one-time messages for the next page stored and read back?
+    judgments:
+    - entity: function:src/flask/helpers.py::flash
+      grade: 3
+    - entity: function:src/flask/helpers.py::get_flashed_messages
+      grade: 3
+  - key: fl-l12
+    class: local
+    task_category: code_search
+    scope: SYMBOL
+    lexical_overlap: low
+    text: How are dates, UUIDs and dataclasses turned into JSON responses?
+    judgments:
+    - entity: function:src/flask/json/provider.py::_default
+      grade: 3
+    - entity: method:src/flask/json/provider.py::DefaultJSONProvider.dumps
+      grade: 2
+    - entity: method:src/flask/json/provider.py::DefaultJSONProvider.response
+      grade: 1
+  - key: fl-l13
+    class: local
+    task_category: code_search
+    scope: SYMBOL
+    lexical_overlap: low
+    text: How does the session keep types such as tuples, bytes and datetimes that JSON cannot represent?
+    judgments:
+    - entity: class:src/flask/json/tag.py::TaggedJSONSerializer
+      grade: 3
+    - entity: method:src/flask/json/tag.py::TaggedJSONSerializer.tag
+      grade: 2
+    - entity: method:src/flask/json/tag.py::TaggedJSONSerializer.untag
+      grade: 2
+  - key: fl-l14
+    class: local
+    task_category: code_search
+    scope: SYMBOL
+    lexical_overlap: low
+    text: How are files served from a directory without letting a request escape it?
+    judgments:
+    - entity: function:src/flask/helpers.py::send_from_directory
+      grade: 3
+    - entity: function:src/flask/helpers.py::send_file
+      grade: 2
+    - entity: method:src/flask/app.py::Flask.send_static_file
+      grade: 2
+  - key: fl-g01
+    class: global
+    task_category: architecture
+    scope: REPOSITORY
+    lexical_overlap: low
+    text: How is the framework split between an I/O-independent core and the WSGI-specific application?
+    judgments:
+    - entity: class:src/flask/sansio/app.py::App
+      grade: 3
+    - entity: class:src/flask/app.py::Flask
+      grade: 3
+    - entity: class:src/flask/sansio/scaffold.py::Scaffold
+      grade: 2
+  - key: fl-g02
+    class: global
+    task_category: architecture
+    scope: MODULE
+    lexical_overlap: low
+    text: Which contexts exist while a request is handled, and what does each hold?
+    judgments:
+    - entity: class:src/flask/ctx.py::AppContext
+      grade: 3
+    - entity: class:src/flask/ctx.py::RequestContext
+      grade: 3
+    - entity: class:src/flask/ctx.py::_AppCtxGlobals
+      grade: 2
+    - entity: function:src/flask/ctx.py::has_request_context
+      grade: 1
+  - key: fl-g03
+    class: global
+    task_category: architecture
+    scope: MODULE
+    lexical_overlap: low
+    text: Which signals does the framework emit?
+    judgments:
+    - file: src/flask/signals.py
+      lines:
+      - 1
+      - 17
+      grade: 3
+    - entity: method:src/flask/app.py::Flask.handle_exception
+      grade: 1
+      note: sends got_request_exception
+  - key: fl-g04
+    class: global
+    task_category: architecture
+    scope: REPOSITORY
+    lexical_overlap: low
+    text: Which request lifecycle hooks can an application register, and when do they run?
+    judgments:
+    - entity: method:src/flask/sansio/scaffold.py::Scaffold.before_request
+      grade: 3
+    - entity: method:src/flask/sansio/scaffold.py::Scaffold.after_request
+      grade: 3
+    - entity: method:src/flask/sansio/scaffold.py::Scaffold.teardown_request
+      grade: 3
+    - entity: method:src/flask/app.py::Flask.preprocess_request
+      grade: 2
+    - entity: method:src/flask/app.py::Flask.process_response
+      grade: 2
+  - key: fl-g05
+    class: global
+    task_category: configuration
+    scope: REPOSITORY
+    lexical_overlap: low
+    text: Which configuration keys have built-in defaults?
+    judgments:
+    - file: src/flask/app.py
+      lines:
+      - 178
+      - 210
+      grade: 3
+      note: Flask.default_config
