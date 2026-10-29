@@ -152,6 +152,19 @@ test("events of unknown shape are skipped instead of crashing the screen", async
   await expect(page.locator(".an-line").last()).toContainText("AWAITING_STAGE");
 });
 
+test("recent analyses are listed on the home page and open their page", async ({ page, api }) => {
+  api.recent = [{ analysis_id: ANALYSIS_ID, canonical_repository_key: "github:pallets/flask", owner_name: "pallets",
+    repository_name: "flask", commit_sha: "d086db856be187255b8ec61ef409357393020f32", requested_reference: "main",
+    status: "AWAITING_STAGE", created_at: "2026-10-29T18:39:56Z", completed_at: null, awaiting_stage: "SUMMARIZING" }];
+  await page.goto("/");
+  const row = page.locator(".home-recent li");
+  await expect(row).toHaveCount(1);
+  await expect(row).toContainText("d086db8");
+  await expect(row).toContainText("waiting");
+  await row.getByRole("link").click();
+  await expect(page).toHaveURL(`/analyses/${ANALYSIS_ID}`);
+});
+
 test("navigation offers no links to the MVP pages R1 removed", async ({ page, api }) => {
   void api;
   await page.goto("/");

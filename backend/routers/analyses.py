@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, Header, HTTPException, status
+from fastapi import APIRouter, Header, HTTPException, Query, status
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 from sse_starlette.sse import EventSourceResponse
@@ -332,6 +332,49 @@ async def create_analysis(request: CreateAnalysisRequest) -> CreateAnalysisRespo
         ) from exc
 
     return _response(result)
+
+
+class AnalysisSummaryResponse(BaseModel):
+    analysis_id: UUID
+    canonical_repository_key: str
+    owner_name: str
+    repository_name: str
+    commit_sha: str
+    requested_reference: str | None
+    status: str
+    created_at: datetime
+    completed_at: datetime | None = None
+    awaiting_stage: str | None = None
+
+
+def _list_analyses(conn: Any, limit: int) -> list[AnalysisSummaryResponse]:
+    rows = conn.fetch_all(
+        """
+        SELECT a.id, r.canonical_key, r.owner_name, r.repository_name, v.commit_sha, v.requested_ref,
+               a.status, a.created_at, a.completed_at, a.awaiting_stage
+        FROM core.analysis AS a
+        JOIN core.repository_version AS v ON v.id = a.repository_version_id
+        JOIN core.repository AS r ON r.id = v.repository_id
+        ORDER BY a.created_at DESC, a.id
+        LIMIT %s
+        """,
+        limit,
+    )
+    return [
+        AnalysisSummaryResponse(
+            analysis_id=UUID(str(row[0])), canonical_repository_key=row[1], owner_name=row[2],
+            repository_name=row[3], commit_sha=row[4], requested_reference=row[5], status=row[6],
+            created_at=row[7], completed_at=row[8], awaiting_stage=row[9],
+        )
+        for row in rows
+    ]
+
+
+@router.get("", response_model=list[AnalysisSummaryResponse])
+async def list_analyses(limit: int = Query(default=20, ge=1, le=100)) -> list[AnalysisSummaryResponse]:
+    """The most recently created analyses, newest first."""
+    factory = _connection_factory_or_raise()
+    return await run_in_threadpool(run_in_transaction, factory, lambda conn: _list_analyses(conn, limit))
 
 
 @router.get("/{analysis_id}", response_model=AnalysisStateResponse)

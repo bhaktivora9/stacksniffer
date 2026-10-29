@@ -28,6 +28,14 @@ export async function createAnalysis(repositoryUrl, { reference } = {}) {
   return body;
 }
 
+/** GET /api/v1/analyses — the most recently created analyses, newest first. */
+export async function listAnalyses(limit = 20) {
+  const response = await fetchApi(`/api/v1/analyses?limit=${encodeURIComponent(limit)}`);
+  const body = await response.json().catch(() => ([]));
+  if (!response.ok) throw new Error(errorDetail(body, `Analysis list request failed (${response.status})`));
+  return body;
+}
+
 /** GET /api/v1/analyses/{id}/overview — repository, counts, graph and the community map. */
 export async function getOverview(analysisId) {
   const response = await fetchApi(`/api/v1/analyses/${encodeURIComponent(analysisId)}/overview`);

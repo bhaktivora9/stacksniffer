@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { API_BASE } from "../config/api";
-import { createAnalysis, subscribeToAnalysisEvents } from "../services/analyses";
+import { createAnalysis, listAnalyses, subscribeToAnalysisEvents } from "../services/analyses";
 import HomeLanding from "../components/HomeLanding";
 import AnalyzingScreen, { AnalyzingScreenFallback } from "../components/AnalyzingScreen";
 import ErrorBoundary from "../components/ErrorBoundary";
@@ -67,6 +67,7 @@ export default function HomePage() {
   const [urlError, setUrlError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [analysisId, setAnalysisId] = useState(null);
+  const [recent, setRecent] = useState(null);
   const [error, setError] = useState(null);
   const [streamEvents, setStreamEvents] = useState([]);
   const [streamStatus, setStreamStatus] = useState("idle");
@@ -77,6 +78,7 @@ export default function HomePage() {
 
   useEffect(() => {
     inputRef.current?.focus();
+    listAnalyses(8).then(setRecent).catch(() => setRecent([]));
     if (followedId) {
       setLoading(true);
       followAnalysis(followedId, ++runRef.current);
@@ -192,5 +194,5 @@ export default function HomePage() {
     </ErrorBoundary>;
   }
 
-  return <HomeLanding repoUrl={repoUrl} onChange={handleUrlChange} onSubmit={handleSubmit} inputRef={inputRef} health={health} urlError={urlError} error={error} />;
+  return <HomeLanding repoUrl={repoUrl} onChange={handleUrlChange} onSubmit={handleSubmit} inputRef={inputRef} health={health} recent={recent} urlError={urlError} error={error} />;
 }

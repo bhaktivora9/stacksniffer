@@ -178,3 +178,15 @@ def test_unknown_analyses_bad_requests_and_a_mismatched_provider_fail_clearly(co
     analyses.configure_search(None)
     assert client.post(url, json={"query": "cart"}).status_code == 503
 
+
+def test_recent_analyses_are_listed_newest_first_with_their_repository(conn, indexed, client):
+    analysis_id, _, _ = indexed
+    listed = client.get("/api/v1/analyses", params={"limit": 100})
+    assert listed.status_code == 200
+    rows = listed.json()
+    created = [row["created_at"] for row in rows]
+    assert created == sorted(created, reverse=True)
+    mine = next(row for row in rows if row["analysis_id"] == str(analysis_id))
+    assert mine["canonical_repository_key"] and mine["commit_sha"] and mine["status"]
+    assert len(client.get("/api/v1/analyses", params={"limit": 1}).json()) == 1
+    assert client.get("/api/v1/analyses", params={"limit": 0}).status_code == 422
