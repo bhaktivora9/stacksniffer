@@ -1,4 +1,4 @@
-"""Analysis API: create and follow analyses, and search them."""
+"""Analysis API: create and follow analyses, search them, and ask grounded questions about them."""
 
 from __future__ import annotations
 
@@ -31,6 +31,8 @@ try:
         RepositoryResolutionError,
         resolve_repository_reference,
     )
+    from services.graphrag.ask import AskError, ask
+    from services.graphrag.llm import GenerationError
     from services.semantic.embeddings import EmbeddingError
     from services.semantic.search import MAX_QUERY_CHARS, MAX_RESULTS, SearchError, search_analysis
 except ModuleNotFoundError:  # Package imports from the repository root.
@@ -43,6 +45,8 @@ except ModuleNotFoundError:  # Package imports from the repository root.
         RepositoryResolutionError,
         resolve_repository_reference,
     )
+    from backend.services.graphrag.ask import AskError, ask
+    from backend.services.graphrag.llm import GenerationError
     from backend.services.semantic.embeddings import EmbeddingError
     from backend.services.semantic.search import MAX_QUERY_CHARS, MAX_RESULTS, SearchError, search_analysis
 
@@ -51,6 +55,8 @@ router = APIRouter(prefix="/api/v1/analyses", tags=["analyses"])
 _connection_factory: Callable[[], Any] | None = None
 # (provider, chunk profile, embedding profile): the profiles the service indexes with.
 _search_configuration: tuple[Any, Any, Any] | None = None
+# The text provider for answers (the one that summarizes communities).
+_text_provider: Any = None
 
 
 class CreateAnalysisRequest(BaseModel):
@@ -218,6 +224,12 @@ def configure_search(provider: Any, chunk_profile: Any = None, embedding_profile
     _search_configuration = None if provider is None else (provider, chunk_profile, embedding_profile)
 
 
+def configure_answers(provider: Any) -> None:
+    """Configure the text provider that answers questions; None disables answers."""
+    global _text_provider
+    _text_provider = provider
+
+
 def _connection_factory_or_raise() -> Callable[[], Any]:
     if _connection_factory is None:
         raise HTTPException(
@@ -366,6 +378,117 @@ async def search(analysis_id: UUID, request: SearchRequest) -> SearchResponse:
             "total": round(total_ms, 2),
         },
     )
+
+
+class AskRequest(BaseModel):
+    question: str = Field(min_length=1, max_length=2000)
+    # Omitted: routed from the question (repository-wide wording goes GLOBAL).
+    mode: str | None = Field(default=None, pattern="^(?i:local|global)$")
+
+
+@router.post("/{analysis_id}/ask")
+async def ask_question(analysis_id: UUID, request: AskRequest) -> dict[str, Any]:
+    factory = _connection_factory_or_raise()
+    if _search_configuration is None or _text_provider is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="answers are not configured: an embedding and a text provider are required",
+        )
+    embedder, chunk_profile, embedding_profile = _search_configuration
+
+    def run(conn: Any):
+        return ask(conn, analysis_id, request.question, embedder=embedder, chunk_profile=chunk_profile,
+                   embedding_profile=embedding_profile, provider=_text_provider, mode=request.mode)
+
+    try:
+        answer = await run_in_threadpool(run_in_transaction, factory, run)
+    except (AskError, SearchError) as exc:
+        raise HTTPException(status_code=exc.status_code, detail=str(exc)) from exc
+    except (EmbeddingError, GenerationError) as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                            detail=f"answer generation failed: {exc.failure_code}") from exc
+    return {
+        "query_run_id": str(answer.query_run_id),
+        "mode": answer.mode,
+        "answer": answer.answer,
+        "grounding_status": answer.grounding_status,
+        "citations": answer.citations,
+        "unsupported_labels": answer.unsupported_labels,
+        "context": [{"label": item.label, "kind": item.kind, "reason": item.reason, "score": round(item.score, 4),
+                     **item.display} for item in answer.context],
+        "latency_ms": answer.latency_ms,
+        "tokens": {"input": answer.input_tokens, "output": answer.output_tokens},
+    }
+
+
+def _overview(conn: Any, analysis_id: UUID) -> dict[str, Any] | None:
+    state = _get_analysis(conn, analysis_id)
+    if state is None:
+        return None
+    a = str(analysis_id)
+    repository = conn.fetch_one(
+        "SELECT r.canonical_key, r.owner_name, r.repository_name, v.commit_sha, v.requested_ref "
+        "FROM core.analysis an JOIN core.repository_version v ON v.id = an.repository_version_id "
+        "JOIN core.repository r ON r.id = v.repository_id WHERE an.id = %s", a)
+    counts = conn.fetch_one(
+        "SELECT (SELECT count(*) FROM core.source_file WHERE analysis_id = %s), "
+        "(SELECT count(*) FROM core.entity WHERE analysis_id = %s AND entity_type <> 'EXTERNAL_SYMBOL'), "
+        "(SELECT count(*) FROM core.repository_edge WHERE analysis_id = %s), "
+        "(SELECT count(*) FROM semantic.chunk WHERE analysis_id = %s)", a, a, a, a)
+    languages = conn.fetch_all(
+        "SELECT language, count(*) FROM core.source_file WHERE analysis_id = %s AND language IS NOT NULL "
+        "AND NOT (is_generated OR is_vendored) GROUP BY language ORDER BY count(*) DESC LIMIT 8", a)
+    snapshot = conn.fetch_one(
+        "SELECT id, node_count, edge_count, projection_version, activated_at FROM graphrag.graph_snapshot "
+        "WHERE analysis_id = %s AND status = 'ACTIVE'", a)
+    communities: list[dict[str, Any]] = []
+    run_metrics = None
+    if snapshot is not None:
+        run = conn.fetch_one("SELECT id, parameters->'metrics' FROM graphrag.community_run WHERE graph_snapshot_id = %s "
+                             "AND status = 'SUCCEEDED' ORDER BY completed_at DESC LIMIT 1", str(snapshot[0]))
+        if run is not None:
+            run_metrics = run[1]
+            rows = conn.fetch_all(
+                "SELECT c.id, c.community_key, c.member_count, c.metrics, s.status, s.structured_summary, "
+                "(SELECT count(*) FROM graphrag.community k WHERE k.parent_community_id = c.id) "
+                "FROM graphrag.community c LEFT JOIN LATERAL (SELECT status, structured_summary "
+                "FROM graphrag.community_summary WHERE community_id = c.id ORDER BY completed_at DESC NULLS LAST "
+                "LIMIT 1) s ON TRUE WHERE c.community_run_id = %s AND c.hierarchy_level = 0 "
+                "ORDER BY c.member_count DESC, c.community_key", str(run[0]))
+            for community_id, key, members, metrics, summary_status, summary, children in rows:
+                summary = summary or {}
+                references = summary.get("references", {})
+                communities.append({
+                    "id": str(community_id), "key": key, "member_count": members, "children": children,
+                    "files": (metrics or {}).get("top_files", []), "summary_status": summary_status,
+                    "title": summary.get("title"), "summary": summary.get("summary"),
+                    "key_points": [{"text": point["text"], "references": [
+                        {"label": label, **{k: references[label].get(k) for k in
+                                            ("file", "start_line", "end_line", "stable_key", "title")}}
+                        for label in point.get("references", []) if label in references]}
+                        for point in summary.get("key_points", []) if point.get("supported")],
+                })
+    return {
+        "analysis": json.loads(state.model_dump_json()),
+        "repository": {"canonical_key": repository[0], "owner": repository[1], "name": repository[2],
+                       "commit_sha": repository[3], "requested_reference": repository[4]},
+        "counts": {"files": counts[0], "entities": counts[1], "relationships": counts[2], "chunks": counts[3]},
+        "languages": [{"language": language, "files": files} for language, files in languages],
+        "graph": None if snapshot is None else {
+            "nodes": snapshot[1], "edges": snapshot[2], "projection_version": snapshot[3],
+            "activated_at": snapshot[4].isoformat() if snapshot[4] else None, "communities": run_metrics},
+        "communities": communities,
+        "answers_available": _text_provider is not None and _search_configuration is not None,
+    }
+
+
+@router.get("/{analysis_id}/overview")
+async def get_overview(analysis_id: UUID) -> dict[str, Any]:
+    factory = _connection_factory_or_raise()
+    result = await run_in_threadpool(run_in_transaction, factory, lambda conn: _overview(conn, analysis_id))
+    if result is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="analysis not found")
+    return result
 
 
 @router.get("/{analysis_id}/events")

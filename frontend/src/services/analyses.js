@@ -29,6 +29,26 @@ export async function createAnalysis(repositoryUrl, { reference } = {}) {
   return body;
 }
 
+/** GET /api/v1/analyses/{id}/overview — repository, counts, graph and the community map. */
+export async function getOverview(analysisId) {
+  const response = await fetchApi(`/api/v1/analyses/${encodeURIComponent(analysisId)}/overview`);
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(errorDetail(body, `Overview request failed (${response.status})`));
+  return body;
+}
+
+/** POST /api/v1/analyses/{id}/ask — a grounded answer; mode "local", "global" or null (routed). */
+export async function askQuestion(analysisId, question, mode = null) {
+  const response = await fetchApi(`/api/v1/analyses/${encodeURIComponent(analysisId)}/ask`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ question, ...(mode ? { mode } : {}) }),
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(errorDetail(body, `Question failed (${response.status})`));
+  return body;
+}
+
 /**
  * Subscribes to /api/v1/analyses/{analysis_id}/events. Events are delivered once each, in order;
  * the stream closes itself after a finished state. Returns a function that closes it early.

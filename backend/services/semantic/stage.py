@@ -5,7 +5,9 @@ worker resumes a parked analysis under a new attempt. It reads only what extract
 (the canonical IR and the retained source), never the repository, so a resume needs no
 acquisition. Every step is idempotent: identical content and profiles reuse their chunks and
 vectors, and embedding commits batch by batch, so a retry after a provider failure embeds only
-what is still missing. When it is done the analysis parks awaiting PROJECTING.
+what is still missing. When it is done it hands the analysis to its next stage (projection), or
+parks it awaiting PROJECTING when there is none. A resumed analysis already past INDEXING skips
+straight to the next stage.
 """
 
 from __future__ import annotations
@@ -15,12 +17,12 @@ import json
 import logging
 import threading
 import time
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from contextlib import suppress
 from typing import Any
 from uuid import UUID
 
-from ..analysis_lifecycle import AWAITING_STAGE
+from ..analysis_lifecycle import AWAITING_STAGE, AnalysisState
 from ..extraction.contracts import ExtractionResult
 from .embeddings import EmbeddingProvider, check_compatibility
 from .profiles import DEFAULT_CHUNK_PROFILE, DEFAULT_EMBEDDING_PROFILE, ChunkProfile, EmbeddingProfile
@@ -34,7 +36,7 @@ class IndexingCancelled(RuntimeError):
 
 
 class SemanticIndexingStage:
-    """``NextStage`` for ``StructuralExtractionStage``; returns AWAITING_STAGE (awaiting PROJECTING)."""
+    """``NextStage`` for ``StructuralExtractionStage``; hands off to ``next_stage`` or parks awaiting PROJECTING."""
 
     def __init__(
         self,
@@ -44,6 +46,7 @@ class SemanticIndexingStage:
         chunk_profile: ChunkProfile = DEFAULT_CHUNK_PROFILE,
         embedding_profile: EmbeddingProfile = DEFAULT_EMBEDDING_PROFILE,
         batch_size: int = 64,
+        next_stage: Callable[[ExtractionResult], Awaitable[str]] | None = None,
     ):
         check_compatibility(provider, embedding_profile)  # a misconfiguration fails at startup
         self._connection_factory = connection_factory
@@ -51,6 +54,12 @@ class SemanticIndexingStage:
         self._chunk_profile = chunk_profile
         self._embedding_profile = embedding_profile
         self._batch_size = batch_size
+        self._next_stage = next_stage
+
+    @property
+    def resumable_stages(self) -> tuple[str, ...]:
+        """Stages after INDEXING that a resumed analysis can continue at."""
+        return tuple(getattr(self._next_stage, "resumable_stages", ()))
 
     @property
     def chunk_profile(self) -> ChunkProfile:
@@ -61,6 +70,10 @@ class SemanticIndexingStage:
         return self._embedding_profile
 
     async def __call__(self, result: ExtractionResult) -> str:
+        status = await asyncio.to_thread(self._in_transaction, lambda conn: conn.fetch_scalar(
+            "SELECT status FROM core.analysis WHERE id = %s", str(result.analysis_id)))
+        if status != AnalysisState.INDEXING.value and self._next_stage is not None:
+            return await self._next_stage(result)  # resumed past indexing: nothing to redo
         stop = threading.Event()
         # The thread outlives a task cancellation, so signal it and wait for its current batch.
         work = asyncio.ensure_future(asyncio.to_thread(self._index, result.analysis_id, result.attempt_id, stop))
@@ -72,6 +85,8 @@ class SemanticIndexingStage:
                 await work
             raise
         logger.info("Indexed analysis %s attempt %s: %s", result.analysis_id, result.attempt_id, metrics)
+        if self._next_stage is not None:
+            return await self._next_stage(result)
         return AWAITING_STAGE
 
     def _index(self, analysis_id: UUID, attempt_id: UUID, stop: threading.Event) -> dict[str, Any]:

@@ -156,7 +156,7 @@ export default function HomePage() {
           setError(event.message || "Analysis failed");
         } else if (event.state === "READY") {
           setStreamStatus("complete");
-          navigate(`/results/${encodeURIComponent(analysis.analysis_id)}`);
+          navigate(`/analyses/${encodeURIComponent(analysis.analysis_id)}`);
         }
       },
       onDisconnect: () => {

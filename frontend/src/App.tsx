@@ -5,12 +5,14 @@ import ReviewQueuePage from "./pages/ReviewQueuePage";
 import RepositoryHistoryPage from "./pages/RepositoryHistoryPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import SearchPage from "./pages/SearchPage";
+import AnalysisPage from "./pages/AnalysisPage";
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<HomePage />} />
+        <Route path="/analyses/:analysisId" element={<AnalysisPage />} />
         <Route path="/results/:analysisId" element={<ResultsPage />} />
         <Route path="/review" element={<ReviewQueuePage />} />
         <Route path="/repositories" element={<RepositoryHistoryPage />} />
