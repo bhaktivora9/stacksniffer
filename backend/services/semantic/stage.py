@@ -53,6 +53,10 @@ class SemanticIndexingStage:
         self._batch_size = batch_size
 
     @property
+    def chunk_profile(self) -> ChunkProfile:
+        return self._chunk_profile
+
+    @property
     def embedding_profile(self) -> EmbeddingProfile:
         return self._embedding_profile
 

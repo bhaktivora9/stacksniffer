@@ -69,6 +69,12 @@ def vector_search(conn: Any, analysis_id: UUID, chunk_profile_id: UUID, embeddin
                             str(chunk_profile_id)]
     if language is not None:
         arguments.append(language)
+    # One HNSW index serves every analysis under a profile, so the analysis and language filters
+    # apply after the index scan; without iterative scans (pgvector 0.8+) a filtered search can
+    # return fewer than k rows although more match. Exact (sequential) plans are unaffected.
+    conn.execute("SELECT set_config('hnsw.iterative_scan', 'strict_order', true) WHERE "
+                 "(SELECT string_to_array(extversion, '.')::int[] FROM pg_extension WHERE extname = 'vector') "
+                 ">= '{0,8}'::int[]")
     rows = conn.fetch_all(search_query(distance_metric, first_party_only=first_party_only,
                                        with_language=language is not None), *arguments, k)
     found = [RetrievedChunk(row[0], row[1], row[2], row[3], row[4], row[5], row[6], to_score(row[7]),

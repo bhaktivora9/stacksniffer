@@ -1,10 +1,11 @@
-"""Analysis creation API."""
+"""Analysis API: create and follow analyses, and search them."""
 
 from __future__ import annotations
 
 import asyncio
 import json
 import os
+import time
 from collections.abc import Callable
 from datetime import datetime, timezone
 from typing import Any
@@ -30,6 +31,8 @@ try:
         RepositoryResolutionError,
         resolve_repository_reference,
     )
+    from services.semantic.embeddings import EmbeddingError
+    from services.semantic.search import MAX_QUERY_CHARS, MAX_RESULTS, SearchError, search_analysis
 except ModuleNotFoundError:  # Package imports from the repository root.
     from backend.services.analysis_persistence import (
         AnalysisCreation,
@@ -40,10 +43,14 @@ except ModuleNotFoundError:  # Package imports from the repository root.
         RepositoryResolutionError,
         resolve_repository_reference,
     )
+    from backend.services.semantic.embeddings import EmbeddingError
+    from backend.services.semantic.search import MAX_QUERY_CHARS, MAX_RESULTS, SearchError, search_analysis
 
 router = APIRouter(prefix="/api/v1/analyses", tags=["analyses"])
 
 _connection_factory: Callable[[], Any] | None = None
+# (provider, chunk profile, embedding profile): the profiles the service indexes with.
+_search_configuration: tuple[Any, Any, Any] | None = None
 
 
 class CreateAnalysisRequest(BaseModel):
@@ -75,6 +82,53 @@ class AnalysisStateResponse(BaseModel):
     # The stage to resume at (set while AWAITING_STAGE, and kept if a resumed attempt fails).
     awaiting_stage: str | None = None
     last_completed_stage: str | None = None
+
+
+class SearchRequest(BaseModel):
+    query: str = Field(min_length=1, max_length=MAX_QUERY_CHARS)
+    k: int = Field(default=10, ge=1, le=MAX_RESULTS)
+    language: str | None = Field(default=None, min_length=1)
+    # Generated and vendored code is excluded unless asked for.
+    include_third_party: bool = False
+
+
+class SearchEvidence(BaseModel):
+    file_path: str
+    start_line: int
+    end_line: int
+
+
+class SearchHitResponse(BaseModel):
+    rank: int
+    score: float
+    chunk_id: UUID
+    stable_chunk_key: str
+    chunk_kind: str
+    content_hash: str
+    content: str
+    entity_stable_key: str | None
+    entity_type: str | None
+    entity_name: str | None
+    evidence: SearchEvidence
+
+
+class SearchResponse(BaseModel):
+    analysis_id: UUID
+    repository_version_id: UUID
+    canonical_repository_key: str
+    commit_sha: str
+    retrieval_mode: str = "VECTOR_ONLY"
+    chunk_profile: str
+    embedding_profile: str
+    distance_metric: str
+    k: int
+    first_party_only: bool
+    language: str | None
+    indexed_chunks: int
+    embedded_chunks: int
+    index_complete: bool
+    results: list[SearchHitResponse]
+    latency_ms: dict[str, float]
 
 
 # Terminal from the client's point of view: the worker has finished with it.
@@ -158,6 +212,12 @@ def configure_connection_factory(factory: Callable[[], Any]) -> None:
     _connection_factory = factory
 
 
+def configure_search(provider: Any, chunk_profile: Any = None, embedding_profile: Any = None) -> None:
+    """Configure query embedding with the provider and profiles the indexing stage uses; None disables search."""
+    global _search_configuration
+    _search_configuration = None if provider is None else (provider, chunk_profile, embedding_profile)
+
+
 def _connection_factory_or_raise() -> Callable[[], Any]:
     if _connection_factory is None:
         raise HTTPException(
@@ -236,6 +296,76 @@ async def get_analysis(analysis_id: UUID) -> AnalysisStateResponse:
     if result is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="analysis not found")
     return result
+
+
+@router.post("/{analysis_id}/search", response_model=SearchResponse)
+async def search(analysis_id: UUID, request: SearchRequest) -> SearchResponse:
+    factory = _connection_factory_or_raise()
+    if _search_configuration is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="search is not configured: no embedding provider",
+        )
+    provider, chunk_profile, embedding_profile = _search_configuration
+    started = time.perf_counter()
+    try:
+        result = await run_in_threadpool(
+            run_in_transaction,
+            factory,
+            lambda conn: search_analysis(
+                conn, analysis_id, request.query, provider, chunk_profile, embedding_profile,
+                k=request.k, first_party_only=not request.include_third_party, language=request.language,
+            ),
+        )
+    except SearchError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=str(exc)) from exc
+    except EmbeddingError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"query embedding failed: {exc.failure_code}",
+        ) from exc
+    total_ms = (time.perf_counter() - started) * 1000
+
+    return SearchResponse(
+        analysis_id=result.analysis_id,
+        repository_version_id=result.repository_version_id,
+        canonical_repository_key=result.canonical_repository_key,
+        commit_sha=result.commit_sha,
+        chunk_profile=result.chunk_profile,
+        embedding_profile=result.embedding_profile,
+        distance_metric=result.distance_metric,
+        k=result.k,
+        first_party_only=result.first_party_only,
+        language=result.language,
+        indexed_chunks=result.indexed_chunks,
+        embedded_chunks=result.embedded_chunks,
+        index_complete=result.index_complete,
+        results=[
+            SearchHitResponse(
+                rank=hit.rank,
+                score=hit.chunk.score,
+                chunk_id=hit.chunk.chunk_id,
+                stable_chunk_key=hit.chunk.stable_chunk_key,
+                chunk_kind=hit.chunk_kind,
+                content_hash=hit.chunk.content_hash,
+                content=hit.content,
+                entity_stable_key=hit.chunk.entity_stable_key,
+                entity_type=hit.entity_type,
+                entity_name=hit.entity_name,
+                evidence=SearchEvidence(
+                    file_path=hit.chunk.file_path,
+                    start_line=hit.chunk.start_line,
+                    end_line=hit.chunk.end_line,
+                ),
+            )
+            for hit in result.hits
+        ],
+        latency_ms={
+            "embed": round(result.embed_ms, 2),
+            "search": round(result.search_ms, 2),
+            "total": round(total_ms, 2),
+        },
+    )
 
 
 @router.get("/{analysis_id}/events")

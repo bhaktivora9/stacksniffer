@@ -9,7 +9,9 @@ When DATABASE_URL is set, the same process also runs the analysis worker that
 moves QUEUED analyses through the pipeline. Indexing (chunking and embedding) runs after
 extraction with the provider named by ANALYSIS_EMBEDDING_PROVIDER: "gemini" (default; needs
 GEMINI_API_KEY) or "offline" (deterministic vectors, no network). Without a usable provider,
-extracted analyses park awaiting INDEXING and resume once one is configured.
+extracted analyses park awaiting INDEXING and resume once one is configured. Vector search
+(POST /api/v1/analyses/{id}/search) embeds queries with the same provider and profiles, so it
+only finds analyses indexed under them.
 
 ``create_app`` loads backend/.env before building the app. Setting
 STACKSNIFFER_LOAD_DOTENV=0 skips that; the test suite does so (see conftest.py)
@@ -30,7 +32,7 @@ from fastapi.responses import JSONResponse
 
 try:
     from cors_config import allowed_origins
-    from routers.analyses import configure_connection_factory
+    from routers.analyses import configure_connection_factory, configure_search
     from routers.analyses import router as analyses_router
     from services.analysis_pipeline import AnalysisPipeline
     from services.analysis_worker import supervise_worker
@@ -44,7 +46,7 @@ try:
     from services.repository_resolver import github_reported_size_bytes
 except ModuleNotFoundError:
     from backend.cors_config import allowed_origins
-    from backend.routers.analyses import configure_connection_factory
+    from backend.routers.analyses import configure_connection_factory, configure_search
     from backend.routers.analyses import router as analyses_router
     from backend.services.analysis_pipeline import AnalysisPipeline
     from backend.services.analysis_worker import supervise_worker
@@ -201,10 +203,13 @@ async def lifespan(app: FastAPI):
         logger.warning("DATABASE_URL is not set; analyses cannot be created or processed")
 
     if app.state.connection_factory is not None:
+        # Search embeds queries with the indexing stage's provider and profiles, worker or not.
+        indexing, app.state.indexing, embedding_provider = _indexing_stage(app.state.connection_factory)
+        if indexing is not None:
+            configure_search(embedding_provider, indexing.chunk_profile, indexing.embedding_profile)
         if _env_flag("ANALYSIS_WORKER_ENABLED", True):
             acquirer = _acquirer()
             await _remove_orphaned_acquisitions(acquirer)
-            indexing, app.state.indexing, embedding_provider = _indexing_stage(app.state.connection_factory)
             app.state.worker_task = asyncio.create_task(
                 supervise_worker(
                     app.state.connection_factory,
@@ -232,6 +237,7 @@ async def lifespan(app: FastAPI):
                 await asyncio.wait_for(task, timeout=WORKER_SHUTDOWN_SECONDS)
             except (TimeoutError, asyncio.CancelledError):
                 task.cancel()
+        configure_search(None)
         if embedding_provider is not None:
             embedding_provider.close()
 
