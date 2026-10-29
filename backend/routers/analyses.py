@@ -506,6 +506,8 @@ def _overview(conn: Any, analysis_id: UUID) -> dict[str, Any] | None:
     if state is None:
         return None
     a = str(analysis_id)
+    # What a DEGRADED analysis's stored output lacks (written by the GraphRAG stage).
+    degraded = conn.fetch_scalar("SELECT metadata->'degraded' FROM core.analysis WHERE id = %s", a) or []
     repository = conn.fetch_one(
         "SELECT r.canonical_key, r.owner_name, r.repository_name, v.commit_sha, v.requested_ref "
         "FROM core.analysis an JOIN core.repository_version v ON v.id = an.repository_version_id "
@@ -549,7 +551,8 @@ def _overview(conn: Any, analysis_id: UUID) -> dict[str, Any] | None:
                         for point in summary.get("key_points", []) if point.get("supported")],
                 })
     return {
-        "analysis": {**json.loads(state.model_dump_json()), "waiting_reason": _waiting_reason(state)},
+        "analysis": {**json.loads(state.model_dump_json()), "waiting_reason": _waiting_reason(state),
+                     "degraded": degraded},
         "repository": {"canonical_key": repository[0], "owner": repository[1], "name": repository[2],
                        "commit_sha": repository[3], "requested_reference": repository[4]},
         "counts": {"files": counts[0], "entities": counts[1], "relationships": counts[2], "chunks": counts[3]},

@@ -122,6 +122,11 @@ def test_projection_resolves_references_to_internal_entities(conn, indexed):
     assert graph.unresolved >= 0 and graph.fingerprint == build_graph(conn, indexed).fingerprint
 
 
+def degraded_reasons(conn, analysis_id):
+    return [item["reason"] for item in conn.fetch_scalar(
+        "SELECT metadata->'degraded' FROM core.analysis WHERE id = %s", str(analysis_id)) or []]
+
+
 @needs_db
 def test_the_stage_takes_an_indexed_analysis_to_success_and_answers_are_grounded(conn, indexed):
     from backend.services.graphrag.llm import OfflineTextProvider
@@ -130,8 +135,10 @@ def test_the_stage_takes_an_indexed_analysis_to_success_and_answers_are_grounded
     from backend.services.semantic.profiles import DEFAULT_CHUNK_PROFILE, OFFLINE_EMBEDDING_PROFILE
 
     provider = OfflineTextProvider()
-    assert asyncio.run(GraphRAGStage(lambda: conn, provider)(result_for(indexed))) == "SUCCEEDED"
-    assert status(conn, indexed) == "SUMMARIZING"  # the worker moves it to READY on SUCCEEDED
+    # Offline summaries are placeholders: the analysis completes, degraded, and says why.
+    assert asyncio.run(GraphRAGStage(lambda: conn, provider)(result_for(indexed))) == "DEGRADED"
+    assert status(conn, indexed) == "SUMMARIZING"  # the worker moves it to DEGRADED
+    assert "OFFLINE_PROVIDER" in degraded_reasons(conn, indexed)
     snapshot = conn.fetch_one("SELECT status, node_count FROM graphrag.graph_snapshot WHERE analysis_id = %s",
                               str(indexed))
     assert snapshot[0] == "ACTIVE" and snapshot[1] > 0
@@ -208,5 +215,40 @@ def test_a_provider_failure_fails_the_stage_and_a_retry_reuses_finished_summarie
     assert "FAILED" in statuses and "READY" in statuses
 
     retry = OfflineTextProvider()
-    assert asyncio.run(GraphRAGStage(lambda: conn, retry)(result_for(indexed))) == "SUCCEEDED"
+    assert asyncio.run(GraphRAGStage(lambda: conn, retry)(result_for(indexed))) == "DEGRADED"  # offline text
     assert len(retry.calls) == statuses.count("FAILED")  # only what failed is generated again
+
+
+@needs_db
+def test_complete_summaries_succeed_and_clear_an_earlier_degradation(conn, indexed):
+    from backend.services.graphrag.llm import OfflineTextProvider
+    from backend.services.graphrag.stage import GraphRAGStage
+
+    assert asyncio.run(GraphRAGStage(lambda: conn, OfflineTextProvider())(result_for(indexed))) == "DEGRADED"
+
+    class Model(OfflineTextProvider):
+        """Stands in for a real model: same supported output, but not the placeholder provider."""
+        name = "test-model"
+
+    # Every community of this fixture has evidence, so a model's summaries are all supported.
+    assert asyncio.run(GraphRAGStage(lambda: conn, Model())(result_for(indexed))) == "SUCCEEDED"
+    assert degraded_reasons(conn, indexed) == []
+
+
+def test_degradation_names_placeholder_text_and_communities_without_a_summary():
+    from types import SimpleNamespace
+
+    from backend.services.graphrag.stage import degradation
+
+    class Counts:
+        def __init__(self, unsupported):
+            self.unsupported = unsupported
+
+        def fetch_scalar(self, sql, *params):
+            return self.unsupported
+
+    model, offline = SimpleNamespace(name="gemini"), SimpleNamespace(name="offline")
+    assert degradation(Counts(0), uuid4(), model) == []
+    [unsupported] = degradation(Counts(3), uuid4(), model)
+    assert unsupported["reason"] == "UNSUPPORTED" and unsupported["count"] == 3 and "3 components" in unsupported["detail"]
+    assert [item["reason"] for item in degradation(Counts(3), uuid4(), offline)] == ["OFFLINE_PROVIDER", "UNSUPPORTED"]

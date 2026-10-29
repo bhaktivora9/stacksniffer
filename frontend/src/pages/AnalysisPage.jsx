@@ -153,9 +153,10 @@ function AskPanel({ analysisId, enabled }) {
 function StatusBanner({ analysis }) {
   const stage = (value) => value?.toLowerCase();
   if (analysis.status === "DEGRADED") {
-    const where = analysis.failure_stage ? ` The ${stage(analysis.failure_stage)} stage did not finish cleanly${analysis.failure_code ? ` (${analysis.failure_code})` : ""}.` : "";
+    const missing = analysis.degraded || [];
     return <div role="status" className="rounded border border-amber/40 bg-amber/10 px-4 py-3 text-sm text-amber">
-      <b>Completed with degraded results.</b>{where} Counts, components and answers below may be incomplete.
+      <b>Completed with degraded results.</b> {missing.length ? "What is incomplete:" : "Some stored output is incomplete."}
+      {missing.length > 0 && <ul className="mt-1 list-disc pl-5 text-xs">{missing.map((item) => <li key={item.reason}>{item.detail}</li>)}</ul>}
     </div>;
   }
   if (analysis.status === "AWAITING_STAGE") {
@@ -255,7 +256,7 @@ export default function AnalysisPage() {
 
           <StatusBanner analysis={analysis} />
 
-          <AskPanel analysisId={analysisId} enabled={overview.answers_available && analysis.status === "READY"} />
+          <AskPanel analysisId={analysisId} enabled={overview.answers_available && ["READY", "DEGRADED"].includes(analysis.status)} />
 
           <section>
             <div className="text-xs font-medium uppercase tracking-wider text-muted">Components</div>

@@ -13,7 +13,7 @@ const sse = (events) => events.map((event) => `id: ${event.sequence}\ndata: ${JS
 function overview(status, extra = {}) {
   return {
     analysis: { analysis_id: ANALYSIS_ID, status, failure_stage: null, failure_code: null, awaiting_stage: null,
-      last_completed_stage: null, waiting_reason: null, ...extra },
+      last_completed_stage: null, waiting_reason: null, degraded: [], ...extra },
     repository: { canonical_key: "github:pallets/flask", owner: "pallets", name: "flask",
       commit_sha: "d086db856be187255b8ec61ef409357393020f32", requested_reference: "main" },
     counts: { files: 230, entities: 3887, relationships: 5308, chunks: 1200 },
@@ -81,10 +81,12 @@ test("READY: the pasted URL streams through to the analysis page, and back retur
 
 test("DEGRADED: opens the analysis page with a banner saying the results are incomplete", async ({ page, api }) => {
   api.bodies = [sse(streams.degraded)];
-  api.overview = overview("DEGRADED");
+  api.overview = overview("DEGRADED", { degraded: [{ capability: "summaries", reason: "OFFLINE_PROVIDER",
+    detail: "Summaries are templated placeholders from the offline text provider." }] });
   await analyze(page);
   await expect(page).toHaveURL(`/analyses/${ANALYSIS_ID}`);
   await expect(page.getByRole("status")).toContainText("Completed with degraded results");
+  await expect(page.getByRole("status")).toContainText("templated placeholders from the offline text provider");
 });
 
 test("AWAITING_STAGE: the parked screen says why and how to resume, and links to the analysis", async ({ page, api }) => {
