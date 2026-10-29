@@ -30,7 +30,7 @@ function ProgressFooter({ stages, current, complete, failed }) {
   </div>;
 }
 
-export default function AnalyzingScreen({ health, repoUrl, analysisId, events = [], status, error, onCancel, onRetry }) {
+export default function AnalyzingScreen({ health, repoUrl, analysisId, stages: pipelineStages, events = [], status, error, onCancel, onRetry }) {
   const latest = events[events.length - 1];
   // A followed link has no typed URL; the stream names the repository (older servers do not).
   const repo = (repoUrl || repositoryLabel(latest?.repository) || "").replace(/^https?:\/\//, "").replace(/\/$/, "");
@@ -39,7 +39,7 @@ export default function AnalyzingScreen({ health, repoUrl, analysisId, events = 
   const failed = status === "failed";
   const waiting = status === "waiting";
   const finished = complete || failed || waiting;
-  const stages = railStages(latest);
+  const stages = railStages(pipelineStages || undefined);
   const current = stageIndex(latest, stages);
   const analysisLink = analysisId && `/analyses/${encodeURIComponent(analysisId)}`;
   return <div className="analyzing-screen">

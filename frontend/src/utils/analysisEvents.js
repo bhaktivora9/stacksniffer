@@ -7,8 +7,8 @@
 // AWAITING_STAGE: every deployed stage finished; the analysis resumes when the next one can run.
 export const FINISHED_STATES = ["READY", "DEGRADED", "FAILED", "AWAITING_STAGE"];
 
-// Used only until the first event arrives with the backend's own stage list.
-const DEFAULT_STAGES = ["INGESTING", "EXTRACTING", "INDEXING", "PROJECTING", "SUMMARIZING"];
+// Used only until the backend's own list (GET /api/v1/analyses/stages) has loaded.
+export const DEFAULT_STAGES = ["INGESTING", "EXTRACTING", "INDEXING", "PROJECTING", "SUMMARIZING"];
 
 const KNOWN_STATES = new Set(["QUEUED", ...DEFAULT_STAGES, ...FINISHED_STATES]);
 
@@ -42,9 +42,6 @@ export function normalizeEvent(raw) {
     return null;
   }
   if (!KNOWN_STATES.has(raw.state)) console.warn(`Unknown analysis state ${raw.state}; shown as in progress`);
-  const stages = Array.isArray(raw.stages) && raw.stages.length && raw.stages.every((s) => typeof s === "string")
-    ? raw.stages
-    : null;
   return {
     sequence: raw.sequence,
     state: raw.state,
@@ -56,13 +53,16 @@ export function normalizeEvent(raw) {
     failureStage: optionalString(raw.failure_stage),
     waitingReason: optionalString(raw.waiting_reason),
     repository: optionalString(raw.repository),
-    stages,
   };
 }
 
-/** The rail: the backend's pipeline stages in order, then "ready". */
-export function railStages(event) {
-  const stages = event?.stages || DEFAULT_STAGES;
+/** A stage list from the backend, or null when it is not a non-empty list of names. */
+export function validStages(raw) {
+  return Array.isArray(raw) && raw.length && raw.every((stage) => typeof stage === "string" && stage) ? raw : null;
+}
+
+/** The rail: the pipeline's stages in order, then "ready". */
+export function railStages(stages = DEFAULT_STAGES) {
   return [
     ...stages.map((state) => ({ state, label: STAGE_LABELS[state] || state.toLowerCase(), tone: STAGE_TONES[state] })),
     { state: "READY", label: "ready" },
@@ -73,7 +73,7 @@ export function railStages(event) {
  * The rail position of an event: the stage running now; for a parked analysis the stage it waits
  * for; for a failed one the stage that failed. -1 before the first stage, or when unknown.
  */
-export function stageIndex(event, stages = railStages(event)) {
+export function stageIndex(event, stages = railStages()) {
   if (!event) return -1;
   const index = (state) => stages.findIndex((stage) => stage.state === state);
   if (event.state === "AWAITING_STAGE") return index(event.awaitingStage);

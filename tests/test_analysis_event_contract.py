@@ -8,11 +8,14 @@ and e2e/analysis-flow.spec.js), so it cannot drift silently either.
 Regenerate after a deliberate change:  UPDATE_CONTRACT_FIXTURES=1 python -m pytest tests/test_analysis_event_contract.py
 """
 
+import asyncio
 import json
 import os
 from datetime import datetime, timezone
 from pathlib import Path
 from uuid import UUID
+
+from types import SimpleNamespace
 
 import pytest
 from fastapi import FastAPI
@@ -39,18 +42,18 @@ STREAMS = {
 }
 
 
-def _state(status, last_completed, awaiting, failure_stage):
+def _state(status, last_completed, awaiting, failure_stage, version=1):
     return AnalysisStateResponse(
         analysis_id=ANALYSIS_ID, attempt_id=ATTEMPT_ID, status=status, created_at=CREATED,
         failure_stage=failure_stage, failure_code="EMBEDDING_FAILED" if failure_stage else None,
-        awaiting_stage=awaiting, last_completed_stage=last_completed,
+        awaiting_stage=awaiting, last_completed_stage=last_completed, state_version=version,
     )
 
 
 def _streams():
     built = {}
     for name, states in STREAMS.items():
-        events = [_state_event(_state(*state), sequence, REPOSITORY) for sequence, state in enumerate(states, 1)]
+        events = [_state_event(_state(*state, version=version), REPOSITORY) for version, state in enumerate(states, 1)]
         built[name] = [{**event, "timestamp": TIMESTAMP} for event in events]
     return built
 
@@ -62,12 +65,17 @@ def readiness():
     analyses.configure_stage_readiness({})
 
 
+def _contract():
+    stages = asyncio.run(analyses.pipeline_stages())["stages"]  # GET /api/v1/analyses/stages
+    return {"stages": stages, "streams": _streams()}
+
+
 def test_the_event_stream_matches_the_frontend_contract():
-    built = _streams()
+    built = _contract()
     if os.getenv("UPDATE_CONTRACT_FIXTURES"):
         FIXTURE.parent.mkdir(parents=True, exist_ok=True)
-        FIXTURE.write_text(json.dumps({"streams": built}, indent=2) + "\n", encoding="utf-8", newline="\n")
-    assert json.loads(FIXTURE.read_text(encoding="utf-8")) == {"streams": built}
+        FIXTURE.write_text(json.dumps(built, indent=2) + "\n", encoding="utf-8", newline="\n")
+    assert json.loads(FIXTURE.read_text(encoding="utf-8")) == built
 
 
 def test_a_parked_analysis_says_why_it_waits_and_how_to_resume():
@@ -76,17 +84,28 @@ def test_a_parked_analysis_says_why_it_waits_and_how_to_resume():
     assert "GEMINI_API_KEY is not set" in parked["waiting_reason"]
     assert "resumes automatically" in parked["waiting_reason"]
     analyses.configure_stage_readiness({"SUMMARIZING": {"status": "enabled"}})
-    assert "resumes this analysis shortly" in _state_event(_state("AWAITING_STAGE", "PROJECTING", "SUMMARIZING", None),
-                                                           1)["waiting_reason"]
+    assert "resumes this analysis shortly" in _state_event(
+        _state("AWAITING_STAGE", "PROJECTING", "SUMMARIZING", None))["waiting_reason"]
 
 
-class OneStateConnection:
-    """Answers the stream's two queries for one analysis resting in a finished state."""
+def _row(status, version):
+    return (str(ANALYSIS_ID), status, CREATED, CREATED, str(ATTEMPT_ID), None, None, None, None, version)
+
+
+class ScriptedConnection:
+    """Answers the stream's queries; each poll of the analysis returns the next scripted (status, version)."""
+
+    def __init__(self, script):
+        self.script = list(script)
+
+    def __call__(self):
+        return self
 
     def fetch_one(self, sql, *params):
         if "canonical_key" in sql and "LATERAL" not in sql:
             return (REPOSITORY,)
-        return (str(ANALYSIS_ID), "READY", CREATED, CREATED, str(ATTEMPT_ID), None, None, None, None)
+        status, version = self.script.pop(0) if len(self.script) > 1 else self.script[0]
+        return _row(status, version)
 
     def commit(self):
         pass
@@ -98,13 +117,16 @@ class OneStateConnection:
         pass
 
 
-@pytest.fixture
-def client():
+def _client(script, monkeypatch):
+    """A fresh app, as after an API restart: nothing survives from an earlier one but the database."""
+    async def no_wait(_seconds):
+        return None
+
+    monkeypatch.setattr(analyses, "asyncio", SimpleNamespace(sleep=no_wait))
     app = FastAPI()
     app.include_router(analyses.router)
-    analyses.configure_connection_factory(OneStateConnection)
-    with TestClient(app) as test_client:
-        yield test_client
+    analyses.configure_connection_factory(ScriptedConnection(script))
+    return TestClient(app)
 
 
 def _events(response):
@@ -116,13 +138,38 @@ def _events(response):
     return parsed
 
 
-def test_stream_events_carry_ids_and_continue_numbering_after_a_reconnect(client):
-    url = f"/api/v1/analyses/{ANALYSIS_ID}/events"
-    [(event_id, event)] = _events(client.get(url))
-    assert event_id == "1" and event["sequence"] == 1 and event["state"] == "READY"
-    assert event["repository"] == REPOSITORY and event["stages"][0] == "INGESTING"
+URL = f"/api/v1/analyses/{ANALYSIS_ID}/events"
 
-    [(event_id, event)] = _events(client.get(url, headers={"Last-Event-ID": "7"}))
-    assert event_id == "8" and event["sequence"] == 8
-    [(event_id, _)] = _events(client.get(url, headers={"Last-Event-ID": "not-a-number"}))
-    assert event_id == "1"
+
+def test_event_ids_are_the_persisted_state_version(monkeypatch):
+    with _client([("READY", 7)], monkeypatch) as client:
+        [(event_id, event)] = _events(client.get(URL))
+    assert event_id == "7" and event["sequence"] == 7 and event["state"] == "READY"
+    assert event["repository"] == REPOSITORY
+
+
+def test_after_an_api_restart_a_reconnect_resumes_from_the_last_event_and_repeats_nothing(monkeypatch):
+    # Before the restart the browser saw INDEXING at version 4.
+    with _client([("INDEXING", 4), ("READY", 7)], monkeypatch) as client:
+        assert [i for i, _ in _events(client.get(URL))][0] == "4"
+    # A new process: an in-memory counter would restart at 1; the persisted version does not.
+    with _client([("INDEXING", 4), ("PROJECTING", 5), ("READY", 7)], monkeypatch) as client:
+        events = _events(client.get(URL, headers={"Last-Event-ID": "4"}))
+    assert [(i, e["state"]) for i, e in events] == [("5", "PROJECTING"), ("7", "READY")]
+    with _client([("READY", 7)], monkeypatch) as client:
+        assert _events(client.get(URL, headers={"Last-Event-ID": "7"})) == []  # already seen
+        assert [i for i, _ in _events(client.get(URL, headers={"Last-Event-ID": "junk"}))] == ["7"]
+
+
+def test_a_state_that_repeats_is_sent_again(monkeypatch):
+    # A retry re-enters INDEXING under a new version; deduplicating by state name would drop it.
+    with _client([("INDEXING", 3), ("INDEXING", 6), ("READY", 9)], monkeypatch) as client:
+        events = _events(client.get(URL))
+    assert [(i, e["state"]) for i, e in events] == [("3", "INDEXING"), ("6", "INDEXING"), ("9", "READY")]
+
+
+def test_the_stage_list_is_served_once(monkeypatch):
+    with _client([("READY", 1)], monkeypatch) as client:
+        stages = client.get("/api/v1/analyses/stages").json()["stages"]
+    assert stages == ["INGESTING", "EXTRACTING", "INDEXING", "PROJECTING", "SUMMARIZING"]
+    assert all("stages" not in event for stream in _streams().values() for event in stream)

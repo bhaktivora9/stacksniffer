@@ -1,4 +1,11 @@
 {
+  "stages": [
+    "INGESTING",
+    "EXTRACTING",
+    "INDEXING",
+    "PROJECTING",
+    "SUMMARIZING"
+  ],
   "streams": {
     "ready": [
       {
@@ -12,13 +19,6 @@
         "failure_stage": null,
         "waiting_reason": null,
         "repository": "github:pallets/flask",
-        "stages": [
-          "INGESTING",
-          "EXTRACTING",
-          "INDEXING",
-          "PROJECTING",
-          "SUMMARIZING"
-        ],
         "timestamp": "2026-10-29T18:00:00+00:00"
       },
       {
@@ -32,13 +32,6 @@
         "failure_stage": null,
         "waiting_reason": null,
         "repository": "github:pallets/flask",
-        "stages": [
-          "INGESTING",
-          "EXTRACTING",
-          "INDEXING",
-          "PROJECTING",
-          "SUMMARIZING"
-        ],
         "timestamp": "2026-10-29T18:00:00+00:00"
       },
       {
@@ -52,13 +45,6 @@
         "failure_stage": null,
         "waiting_reason": null,
         "repository": "github:pallets/flask",
-        "stages": [
-          "INGESTING",
-          "EXTRACTING",
-          "INDEXING",
-          "PROJECTING",
-          "SUMMARIZING"
-        ],
         "timestamp": "2026-10-29T18:00:00+00:00"
       },
       {
@@ -72,13 +58,6 @@
         "failure_stage": null,
         "waiting_reason": null,
         "repository": "github:pallets/flask",
-        "stages": [
-          "INGESTING",
-          "EXTRACTING",
-          "INDEXING",
-          "PROJECTING",
-          "SUMMARIZING"
-        ],
         "timestamp": "2026-10-29T18:00:00+00:00"
       },
       {
@@ -92,13 +71,6 @@
         "failure_stage": null,
         "waiting_reason": null,
         "repository": "github:pallets/flask",
-        "stages": [
-          "INGESTING",
-          "EXTRACTING",
-          "INDEXING",
-          "PROJECTING",
-          "SUMMARIZING"
-        ],
         "timestamp": "2026-10-29T18:00:00+00:00"
       },
       {
@@ -112,13 +84,6 @@
         "failure_stage": null,
         "waiting_reason": null,
         "repository": "github:pallets/flask",
-        "stages": [
-          "INGESTING",
-          "EXTRACTING",
-          "INDEXING",
-          "PROJECTING",
-          "SUMMARIZING"
-        ],
         "timestamp": "2026-10-29T18:00:00+00:00"
       },
       {
@@ -132,13 +97,6 @@
         "failure_stage": null,
         "waiting_reason": null,
         "repository": "github:pallets/flask",
-        "stages": [
-          "INGESTING",
-          "EXTRACTING",
-          "INDEXING",
-          "PROJECTING",
-          "SUMMARIZING"
-        ],
         "timestamp": "2026-10-29T18:00:00+00:00"
       }
     ],
@@ -154,13 +112,6 @@
         "failure_stage": null,
         "waiting_reason": null,
         "repository": "github:pallets/flask",
-        "stages": [
-          "INGESTING",
-          "EXTRACTING",
-          "INDEXING",
-          "PROJECTING",
-          "SUMMARIZING"
-        ],
         "timestamp": "2026-10-29T18:00:00+00:00"
       },
       {
@@ -174,13 +125,6 @@
         "failure_stage": null,
         "waiting_reason": null,
         "repository": "github:pallets/flask",
-        "stages": [
-          "INGESTING",
-          "EXTRACTING",
-          "INDEXING",
-          "PROJECTING",
-          "SUMMARIZING"
-        ],
         "timestamp": "2026-10-29T18:00:00+00:00"
       },
       {
@@ -194,13 +138,6 @@
         "failure_stage": null,
         "waiting_reason": null,
         "repository": "github:pallets/flask",
-        "stages": [
-          "INGESTING",
-          "EXTRACTING",
-          "INDEXING",
-          "PROJECTING",
-          "SUMMARIZING"
-        ],
         "timestamp": "2026-10-29T18:00:00+00:00"
       },
       {
@@ -214,13 +151,6 @@
         "failure_stage": null,
         "waiting_reason": null,
         "repository": "github:pallets/flask",
-        "stages": [
-          "INGESTING",
-          "EXTRACTING",
-          "INDEXING",
-          "PROJECTING",
-          "SUMMARIZING"
-        ],
         "timestamp": "2026-10-29T18:00:00+00:00"
       },
       {
@@ -234,13 +164,6 @@
         "failure_stage": null,
         "waiting_reason": null,
         "repository": "github:pallets/flask",
-        "stages": [
-          "INGESTING",
-          "EXTRACTING",
-          "INDEXING",
-          "PROJECTING",
-          "SUMMARIZING"
-        ],
         "timestamp": "2026-10-29T18:00:00+00:00"
       },
       {
@@ -254,13 +177,6 @@
         "failure_stage": null,
         "waiting_reason": null,
         "repository": "github:pallets/flask",
-        "stages": [
-          "INGESTING",
-          "EXTRACTING",
-          "INDEXING",
-          "PROJECTING",
-          "SUMMARIZING"
-        ],
         "timestamp": "2026-10-29T18:00:00+00:00"
       },
       {
@@ -274,13 +190,6 @@
         "failure_stage": null,
         "waiting_reason": null,
         "repository": "github:pallets/flask",
-        "stages": [
-          "INGESTING",
-          "EXTRACTING",
-          "INDEXING",
-          "PROJECTING",
-          "SUMMARIZING"
-        ],
         "timestamp": "2026-10-29T18:00:00+00:00"
       }
     ],
@@ -296,13 +205,6 @@
         "failure_stage": null,
         "waiting_reason": null,
         "repository": "github:pallets/flask",
-        "stages": [
-          "INGESTING",
-          "EXTRACTING",
-          "INDEXING",
-          "PROJECTING",
-          "SUMMARIZING"
-        ],
         "timestamp": "2026-10-29T18:00:00+00:00"
       },
       {
@@ -316,13 +218,6 @@
         "failure_stage": null,
         "waiting_reason": null,
         "repository": "github:pallets/flask",
-        "stages": [
-          "INGESTING",
-          "EXTRACTING",
-          "INDEXING",
-          "PROJECTING",
-          "SUMMARIZING"
-        ],
         "timestamp": "2026-10-29T18:00:00+00:00"
       },
       {
@@ -336,13 +231,6 @@
         "failure_stage": null,
         "waiting_reason": null,
         "repository": "github:pallets/flask",
-        "stages": [
-          "INGESTING",
-          "EXTRACTING",
-          "INDEXING",
-          "PROJECTING",
-          "SUMMARIZING"
-        ],
         "timestamp": "2026-10-29T18:00:00+00:00"
       },
       {
@@ -356,13 +244,6 @@
         "failure_stage": null,
         "waiting_reason": null,
         "repository": "github:pallets/flask",
-        "stages": [
-          "INGESTING",
-          "EXTRACTING",
-          "INDEXING",
-          "PROJECTING",
-          "SUMMARIZING"
-        ],
         "timestamp": "2026-10-29T18:00:00+00:00"
       },
       {
@@ -376,13 +257,6 @@
         "failure_stage": null,
         "waiting_reason": null,
         "repository": "github:pallets/flask",
-        "stages": [
-          "INGESTING",
-          "EXTRACTING",
-          "INDEXING",
-          "PROJECTING",
-          "SUMMARIZING"
-        ],
         "timestamp": "2026-10-29T18:00:00+00:00"
       },
       {
@@ -396,13 +270,6 @@
         "failure_stage": null,
         "waiting_reason": "Summaries need a text model, and none is configured (GEMINI_API_KEY is not set). Set GEMINI_API_KEY or ANALYSIS_LLM_PROVIDER=offline, then restart the API; the analysis resumes automatically.",
         "repository": "github:pallets/flask",
-        "stages": [
-          "INGESTING",
-          "EXTRACTING",
-          "INDEXING",
-          "PROJECTING",
-          "SUMMARIZING"
-        ],
         "timestamp": "2026-10-29T18:00:00+00:00"
       }
     ],
@@ -418,13 +285,6 @@
         "failure_stage": null,
         "waiting_reason": null,
         "repository": "github:pallets/flask",
-        "stages": [
-          "INGESTING",
-          "EXTRACTING",
-          "INDEXING",
-          "PROJECTING",
-          "SUMMARIZING"
-        ],
         "timestamp": "2026-10-29T18:00:00+00:00"
       },
       {
@@ -438,13 +298,6 @@
         "failure_stage": null,
         "waiting_reason": null,
         "repository": "github:pallets/flask",
-        "stages": [
-          "INGESTING",
-          "EXTRACTING",
-          "INDEXING",
-          "PROJECTING",
-          "SUMMARIZING"
-        ],
         "timestamp": "2026-10-29T18:00:00+00:00"
       },
       {
@@ -458,13 +311,6 @@
         "failure_stage": null,
         "waiting_reason": null,
         "repository": "github:pallets/flask",
-        "stages": [
-          "INGESTING",
-          "EXTRACTING",
-          "INDEXING",
-          "PROJECTING",
-          "SUMMARIZING"
-        ],
         "timestamp": "2026-10-29T18:00:00+00:00"
       },
       {
@@ -478,13 +324,6 @@
         "failure_stage": null,
         "waiting_reason": null,
         "repository": "github:pallets/flask",
-        "stages": [
-          "INGESTING",
-          "EXTRACTING",
-          "INDEXING",
-          "PROJECTING",
-          "SUMMARIZING"
-        ],
         "timestamp": "2026-10-29T18:00:00+00:00"
       },
       {
@@ -498,13 +337,6 @@
         "failure_stage": "INDEXING",
         "waiting_reason": null,
         "repository": "github:pallets/flask",
-        "stages": [
-          "INGESTING",
-          "EXTRACTING",
-          "INDEXING",
-          "PROJECTING",
-          "SUMMARIZING"
-        ],
         "timestamp": "2026-10-29T18:00:00+00:00"
       }
     ]

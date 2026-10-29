@@ -1,5 +1,5 @@
 import { API_BASE, fetchApi } from "../config/api";
-import { FINISHED_STATES, normalizeEvent } from "../utils/analysisEvents";
+import { FINISHED_STATES, normalizeEvent, validStages } from "../utils/analysisEvents";
 
 export { FINISHED_STATES };
 
@@ -36,6 +36,13 @@ export async function listAnalyses(limit = 20) {
   return body;
 }
 
+/** GET /api/v1/analyses/stages — the pipeline's stages in order; null if unavailable. */
+export async function getPipelineStages() {
+  const response = await fetchApi("/api/v1/analyses/stages");
+  const body = await response.json().catch(() => ({}));
+  return response.ok ? validStages(body.stages) : null;
+}
+
 /** GET /api/v1/analyses/{id}/overview — repository, counts, graph and the community map. */
 export async function getOverview(analysisId) {
   const response = await fetchApi(`/api/v1/analyses/${encodeURIComponent(analysisId)}/overview`);
@@ -62,14 +69,14 @@ const MAX_RECONNECTS = 3;
 /**
  * Subscribes to /api/v1/analyses/{analysis_id}/events. Events arrive normalized (see
  * utils/analysisEvents), once each and in order; the stream closes itself after a finished state.
- * A dropped connection is retried by the browser: the server resumes numbering from Last-Event-ID
- * and resends the current state, which is skipped when nothing changed. onDisconnect runs only
- * after MAX_RECONNECTS failures in a row. Returns a function that closes the stream early.
+ * An event's sequence is the analysis's persisted state version, so a dropped connection, retried
+ * by the browser with Last-Event-ID, continues where it stopped even across an API restart, and a
+ * state that repeats (a retried stage) still arrives. onDisconnect runs only after MAX_RECONNECTS
+ * failures in a row. Returns a function that closes the stream early.
  */
 export function subscribeToAnalysisEvents(analysisId, { onEvent, onDisconnect }) {
   const source = new EventSource(`${API_BASE}/api/v1/analyses/${encodeURIComponent(analysisId)}/events`);
   let lastSequence = 0;
-  let lastState = null;
   let failures = 0;
   let closed = false;
 
@@ -85,10 +92,7 @@ export function subscribeToAnalysisEvents(analysisId, { onEvent, onDisconnect })
     const event = normalizeEvent(raw);
     if (!event || event.sequence <= lastSequence) return;
     lastSequence = event.sequence;
-    const state = `${event.state}/${event.attemptId}`;
     if (FINISHED_STATES.includes(event.state)) close();
-    if (state === lastState) return; // the current state, resent after a reconnect
-    lastState = state;
     onEvent(event);
   };
   source.onerror = () => {

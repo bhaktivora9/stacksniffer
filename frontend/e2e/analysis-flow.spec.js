@@ -4,7 +4,7 @@
 import { test as base, expect } from "@playwright/test";
 import { readFileSync } from "node:fs";
 
-const { streams } = JSON.parse(readFileSync(
+const { stages, streams } = JSON.parse(readFileSync(
   new URL("../../backend/tests/fixtures/contracts/analysis-event-stream.json", import.meta.url), "utf8"));
 const ANALYSIS_ID = streams.ready[0].analysis_id;
 
@@ -39,6 +39,7 @@ const test = base.extend({
       const url = new URL(route.request().url());
       const json = (body, status = 200) => route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
       if (url.pathname === "/api/health") return json({ status: "ok", database: "ok", worker: "running" });
+      if (url.pathname === "/api/v1/analyses/stages") return json({ stages });
       if (url.pathname === "/api/v1/analyses" && route.request().method() === "GET") return json(api.recent);
       if (url.pathname === "/api/v1/analyses" && route.request().method() === "POST") {
         return json({ analysis_id: ANALYSIS_ID, status: "QUEUED", reused: false,
@@ -128,13 +129,10 @@ test("a refresh or shared link resumes the progress screen", async ({ page, api 
   expect(await stageStates(page)).toMatchObject({ index: "active" });
 });
 
-test("a dropped stream reconnects from the last event and does not repeat the current state", async ({ page, api }) => {
+test("a dropped stream, or an API restart, resumes from the last event without repeating it", async ({ page, api }) => {
   const first = streams.parked.slice(0, 4); // through INDEXING, then the connection drops
-  // As the server does on reconnect: numbering continues from Last-Event-ID, the current state is resent.
-  const resumed = [first.at(-1), ...streams.parked.slice(4)].map((event, index) => ({ ...event, sequence: 5 + index }));
-  api.bodies = [`retry: 100
-
-${sse(first)}`, sse(resumed)];
+  // Ids are persisted state versions: after a reconnect (or a restart) the server sends only newer ones.
+  api.bodies = [`retry: 100\n\n${sse(first)}`, sse(streams.parked.slice(4))];
   await page.goto(`/?analysis=${ANALYSIS_ID}`);
   await expect(page.getByRole("heading", { name: "Analysis paused" })).toBeVisible();
   // Chrome sends Last-Event-ID on the reconnect, but intercepted requests do not show it; the
@@ -142,6 +140,16 @@ ${sse(first)}`, sse(resumed)];
   expect(api.connections.length).toBeGreaterThanOrEqual(2);
   await expect(page.locator(".an-line", { hasText: "Indexing content" })).toHaveCount(1);
   await expect(page.locator(".an-line")).toHaveCount(streams.parked.length);
+});
+
+test("a state that repeats under a new version (a retried stage) is shown again", async ({ page, api }) => {
+  const [queued, ingesting, extracting, indexing] = streams.parked;
+  const retried = { ...indexing, sequence: 9, message: "Indexing content" };
+  api.bodies = [`retry: 100\n\n${sse([queued, ingesting, extracting, indexing])}`,
+    sse([retried, ...streams.parked.slice(4).map((event, index) => ({ ...event, sequence: 10 + index }))])];
+  await page.goto(`/?analysis=${ANALYSIS_ID}`);
+  await expect(page.getByRole("heading", { name: "Analysis paused" })).toBeVisible();
+  await expect(page.locator(".an-line", { hasText: "Indexing content" })).toHaveCount(2);
 });
 
 test("events of unknown shape are skipped instead of crashing the screen", async ({ page, api }) => {

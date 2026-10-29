@@ -198,3 +198,21 @@ def test_stale_running_attempt_is_recovered_and_requeued(conn):
         "SELECT status, failure_stage, failure_code FROM core.analysis_attempt WHERE id = %s", str(attempt_id)
     )
     assert tuple(row) == ("FAILED", "EXTRACTING", "WORKER_LOST")
+
+
+def test_every_status_change_bumps_the_persisted_state_version(conn):
+    created = _create(conn, f"repo-{uuid4().hex[:8]}")
+    version = lambda: _get_analysis(conn, created.analysis_id).state_version  # noqa: E731
+    assert version() == 1
+
+    conn.execute("UPDATE core.analysis SET metadata = '{\"note\": 1}' WHERE id = %s", str(created.analysis_id))
+    assert version() == 1  # other columns leave it alone
+
+    asyncio.run(transition_analysis(conn, created.analysis_id, AnalysisState.QUEUED, AnalysisState.INGESTING))
+    assert version() == 2
+    # A retry that re-enters a stage still moves the version forward: ids never repeat.
+    for status in ("FAILED", "QUEUED", "INGESTING"):
+        conn.execute("UPDATE core.analysis SET status = %s WHERE id = %s", status, str(created.analysis_id))
+    assert version() == 5
+    conn.execute("UPDATE core.analysis SET status = status WHERE id = %s", str(created.analysis_id))
+    assert version() == 5  # an update that does not change the status is not a transition

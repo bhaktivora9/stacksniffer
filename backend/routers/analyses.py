@@ -92,6 +92,8 @@ class AnalysisStateResponse(BaseModel):
     # The stage to resume at (set while AWAITING_STAGE, and kept if a resumed attempt fails).
     awaiting_stage: str | None = None
     last_completed_stage: str | None = None
+    # Incremented by every status change and persisted: the id of the analysis's event stream.
+    state_version: int = 1
 
 
 class SearchRequest(BaseModel):
@@ -168,7 +170,7 @@ def _get_analysis(conn: Any, analysis_id: UUID) -> AnalysisStateResponse | None:
         """
         SELECT a.id, a.status, a.created_at, a.completed_at,
                aa.id AS attempt_id, aa.failure_stage, aa.failure_code,
-               a.awaiting_stage, a.last_completed_stage
+               a.awaiting_stage, a.last_completed_stage, a.state_version
         FROM core.analysis AS a
         LEFT JOIN LATERAL (
             SELECT id, failure_stage, failure_code
@@ -194,6 +196,7 @@ def _get_analysis(conn: Any, analysis_id: UUID) -> AnalysisStateResponse | None:
         failure_code=_row_value(row, "failure_code", 6),
         awaiting_stage=_row_value(row, "awaiting_stage", 7),
         last_completed_stage=_row_value(row, "last_completed_stage", 8),
+        state_version=_row_value(row, "state_version", 9),
     )
 
 
@@ -219,7 +222,8 @@ def _waiting_reason(state: AnalysisStateResponse) -> str | None:
             f"{fix}, then restart the API; the analysis resumes automatically.")
 
 
-def _state_event(state: AnalysisStateResponse, sequence: int, repository: str | None = None) -> dict[str, Any]:
+def _state_event(state: AnalysisStateResponse, repository: str | None = None) -> dict[str, Any]:
+    """One stream event; its sequence is the analysis's persisted state version."""
     message = _STATE_MESSAGES.get(state.status, state.status)
     if state.status == "FAILED" and state.failure_stage:
         message = f"Analysis failed during {state.failure_stage.lower()}"
@@ -229,7 +233,7 @@ def _state_event(state: AnalysisStateResponse, sequence: int, repository: str | 
     return {
         "analysis_id": str(state.analysis_id),
         "attempt_id": str(state.attempt_id) if state.attempt_id else None,
-        "sequence": sequence,
+        "sequence": state.state_version,
         "state": state.status,
         "message": message,
         "awaiting_stage": state.awaiting_stage,
@@ -237,8 +241,6 @@ def _state_event(state: AnalysisStateResponse, sequence: int, repository: str | 
         "failure_stage": state.failure_stage if state.status == "FAILED" else None,
         "waiting_reason": _waiting_reason(state),
         "repository": repository,
-        # The pipeline's stages in order, so clients need not hardcode them.
-        "stages": [stage.value for stage in STAGE_ORDER],
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
@@ -375,6 +377,12 @@ async def list_analyses(limit: int = Query(default=20, ge=1, le=100)) -> list[An
     """The most recently created analyses, newest first."""
     factory = _connection_factory_or_raise()
     return await run_in_threadpool(run_in_transaction, factory, lambda conn: _list_analyses(conn, limit))
+
+
+@router.get("/stages")
+async def pipeline_stages() -> dict[str, list[str]]:
+    """The pipeline's stages in order, so clients need not hardcode them."""
+    return {"stages": [stage.value for stage in STAGE_ORDER]}
 
 
 @router.get("/{analysis_id}", response_model=AnalysisStateResponse)
@@ -587,19 +595,19 @@ async def stream_analysis_events(
 ) -> EventSourceResponse:
     """Each connection sends the current state, then every change; finished analyses send one event.
 
-    Events carry SSE ids. A reconnecting browser sends Last-Event-ID, and numbering continues
-    from it, so the client's ordering check holds across reconnects.
+    An event's SSE id is the analysis's persisted state version, which every status change
+    increments. A reconnecting browser sends Last-Event-ID; states at or below it are not resent,
+    and the ids stay ordered across API restarts and across states that repeat (a retried stage).
     """
     factory = _connection_factory_or_raise()
     try:
-        resumed_from = max(int(last_event_id or 0), 0)
+        seen_version = max(int(last_event_id or 0), 0)
     except ValueError:
-        resumed_from = 0
+        seen_version = 0
 
     # Unnamed events with JSON data, so the browser's EventSource.onmessage receives them.
     async def events():
-        sequence = resumed_from
-        last_seen: tuple[str, UUID | None] | None = None
+        nonlocal seen_version
         repository = await run_in_threadpool(
             run_in_transaction, factory, lambda conn: _repository_key(conn, analysis_id))
         while True:
@@ -609,13 +617,12 @@ async def stream_analysis_events(
                 lambda conn: _get_analysis(conn, analysis_id),
             )
             if state is None:
-                yield {"id": str(sequence + 1),
-                       "data": json.dumps({"state": "FAILED", "sequence": sequence + 1, "message": "analysis not found"})}
+                yield {"data": json.dumps({"state": "FAILED", "sequence": seen_version + 1,
+                                           "message": "analysis not found"})}
                 return
-            if (state.status, state.attempt_id) != last_seen:
-                last_seen = (state.status, state.attempt_id)
-                sequence += 1
-                yield {"id": str(sequence), "data": json.dumps(_state_event(state, sequence, repository))}
+            if state.state_version > seen_version:
+                seen_version = state.state_version
+                yield {"id": str(state.state_version), "data": json.dumps(_state_event(state, repository))}
             if state.status in _STREAM_END_STATES:
                 return
             await asyncio.sleep(1.0)

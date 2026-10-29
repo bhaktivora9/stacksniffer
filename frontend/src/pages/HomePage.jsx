@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { API_BASE } from "../config/api";
-import { createAnalysis, listAnalyses, subscribeToAnalysisEvents } from "../services/analyses";
+import { createAnalysis, getPipelineStages, listAnalyses, subscribeToAnalysisEvents } from "../services/analyses";
 import HomeLanding from "../components/HomeLanding";
 import AnalyzingScreen, { AnalyzingScreenFallback } from "../components/AnalyzingScreen";
 import ErrorBoundary from "../components/ErrorBoundary";
@@ -68,6 +68,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(false);
   const [analysisId, setAnalysisId] = useState(null);
   const [recent, setRecent] = useState(null);
+  const [stages, setStages] = useState(null); // the pipeline's stages, served once by the backend
   const [error, setError] = useState(null);
   const [streamEvents, setStreamEvents] = useState([]);
   const [streamStatus, setStreamStatus] = useState("idle");
@@ -79,6 +80,7 @@ export default function HomePage() {
   useEffect(() => {
     inputRef.current?.focus();
     listAnalyses(8).then(setRecent).catch(() => setRecent([]));
+    getPipelineStages().then(setStages).catch(() => setStages(null));
     if (followedId) {
       setLoading(true);
       followAnalysis(followedId, ++runRef.current);
@@ -190,7 +192,7 @@ export default function HomePage() {
 
   if (loading) {
     return <ErrorBoundary resetKey={analysisId} fallback={({ error: renderError, reset }) => <AnalyzingScreenFallback analysisId={analysisId} error={renderError} reset={reset} />}>
-      <AnalyzingScreen health={health} repoUrl={repoUrl} analysisId={analysisId} events={streamEvents} status={streamStatus} error={error} onCancel={cancelAnalysis} onRetry={retryAnalysis} />
+      <AnalyzingScreen health={health} repoUrl={repoUrl} analysisId={analysisId} stages={stages} events={streamEvents} status={streamStatus} error={error} onCancel={cancelAnalysis} onRetry={retryAnalysis} />
     </ErrorBoundary>;
   }
 
