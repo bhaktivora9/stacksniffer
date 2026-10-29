@@ -149,6 +149,29 @@ function AskPanel({ analysisId, enabled }) {
   );
 }
 
+// Partial results must not read as complete: say what is missing and, when parked, how to resume.
+function StatusBanner({ analysis }) {
+  const stage = (value) => value?.toLowerCase();
+  if (analysis.status === "DEGRADED") {
+    const where = analysis.failure_stage ? ` The ${stage(analysis.failure_stage)} stage did not finish cleanly${analysis.failure_code ? ` (${analysis.failure_code})` : ""}.` : "";
+    return <div role="status" className="rounded border border-amber/40 bg-amber/10 px-4 py-3 text-sm text-amber">
+      <b>Completed with degraded results.</b>{where} Counts, components and answers below may be incomplete.
+    </div>;
+  }
+  if (analysis.status === "AWAITING_STAGE") {
+    return <div role="status" className="rounded border border-amber/40 bg-amber/10 px-4 py-3 text-sm text-amber">
+      <b>Paused before the {stage(analysis.awaiting_stage) || "next"} stage.</b> Shown: what was built through {stage(analysis.last_completed_stage) || "the last completed stage"}.
+      {analysis.waiting_reason && <p className="mt-1 text-xs">{analysis.waiting_reason}</p>}
+    </div>;
+  }
+  if (analysis.status === "FAILED") {
+    return <div role="status" className="rounded border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+      <b>Analysis failed{analysis.failure_stage ? ` during ${stage(analysis.failure_stage)}` : ""}.</b> Anything shown below is from the stages that completed.
+    </div>;
+  }
+  return null;
+}
+
 function CommunityCard({ community }) {
   return (
     <li className="rounded-lg border border-border bg-surface px-4 py-3">
@@ -229,6 +252,8 @@ export default function AnalysisPage() {
               </p>
             )}
           </header>
+
+          <StatusBanner analysis={analysis} />
 
           <AskPanel analysisId={analysisId} enabled={overview.answers_available && analysis.status === "READY"} />
 

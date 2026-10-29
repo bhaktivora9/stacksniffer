@@ -1,8 +1,7 @@
 import { API_BASE, fetchApi } from "../config/api";
+import { FINISHED_STATES, normalizeEvent } from "../utils/analysisEvents";
 
-// The backend stops streaming once an analysis reaches one of these states.
-// AWAITING_STAGE: every deployed stage finished; the analysis resumes when the next one ships.
-export const FINISHED_STATES = ["READY", "DEGRADED", "FAILED", "AWAITING_STAGE"];
+export { FINISHED_STATES };
 
 function errorDetail(body, fallback) {
   const detail = body?.detail;
@@ -49,13 +48,21 @@ export async function askQuestion(analysisId, question, mode = null) {
   return body;
 }
 
+// Consecutive connection failures tolerated before giving up; the browser waits between retries.
+const MAX_RECONNECTS = 3;
+
 /**
- * Subscribes to /api/v1/analyses/{analysis_id}/events. Events are delivered once each, in order;
- * the stream closes itself after a finished state. Returns a function that closes it early.
+ * Subscribes to /api/v1/analyses/{analysis_id}/events. Events arrive normalized (see
+ * utils/analysisEvents), once each and in order; the stream closes itself after a finished state.
+ * A dropped connection is retried by the browser: the server resumes numbering from Last-Event-ID
+ * and resends the current state, which is skipped when nothing changed. onDisconnect runs only
+ * after MAX_RECONNECTS failures in a row. Returns a function that closes the stream early.
  */
 export function subscribeToAnalysisEvents(analysisId, { onEvent, onDisconnect }) {
   const source = new EventSource(`${API_BASE}/api/v1/analyses/${encodeURIComponent(analysisId)}/events`);
   let lastSequence = 0;
+  let lastState = null;
+  let failures = 0;
   let closed = false;
 
   const close = () => {
@@ -63,16 +70,23 @@ export function subscribeToAnalysisEvents(analysisId, { onEvent, onDisconnect })
     source.close();
   };
 
+  source.onopen = () => { failures = 0; };
   source.onmessage = (message) => {
-    let event;
-    try { event = JSON.parse(message.data); } catch { return; }
-    if (!Number.isFinite(event.sequence) || event.sequence <= lastSequence) return;
+    let raw;
+    try { raw = JSON.parse(message.data); } catch { console.warn("Ignoring a malformed analysis event", message.data); return; }
+    const event = normalizeEvent(raw);
+    if (!event || event.sequence <= lastSequence) return;
     lastSequence = event.sequence;
+    const state = `${event.state}/${event.attemptId}`;
     if (FINISHED_STATES.includes(event.state)) close();
+    if (state === lastState) return; // the current state, resent after a reconnect
+    lastState = state;
     onEvent(event);
   };
   source.onerror = () => {
     if (closed) return;
+    failures += 1;
+    if (source.readyState === EventSource.CONNECTING && failures <= MAX_RECONNECTS) return;
     close();
     onDisconnect?.();
   };

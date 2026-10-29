@@ -1,0 +1,512 @@
+{
+  "streams": {
+    "ready": [
+      {
+        "analysis_id": "00000000-0000-4000-8000-0000000000a1",
+        "attempt_id": "00000000-0000-4000-8000-0000000000b1",
+        "sequence": 1,
+        "state": "QUEUED",
+        "message": "Analysis queued",
+        "awaiting_stage": null,
+        "last_completed_stage": null,
+        "failure_stage": null,
+        "waiting_reason": null,
+        "repository": "github:pallets/flask",
+        "stages": [
+          "INGESTING",
+          "EXTRACTING",
+          "INDEXING",
+          "PROJECTING",
+          "SUMMARIZING"
+        ],
+        "timestamp": "2026-10-29T18:00:00+00:00"
+      },
+      {
+        "analysis_id": "00000000-0000-4000-8000-0000000000a1",
+        "attempt_id": "00000000-0000-4000-8000-0000000000b1",
+        "sequence": 2,
+        "state": "INGESTING",
+        "message": "Downloading repository",
+        "awaiting_stage": null,
+        "last_completed_stage": null,
+        "failure_stage": null,
+        "waiting_reason": null,
+        "repository": "github:pallets/flask",
+        "stages": [
+          "INGESTING",
+          "EXTRACTING",
+          "INDEXING",
+          "PROJECTING",
+          "SUMMARIZING"
+        ],
+        "timestamp": "2026-10-29T18:00:00+00:00"
+      },
+      {
+        "analysis_id": "00000000-0000-4000-8000-0000000000a1",
+        "attempt_id": "00000000-0000-4000-8000-0000000000b1",
+        "sequence": 3,
+        "state": "EXTRACTING",
+        "message": "Extracting structure",
+        "awaiting_stage": null,
+        "last_completed_stage": null,
+        "failure_stage": null,
+        "waiting_reason": null,
+        "repository": "github:pallets/flask",
+        "stages": [
+          "INGESTING",
+          "EXTRACTING",
+          "INDEXING",
+          "PROJECTING",
+          "SUMMARIZING"
+        ],
+        "timestamp": "2026-10-29T18:00:00+00:00"
+      },
+      {
+        "analysis_id": "00000000-0000-4000-8000-0000000000a1",
+        "attempt_id": "00000000-0000-4000-8000-0000000000b1",
+        "sequence": 4,
+        "state": "INDEXING",
+        "message": "Indexing content",
+        "awaiting_stage": null,
+        "last_completed_stage": null,
+        "failure_stage": null,
+        "waiting_reason": null,
+        "repository": "github:pallets/flask",
+        "stages": [
+          "INGESTING",
+          "EXTRACTING",
+          "INDEXING",
+          "PROJECTING",
+          "SUMMARIZING"
+        ],
+        "timestamp": "2026-10-29T18:00:00+00:00"
+      },
+      {
+        "analysis_id": "00000000-0000-4000-8000-0000000000a1",
+        "attempt_id": "00000000-0000-4000-8000-0000000000b1",
+        "sequence": 5,
+        "state": "PROJECTING",
+        "message": "Building graph projection",
+        "awaiting_stage": null,
+        "last_completed_stage": null,
+        "failure_stage": null,
+        "waiting_reason": null,
+        "repository": "github:pallets/flask",
+        "stages": [
+          "INGESTING",
+          "EXTRACTING",
+          "INDEXING",
+          "PROJECTING",
+          "SUMMARIZING"
+        ],
+        "timestamp": "2026-10-29T18:00:00+00:00"
+      },
+      {
+        "analysis_id": "00000000-0000-4000-8000-0000000000a1",
+        "attempt_id": "00000000-0000-4000-8000-0000000000b1",
+        "sequence": 6,
+        "state": "SUMMARIZING",
+        "message": "Summarizing",
+        "awaiting_stage": null,
+        "last_completed_stage": null,
+        "failure_stage": null,
+        "waiting_reason": null,
+        "repository": "github:pallets/flask",
+        "stages": [
+          "INGESTING",
+          "EXTRACTING",
+          "INDEXING",
+          "PROJECTING",
+          "SUMMARIZING"
+        ],
+        "timestamp": "2026-10-29T18:00:00+00:00"
+      },
+      {
+        "analysis_id": "00000000-0000-4000-8000-0000000000a1",
+        "attempt_id": "00000000-0000-4000-8000-0000000000b1",
+        "sequence": 7,
+        "state": "READY",
+        "message": "Analysis complete",
+        "awaiting_stage": null,
+        "last_completed_stage": null,
+        "failure_stage": null,
+        "waiting_reason": null,
+        "repository": "github:pallets/flask",
+        "stages": [
+          "INGESTING",
+          "EXTRACTING",
+          "INDEXING",
+          "PROJECTING",
+          "SUMMARIZING"
+        ],
+        "timestamp": "2026-10-29T18:00:00+00:00"
+      }
+    ],
+    "degraded": [
+      {
+        "analysis_id": "00000000-0000-4000-8000-0000000000a1",
+        "attempt_id": "00000000-0000-4000-8000-0000000000b1",
+        "sequence": 1,
+        "state": "QUEUED",
+        "message": "Analysis queued",
+        "awaiting_stage": null,
+        "last_completed_stage": null,
+        "failure_stage": null,
+        "waiting_reason": null,
+        "repository": "github:pallets/flask",
+        "stages": [
+          "INGESTING",
+          "EXTRACTING",
+          "INDEXING",
+          "PROJECTING",
+          "SUMMARIZING"
+        ],
+        "timestamp": "2026-10-29T18:00:00+00:00"
+      },
+      {
+        "analysis_id": "00000000-0000-4000-8000-0000000000a1",
+        "attempt_id": "00000000-0000-4000-8000-0000000000b1",
+        "sequence": 2,
+        "state": "INGESTING",
+        "message": "Downloading repository",
+        "awaiting_stage": null,
+        "last_completed_stage": null,
+        "failure_stage": null,
+        "waiting_reason": null,
+        "repository": "github:pallets/flask",
+        "stages": [
+          "INGESTING",
+          "EXTRACTING",
+          "INDEXING",
+          "PROJECTING",
+          "SUMMARIZING"
+        ],
+        "timestamp": "2026-10-29T18:00:00+00:00"
+      },
+      {
+        "analysis_id": "00000000-0000-4000-8000-0000000000a1",
+        "attempt_id": "00000000-0000-4000-8000-0000000000b1",
+        "sequence": 3,
+        "state": "EXTRACTING",
+        "message": "Extracting structure",
+        "awaiting_stage": null,
+        "last_completed_stage": null,
+        "failure_stage": null,
+        "waiting_reason": null,
+        "repository": "github:pallets/flask",
+        "stages": [
+          "INGESTING",
+          "EXTRACTING",
+          "INDEXING",
+          "PROJECTING",
+          "SUMMARIZING"
+        ],
+        "timestamp": "2026-10-29T18:00:00+00:00"
+      },
+      {
+        "analysis_id": "00000000-0000-4000-8000-0000000000a1",
+        "attempt_id": "00000000-0000-4000-8000-0000000000b1",
+        "sequence": 4,
+        "state": "INDEXING",
+        "message": "Indexing content",
+        "awaiting_stage": null,
+        "last_completed_stage": null,
+        "failure_stage": null,
+        "waiting_reason": null,
+        "repository": "github:pallets/flask",
+        "stages": [
+          "INGESTING",
+          "EXTRACTING",
+          "INDEXING",
+          "PROJECTING",
+          "SUMMARIZING"
+        ],
+        "timestamp": "2026-10-29T18:00:00+00:00"
+      },
+      {
+        "analysis_id": "00000000-0000-4000-8000-0000000000a1",
+        "attempt_id": "00000000-0000-4000-8000-0000000000b1",
+        "sequence": 5,
+        "state": "PROJECTING",
+        "message": "Building graph projection",
+        "awaiting_stage": null,
+        "last_completed_stage": null,
+        "failure_stage": null,
+        "waiting_reason": null,
+        "repository": "github:pallets/flask",
+        "stages": [
+          "INGESTING",
+          "EXTRACTING",
+          "INDEXING",
+          "PROJECTING",
+          "SUMMARIZING"
+        ],
+        "timestamp": "2026-10-29T18:00:00+00:00"
+      },
+      {
+        "analysis_id": "00000000-0000-4000-8000-0000000000a1",
+        "attempt_id": "00000000-0000-4000-8000-0000000000b1",
+        "sequence": 6,
+        "state": "SUMMARIZING",
+        "message": "Summarizing",
+        "awaiting_stage": null,
+        "last_completed_stage": null,
+        "failure_stage": null,
+        "waiting_reason": null,
+        "repository": "github:pallets/flask",
+        "stages": [
+          "INGESTING",
+          "EXTRACTING",
+          "INDEXING",
+          "PROJECTING",
+          "SUMMARIZING"
+        ],
+        "timestamp": "2026-10-29T18:00:00+00:00"
+      },
+      {
+        "analysis_id": "00000000-0000-4000-8000-0000000000a1",
+        "attempt_id": "00000000-0000-4000-8000-0000000000b1",
+        "sequence": 7,
+        "state": "DEGRADED",
+        "message": "Analysis completed with degraded results",
+        "awaiting_stage": null,
+        "last_completed_stage": null,
+        "failure_stage": null,
+        "waiting_reason": null,
+        "repository": "github:pallets/flask",
+        "stages": [
+          "INGESTING",
+          "EXTRACTING",
+          "INDEXING",
+          "PROJECTING",
+          "SUMMARIZING"
+        ],
+        "timestamp": "2026-10-29T18:00:00+00:00"
+      }
+    ],
+    "parked": [
+      {
+        "analysis_id": "00000000-0000-4000-8000-0000000000a1",
+        "attempt_id": "00000000-0000-4000-8000-0000000000b1",
+        "sequence": 1,
+        "state": "QUEUED",
+        "message": "Analysis queued",
+        "awaiting_stage": null,
+        "last_completed_stage": null,
+        "failure_stage": null,
+        "waiting_reason": null,
+        "repository": "github:pallets/flask",
+        "stages": [
+          "INGESTING",
+          "EXTRACTING",
+          "INDEXING",
+          "PROJECTING",
+          "SUMMARIZING"
+        ],
+        "timestamp": "2026-10-29T18:00:00+00:00"
+      },
+      {
+        "analysis_id": "00000000-0000-4000-8000-0000000000a1",
+        "attempt_id": "00000000-0000-4000-8000-0000000000b1",
+        "sequence": 2,
+        "state": "INGESTING",
+        "message": "Downloading repository",
+        "awaiting_stage": null,
+        "last_completed_stage": null,
+        "failure_stage": null,
+        "waiting_reason": null,
+        "repository": "github:pallets/flask",
+        "stages": [
+          "INGESTING",
+          "EXTRACTING",
+          "INDEXING",
+          "PROJECTING",
+          "SUMMARIZING"
+        ],
+        "timestamp": "2026-10-29T18:00:00+00:00"
+      },
+      {
+        "analysis_id": "00000000-0000-4000-8000-0000000000a1",
+        "attempt_id": "00000000-0000-4000-8000-0000000000b1",
+        "sequence": 3,
+        "state": "EXTRACTING",
+        "message": "Extracting structure",
+        "awaiting_stage": null,
+        "last_completed_stage": null,
+        "failure_stage": null,
+        "waiting_reason": null,
+        "repository": "github:pallets/flask",
+        "stages": [
+          "INGESTING",
+          "EXTRACTING",
+          "INDEXING",
+          "PROJECTING",
+          "SUMMARIZING"
+        ],
+        "timestamp": "2026-10-29T18:00:00+00:00"
+      },
+      {
+        "analysis_id": "00000000-0000-4000-8000-0000000000a1",
+        "attempt_id": "00000000-0000-4000-8000-0000000000b1",
+        "sequence": 4,
+        "state": "INDEXING",
+        "message": "Indexing content",
+        "awaiting_stage": null,
+        "last_completed_stage": null,
+        "failure_stage": null,
+        "waiting_reason": null,
+        "repository": "github:pallets/flask",
+        "stages": [
+          "INGESTING",
+          "EXTRACTING",
+          "INDEXING",
+          "PROJECTING",
+          "SUMMARIZING"
+        ],
+        "timestamp": "2026-10-29T18:00:00+00:00"
+      },
+      {
+        "analysis_id": "00000000-0000-4000-8000-0000000000a1",
+        "attempt_id": "00000000-0000-4000-8000-0000000000b1",
+        "sequence": 5,
+        "state": "PROJECTING",
+        "message": "Building graph projection",
+        "awaiting_stage": null,
+        "last_completed_stage": null,
+        "failure_stage": null,
+        "waiting_reason": null,
+        "repository": "github:pallets/flask",
+        "stages": [
+          "INGESTING",
+          "EXTRACTING",
+          "INDEXING",
+          "PROJECTING",
+          "SUMMARIZING"
+        ],
+        "timestamp": "2026-10-29T18:00:00+00:00"
+      },
+      {
+        "analysis_id": "00000000-0000-4000-8000-0000000000a1",
+        "attempt_id": "00000000-0000-4000-8000-0000000000b1",
+        "sequence": 6,
+        "state": "AWAITING_STAGE",
+        "message": "Completed through projecting; waiting for the summarizing stage",
+        "awaiting_stage": "SUMMARIZING",
+        "last_completed_stage": "PROJECTING",
+        "failure_stage": null,
+        "waiting_reason": "Summaries need a text model, and none is configured (GEMINI_API_KEY is not set). Set GEMINI_API_KEY or ANALYSIS_LLM_PROVIDER=offline, then restart the API; the analysis resumes automatically.",
+        "repository": "github:pallets/flask",
+        "stages": [
+          "INGESTING",
+          "EXTRACTING",
+          "INDEXING",
+          "PROJECTING",
+          "SUMMARIZING"
+        ],
+        "timestamp": "2026-10-29T18:00:00+00:00"
+      }
+    ],
+    "failed": [
+      {
+        "analysis_id": "00000000-0000-4000-8000-0000000000a1",
+        "attempt_id": "00000000-0000-4000-8000-0000000000b1",
+        "sequence": 1,
+        "state": "QUEUED",
+        "message": "Analysis queued",
+        "awaiting_stage": null,
+        "last_completed_stage": null,
+        "failure_stage": null,
+        "waiting_reason": null,
+        "repository": "github:pallets/flask",
+        "stages": [
+          "INGESTING",
+          "EXTRACTING",
+          "INDEXING",
+          "PROJECTING",
+          "SUMMARIZING"
+        ],
+        "timestamp": "2026-10-29T18:00:00+00:00"
+      },
+      {
+        "analysis_id": "00000000-0000-4000-8000-0000000000a1",
+        "attempt_id": "00000000-0000-4000-8000-0000000000b1",
+        "sequence": 2,
+        "state": "INGESTING",
+        "message": "Downloading repository",
+        "awaiting_stage": null,
+        "last_completed_stage": null,
+        "failure_stage": null,
+        "waiting_reason": null,
+        "repository": "github:pallets/flask",
+        "stages": [
+          "INGESTING",
+          "EXTRACTING",
+          "INDEXING",
+          "PROJECTING",
+          "SUMMARIZING"
+        ],
+        "timestamp": "2026-10-29T18:00:00+00:00"
+      },
+      {
+        "analysis_id": "00000000-0000-4000-8000-0000000000a1",
+        "attempt_id": "00000000-0000-4000-8000-0000000000b1",
+        "sequence": 3,
+        "state": "EXTRACTING",
+        "message": "Extracting structure",
+        "awaiting_stage": null,
+        "last_completed_stage": null,
+        "failure_stage": null,
+        "waiting_reason": null,
+        "repository": "github:pallets/flask",
+        "stages": [
+          "INGESTING",
+          "EXTRACTING",
+          "INDEXING",
+          "PROJECTING",
+          "SUMMARIZING"
+        ],
+        "timestamp": "2026-10-29T18:00:00+00:00"
+      },
+      {
+        "analysis_id": "00000000-0000-4000-8000-0000000000a1",
+        "attempt_id": "00000000-0000-4000-8000-0000000000b1",
+        "sequence": 4,
+        "state": "INDEXING",
+        "message": "Indexing content",
+        "awaiting_stage": null,
+        "last_completed_stage": null,
+        "failure_stage": null,
+        "waiting_reason": null,
+        "repository": "github:pallets/flask",
+        "stages": [
+          "INGESTING",
+          "EXTRACTING",
+          "INDEXING",
+          "PROJECTING",
+          "SUMMARIZING"
+        ],
+        "timestamp": "2026-10-29T18:00:00+00:00"
+      },
+      {
+        "analysis_id": "00000000-0000-4000-8000-0000000000a1",
+        "attempt_id": "00000000-0000-4000-8000-0000000000b1",
+        "sequence": 5,
+        "state": "FAILED",
+        "message": "Analysis failed during indexing",
+        "awaiting_stage": null,
+        "last_completed_stage": null,
+        "failure_stage": "INDEXING",
+        "waiting_reason": null,
+        "repository": "github:pallets/flask",
+        "stages": [
+          "INGESTING",
+          "EXTRACTING",
+          "INDEXING",
+          "PROJECTING",
+          "SUMMARIZING"
+        ],
+        "timestamp": "2026-10-29T18:00:00+00:00"
+      }
+    ]
+  }
+}

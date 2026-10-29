@@ -47,6 +47,7 @@ export default function HomeLanding({
               </p>
             )}
             {error && <p className="home-error">{error}</p>}
+
           </div>
         </section>
 

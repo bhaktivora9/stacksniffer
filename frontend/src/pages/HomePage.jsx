@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { API_BASE } from "../config/api";
 import { createAnalysis, subscribeToAnalysisEvents } from "../services/analyses";
 import HomeLanding from "../components/HomeLanding";
-import AnalyzingScreen from "../components/AnalyzingScreen";
+import AnalyzingScreen, { AnalyzingScreenFallback } from "../components/AnalyzingScreen";
+import ErrorBoundary from "../components/ErrorBoundary";
+import { repositoryLabel } from "../utils/analysisEvents";
 
 const GITHUB_OWNER_REPO_RE = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+(?:\.git)?\/?$/;
 
@@ -57,11 +59,14 @@ function useHealthStatus() {
 export default function HomePage() {
   const navigate = useNavigate();
   const health = useHealthStatus();
+  // The analysis being followed is in the URL (?analysis=<id>), so a refresh or a shared link resumes it.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const followedId = searchParams.get("analysis");
 
   const [repoUrl, setRepoUrl] = useState("");
   const [urlError, setUrlError] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0);
+  const [analysisId, setAnalysisId] = useState(null);
   const [error, setError] = useState(null);
   const [streamEvents, setStreamEvents] = useState([]);
   const [streamStatus, setStreamStatus] = useState("idle");
@@ -72,11 +77,20 @@ export default function HomePage() {
 
   useEffect(() => {
     inputRef.current?.focus();
+    if (followedId) {
+      setLoading(true);
+      followAnalysis(followedId, ++runRef.current);
+    }
     return () => {
       runRef.current += 1;
       closeStreamRef.current?.();
     };
   }, []);
+
+  // Back (or any navigation) to the bare home page stops following the analysis.
+  useEffect(() => {
+    if (!followedId && analysisId) cancelAnalysis();
+  }, [followedId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function validateUrl(val) {
     return parseGitHubRepoInput(val).error;
@@ -93,6 +107,7 @@ export default function HomePage() {
     setLoading(true);
     setStreamEvents([]);
     setStreamStatus("running");
+    setAnalysisId(null);
     closeStreamRef.current?.();
     const run = ++runRef.current;
 
@@ -107,24 +122,33 @@ export default function HomePage() {
       return;
     }
     if (run !== runRef.current) return; // cancelled or superseded while the request was in flight
+    setSearchParams({ analysis: analysis.analysis_id }); // a new history entry, so back returns home
+    followAnalysis(analysis.analysis_id, run);
+  }
 
-    closeStreamRef.current = subscribeToAnalysisEvents(analysis.analysis_id, {
+  function followAnalysis(id, run) {
+    setAnalysisId(id);
+    setStreamEvents([]);
+    setStreamStatus("running");
+    closeStreamRef.current?.();
+    closeStreamRef.current = subscribeToAnalysisEvents(id, {
       onEvent: (event) => {
+        if (run !== runRef.current) return;
         setStreamEvents((current) => [...current, event]);
-        const steps = { INGESTING: 0, EXTRACTING: 1, INDEXING: 2, PROJECTING: 3, SUMMARIZING: 3, READY: 4 };
-        // A parked analysis has finished its last completed stage; show the rail up to the awaited one.
-        setCurrentStep(event.state === "AWAITING_STAGE" ? steps[event.awaiting_stage] ?? 0 : steps[event.state] ?? 0);
         if (event.state === "AWAITING_STAGE") {
           setStreamStatus("waiting");
-        } else if (["FAILED", "DEGRADED"].includes(event.state)) {
+        } else if (event.state === "FAILED") {
           setStreamStatus("failed");
           setError(event.message || "Analysis failed");
-        } else if (event.state === "READY") {
+        } else if (event.state === "READY" || event.state === "DEGRADED") {
+          // A degraded analysis finished with some results missing; its page shows what there is.
           setStreamStatus("complete");
-          navigate(`/analyses/${encodeURIComponent(analysis.analysis_id)}`);
+          // Replaces the progress entry: going back must not land on it and be forwarded again.
+          navigate(`/analyses/${encodeURIComponent(id)}`, { replace: true });
         }
       },
       onDisconnect: () => {
+        if (run !== runRef.current) return;
         setStreamStatus("failed");
         setError("The analysis stream disconnected. You can retry safely.");
       },
@@ -137,6 +161,16 @@ export default function HomePage() {
     setLoading(false);
     setStreamStatus("idle");
     setStreamEvents([]);
+    setAnalysisId(null);
+    setSearchParams({}, { replace: true });
+  }
+
+  // A followed link carries no URL of its own; retry with the repository the stream reported.
+  function retryAnalysis() {
+    const reported = repositoryLabel(streamEvents[streamEvents.length - 1]?.repository);
+    const url = repoUrl || (reported ? `https://${reported}` : "");
+    if (url) runAnalysis(url);
+    else cancelAnalysis();
   }
 
   function handleSubmit(e) {
@@ -153,7 +187,9 @@ export default function HomePage() {
   }
 
   if (loading) {
-    return <AnalyzingScreen health={health} currentStep={currentStep} repoUrl={repoUrl} events={streamEvents} status={streamStatus} error={error} onCancel={cancelAnalysis} onRetry={() => runAnalysis(repoUrl)} />;
+    return <ErrorBoundary resetKey={analysisId} fallback={({ error: renderError, reset }) => <AnalyzingScreenFallback analysisId={analysisId} error={renderError} reset={reset} />}>
+      <AnalyzingScreen health={health} repoUrl={repoUrl} analysisId={analysisId} events={streamEvents} status={streamStatus} error={error} onCancel={cancelAnalysis} onRetry={retryAnalysis} />
+    </ErrorBoundary>;
   }
 
   return <HomeLanding repoUrl={repoUrl} onChange={handleUrlChange} onSubmit={handleSubmit} inputRef={inputRef} health={health} urlError={urlError} error={error} />;

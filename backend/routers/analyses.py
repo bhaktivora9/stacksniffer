@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Header, HTTPException, status
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 from sse_starlette.sse import EventSourceResponse
@@ -22,6 +22,7 @@ from backend.services.repository_resolver import (
 )
 
 try:
+    from services.analysis_lifecycle import STAGE_ORDER
     from services.analysis_persistence import (
         AnalysisCreation,
         create_or_reuse_analysis,
@@ -36,6 +37,7 @@ try:
     from services.semantic.embeddings import EmbeddingError
     from services.semantic.search import MAX_QUERY_CHARS, MAX_RESULTS, SearchError, search_analysis
 except ModuleNotFoundError:  # Package imports from the repository root.
+    from backend.services.analysis_lifecycle import STAGE_ORDER
     from backend.services.analysis_persistence import (
         AnalysisCreation,
         create_or_reuse_analysis,
@@ -57,6 +59,8 @@ _connection_factory: Callable[[], Any] | None = None
 _search_configuration: tuple[Any, Any, Any] | None = None
 # The text provider for answers (the one that summarizes communities).
 _text_provider: Any = None
+# Readiness reports of the stages that can be unavailable, keyed by stage: why a parked analysis waits.
+_stage_readiness: dict[str, dict[str, Any]] = {}
 
 
 class CreateAnalysisRequest(BaseModel):
@@ -193,7 +197,29 @@ def _get_analysis(conn: Any, analysis_id: UUID) -> AnalysisStateResponse | None:
     )
 
 
-def _state_event(state: AnalysisStateResponse, sequence: int) -> dict[str, Any]:
+# What a parked analysis needs, and how to provide it, per awaited stage.
+_RESUME_ACTIONS = {
+    "INDEXING": ("Indexing needs an embedding provider", "Set GEMINI_API_KEY or ANALYSIS_EMBEDDING_PROVIDER=offline"),
+    "SUMMARIZING": ("Summaries need a text model", "Set GEMINI_API_KEY or ANALYSIS_LLM_PROVIDER=offline"),
+}
+
+
+def _waiting_reason(state: AnalysisStateResponse) -> str | None:
+    """Why a parked analysis waits and how to resume it; None unless it is AWAITING_STAGE."""
+    if state.status != "AWAITING_STAGE" or not state.awaiting_stage:
+        return None
+    stage = state.awaiting_stage
+    report = _stage_readiness.get(stage, {})
+    if report.get("status") == "enabled":
+        return f"The {stage.lower()} stage is available; the worker resumes this analysis shortly."
+    need, fix = _RESUME_ACTIONS.get(stage, (f"The {stage.lower()} stage is not available on this server",
+                                            "Deploy a pipeline that runs it"))
+    reason = report.get("reason") or report.get("status")
+    return (f"{need}, and none is configured{f' ({reason})' if reason else ''}. "
+            f"{fix}, then restart the API; the analysis resumes automatically.")
+
+
+def _state_event(state: AnalysisStateResponse, sequence: int, repository: str | None = None) -> dict[str, Any]:
     message = _STATE_MESSAGES.get(state.status, state.status)
     if state.status == "FAILED" and state.failure_stage:
         message = f"Analysis failed during {state.failure_stage.lower()}"
@@ -208,6 +234,11 @@ def _state_event(state: AnalysisStateResponse, sequence: int) -> dict[str, Any]:
         "message": message,
         "awaiting_stage": state.awaiting_stage,
         "last_completed_stage": state.last_completed_stage,
+        "failure_stage": state.failure_stage if state.status == "FAILED" else None,
+        "waiting_reason": _waiting_reason(state),
+        "repository": repository,
+        # The pipeline's stages in order, so clients need not hardcode them.
+        "stages": [stage.value for stage in STAGE_ORDER],
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
@@ -228,6 +259,12 @@ def configure_answers(provider: Any) -> None:
     """Configure the text provider that answers questions; None disables answers."""
     global _text_provider
     _text_provider = provider
+
+
+def configure_stage_readiness(readiness: dict[str, dict[str, Any]]) -> None:
+    """Configure each optional stage's readiness report (INDEXING, SUMMARIZING), as /api/health/ready shows it."""
+    global _stage_readiness
+    _stage_readiness = dict(readiness)
 
 
 def _connection_factory_or_raise() -> Callable[[], Any]:
@@ -469,7 +506,7 @@ def _overview(conn: Any, analysis_id: UUID) -> dict[str, Any] | None:
                         for point in summary.get("key_points", []) if point.get("supported")],
                 })
     return {
-        "analysis": json.loads(state.model_dump_json()),
+        "analysis": {**json.loads(state.model_dump_json()), "waiting_reason": _waiting_reason(state)},
         "repository": {"canonical_key": repository[0], "owner": repository[1], "name": repository[2],
                        "commit_sha": repository[3], "requested_reference": repository[4]},
         "counts": {"files": counts[0], "entities": counts[1], "relationships": counts[2], "chunks": counts[3]},
@@ -491,14 +528,34 @@ async def get_overview(analysis_id: UUID) -> dict[str, Any]:
     return result
 
 
+def _repository_key(conn: Any, analysis_id: UUID) -> str | None:
+    row = conn.fetch_one(
+        "SELECT r.canonical_key FROM core.analysis a JOIN core.repository_version v ON v.id = a.repository_version_id "
+        "JOIN core.repository r ON r.id = v.repository_id WHERE a.id = %s", str(analysis_id))
+    return None if row is None else _row_value(row, "canonical_key", 0)
+
+
 @router.get("/{analysis_id}/events")
-async def stream_analysis_events(analysis_id: UUID) -> EventSourceResponse:
+async def stream_analysis_events(
+    analysis_id: UUID, last_event_id: str | None = Header(default=None),
+) -> EventSourceResponse:
+    """Each connection sends the current state, then every change; finished analyses send one event.
+
+    Events carry SSE ids. A reconnecting browser sends Last-Event-ID, and numbering continues
+    from it, so the client's ordering check holds across reconnects.
+    """
     factory = _connection_factory_or_raise()
+    try:
+        resumed_from = max(int(last_event_id or 0), 0)
+    except ValueError:
+        resumed_from = 0
 
     # Unnamed events with JSON data, so the browser's EventSource.onmessage receives them.
     async def events():
-        sequence = 0
+        sequence = resumed_from
         last_seen: tuple[str, UUID | None] | None = None
+        repository = await run_in_threadpool(
+            run_in_transaction, factory, lambda conn: _repository_key(conn, analysis_id))
         while True:
             state = await run_in_threadpool(
                 run_in_transaction,
@@ -506,12 +563,13 @@ async def stream_analysis_events(analysis_id: UUID) -> EventSourceResponse:
                 lambda conn: _get_analysis(conn, analysis_id),
             )
             if state is None:
-                yield {"data": json.dumps({"state": "FAILED", "sequence": sequence + 1, "message": "analysis not found"})}
+                yield {"id": str(sequence + 1),
+                       "data": json.dumps({"state": "FAILED", "sequence": sequence + 1, "message": "analysis not found"})}
                 return
             if (state.status, state.attempt_id) != last_seen:
                 last_seen = (state.status, state.attempt_id)
                 sequence += 1
-                yield {"data": json.dumps(_state_event(state, sequence))}
+                yield {"id": str(sequence), "data": json.dumps(_state_event(state, sequence, repository))}
             if state.status in _STREAM_END_STATES:
                 return
             await asyncio.sleep(1.0)

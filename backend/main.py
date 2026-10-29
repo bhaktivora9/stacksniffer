@@ -38,7 +38,8 @@ from fastapi.responses import JSONResponse
 
 try:
     from cors_config import allowed_origins
-    from routers.analyses import configure_answers, configure_connection_factory, configure_search
+    from routers.analyses import (configure_answers, configure_connection_factory, configure_search,
+                                  configure_stage_readiness)
     from routers.analyses import router as analyses_router
     from services.analysis_pipeline import AnalysisPipeline
     from services.analysis_worker import supervise_worker
@@ -54,7 +55,8 @@ try:
     from services.repository_resolver import github_reported_size_bytes
 except ModuleNotFoundError:
     from backend.cors_config import allowed_origins
-    from backend.routers.analyses import configure_answers, configure_connection_factory, configure_search
+    from backend.routers.analyses import (configure_answers, configure_connection_factory, configure_search,
+                                          configure_stage_readiness)
     from backend.routers.analyses import router as analyses_router
     from backend.services.analysis_pipeline import AnalysisPipeline
     from backend.services.analysis_worker import supervise_worker
@@ -242,6 +244,7 @@ async def lifespan(app: FastAPI):
         if indexing is not None:
             configure_search(embedding_provider, indexing.chunk_profile, indexing.embedding_profile)
         configure_answers(text_provider)
+        configure_stage_readiness({"INDEXING": app.state.indexing, "SUMMARIZING": app.state.generation})
         if _env_flag("ANALYSIS_WORKER_ENABLED", True):
             acquirer = _acquirer()
             await _remove_orphaned_acquisitions(acquirer)
