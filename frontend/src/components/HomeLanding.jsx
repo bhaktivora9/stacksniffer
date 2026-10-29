@@ -4,12 +4,10 @@ export default function HomeLanding({
   repoUrl,
   onChange,
   onSubmit,
-  onDemo,
   inputRef,
   health,
   urlError,
   error,
-  rateLimitCountdown,
 }) {
   return (
     <div className="home-v2">
@@ -48,15 +46,7 @@ export default function HomeLanding({
                 {urlError}
               </p>
             )}
-            {error && !rateLimitCountdown && <p className="home-error">{error}</p>}
-            {rateLimitCountdown != null && (
-              <p className="home-error">GitHub rate limit hit. Retrying in {rateLimitCountdown}s...</p>
-            )}
-
-            <div className="home-subrow">
-              <button onClick={onDemo}>&gt; try demo - bhaktivora9/stacksniffer</button>
-              <span>no sign-in - no API key</span>
-            </div>
+            {error && <p className="home-error">{error}</p>}
           </div>
         </section>
 
