@@ -45,9 +45,6 @@ CREATE TABLE core.analysis (
     --   awaiting_stage        the stage to resume at once it exists (e.g. INDEXING)
     last_completed_stage TEXT,
     awaiting_stage TEXT,
-    -- Incremented by every status change (analysis_state_version_trg), never reset: event streams
-    -- use it as the event id, so ids stay ordered across API restarts and repeated states.
-    state_version BIGINT NOT NULL DEFAULT 1,
     CONSTRAINT analysis_pipeline_version_not_blank CHECK (btrim(structural_pipeline_version) <> ''),
     CONSTRAINT analysis_status_ck CHECK (
         status IN (
@@ -71,23 +68,6 @@ CREATE TABLE core.analysis (
 
 CREATE INDEX analysis_status_created_idx
     ON core.analysis (status, created_at);
-
-CREATE OR REPLACE FUNCTION core.bump_analysis_state_version()
-RETURNS trigger
-LANGUAGE plpgsql
-SET search_path = core, public, pg_temp
-AS $$
-BEGIN
-    NEW.state_version := OLD.state_version + 1;
-    RETURN NEW;
-END;
-$$;
-
-CREATE TRIGGER analysis_state_version_trg
-BEFORE UPDATE OF status ON core.analysis
-FOR EACH ROW
-WHEN (OLD.status IS DISTINCT FROM NEW.status)
-EXECUTE FUNCTION core.bump_analysis_state_version();
 
 -- The worker finds resumable analyses by the stage they wait for.
 CREATE INDEX analysis_awaiting_stage_idx

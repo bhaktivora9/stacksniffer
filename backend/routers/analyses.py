@@ -61,6 +61,8 @@ _search_configuration: tuple[Any, Any, Any] | None = None
 _text_provider: Any = None
 # Readiness reports of the stages that can be unavailable, keyed by stage: why a parked analysis waits.
 _stage_readiness: dict[str, dict[str, Any]] = {}
+# Set when the database's schema is not the version this code needs: what to do about it.
+_schema_problem: str | None = None
 
 
 class CreateAnalysisRequest(BaseModel):
@@ -269,7 +271,15 @@ def configure_stage_readiness(readiness: dict[str, dict[str, Any]]) -> None:
     _stage_readiness = dict(readiness)
 
 
+def configure_schema_problem(detail: str | None) -> None:
+    """Refuse analysis requests with this message (the database needs migrating); None clears it."""
+    global _schema_problem
+    _schema_problem = detail
+
+
 def _connection_factory_or_raise() -> Callable[[], Any]:
+    if _schema_problem is not None:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=_schema_problem)
     if _connection_factory is None:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

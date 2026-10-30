@@ -33,6 +33,10 @@ class RecordingConnection:
 
     def fetch_scalar(self, query, *args):
         self.calls.append((query, args))
+        if "schema_migration" in query and "max(version)" in query:
+            from backend.services.schema_migrations import required_version
+
+            return required_version()  # the startup schema check: exactly the version this code needs
         return 1
 
     def execute(self, query, *args):
@@ -180,7 +184,8 @@ def test_app_starts_the_worker_and_reports_health(monkeypatch):
         body = client.get("/api/health").json()
         ready = client.get("/api/health/ready")
         task = app_module.app.state.worker_task
-        assert body == {"status": "ok", "database": "ok", "worker": "running", "analyzers": READY_ANALYZERS}
+        assert body == {"status": "ok", "database": "ok", "schema": {"status": "ok"}, "worker": "running",
+                        "analyzers": READY_ANALYZERS}
         assert ready.status_code == 200 and ready.json()["failing"] == []
 
     assert task.done()  # stopped on shutdown
@@ -194,7 +199,8 @@ def test_an_api_only_process_with_the_worker_switched_off_is_ready(monkeypatch):
 
     with TestClient(app_module.app) as client:
         assert client.get("/api/health").json() == {
-            "status": "ok", "database": "ok", "worker": "disabled", "analyzers": READY_ANALYZERS}
+            "status": "ok", "database": "ok", "schema": {"status": "ok"}, "worker": "disabled",
+            "analyzers": READY_ANALYZERS}
         assert client.get("/api/health/ready").status_code == 200
 
 
@@ -204,8 +210,8 @@ def test_health_without_database(monkeypatch):
         body = client.get("/api/health").json()
         ready = client.get("/api/health/ready")
         live = client.get("/api/health/live")
-    assert body == {"status": "degraded", "database": "unconfigured", "worker": "unconfigured",
-                    "analyzers": READY_ANALYZERS}
+    assert body == {"status": "degraded", "database": "unconfigured", "schema": {"status": "unchecked"},
+                    "worker": "unconfigured", "analyzers": READY_ANALYZERS}
     assert ready.status_code == 503 and set(ready.json()["failing"]) == {"database", "worker"}
     assert live.status_code == 200 and live.json() == {"status": "ok"}
 

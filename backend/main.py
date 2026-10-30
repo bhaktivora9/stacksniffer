@@ -38,8 +38,8 @@ from fastapi.responses import JSONResponse
 
 try:
     from cors_config import allowed_origins
-    from routers.analyses import (configure_answers, configure_connection_factory, configure_search,
-                                  configure_stage_readiness)
+    from routers.analyses import (configure_answers, configure_connection_factory, configure_schema_problem,
+                                  configure_search, configure_stage_readiness)
     from routers.analyses import router as analyses_router
     from services.analysis_pipeline import AnalysisPipeline
     from services.analysis_worker import supervise_worker
@@ -51,12 +51,13 @@ try:
     from services.semantic.profiles import DEFAULT_EMBEDDING_PROFILE, OFFLINE_EMBEDDING_PROFILE
     from services.semantic.stage import SemanticIndexingStage
     from services.postgres import PostgresUnavailable, make_connection_factory
+    from services.schema_migrations import schema_problem
     from services.repository_acquisition import AcquisitionLimits, GitRepositoryAcquirer
     from services.repository_resolver import github_reported_size_bytes
 except ModuleNotFoundError:
     from backend.cors_config import allowed_origins
-    from backend.routers.analyses import (configure_answers, configure_connection_factory, configure_search,
-                                          configure_stage_readiness)
+    from backend.routers.analyses import (configure_answers, configure_connection_factory, configure_schema_problem,
+                                          configure_search, configure_stage_readiness)
     from backend.routers.analyses import router as analyses_router
     from backend.services.analysis_pipeline import AnalysisPipeline
     from backend.services.analysis_worker import supervise_worker
@@ -68,6 +69,7 @@ except ModuleNotFoundError:
     from backend.services.semantic.profiles import DEFAULT_EMBEDDING_PROFILE, OFFLINE_EMBEDDING_PROFILE
     from backend.services.semantic.stage import SemanticIndexingStage
     from backend.services.postgres import PostgresUnavailable, make_connection_factory
+    from backend.services.schema_migrations import schema_problem
     from backend.services.repository_acquisition import (
         AcquisitionLimits,
         GitRepositoryAcquirer,
@@ -218,6 +220,7 @@ async def lifespan(app: FastAPI):
     app.state.worker_task = None
     app.state.indexing = {"status": "unconfigured"}
     app.state.generation = {"status": "unconfigured"}
+    app.state.schema = {"status": "unchecked"}
     embedding_provider = text_provider = None
     app.state.analyzer_registry = AnalyzerRegistry.default()
     app.state.required_languages = _required_languages()
@@ -236,6 +239,13 @@ async def lifespan(app: FastAPI):
         logger.warning("DATABASE_URL is not set; analyses cannot be created or processed")
 
     if app.state.connection_factory is not None:
+        app.state.schema = await run_in_threadpool(_schema_report, app.state.connection_factory)
+        if app.state.schema["status"] == "outdated":
+            # Refuse analysis requests with the fix, and run no worker, rather than fail on missing columns.
+            logger.error("%s", app.state.schema["detail"])
+            configure_schema_problem(app.state.schema["detail"])
+
+    if app.state.connection_factory is not None and app.state.schema["status"] != "outdated":
         text_provider, app.state.generation = _text_provider()
         graph_stage = GraphRAGStage(app.state.connection_factory, text_provider,
                                     summary_workers=int(os.getenv("ANALYSIS_SUMMARY_WORKERS", "4")))
@@ -277,9 +287,28 @@ async def lifespan(app: FastAPI):
                 task.cancel()
         configure_search(None)
         configure_answers(None)
+        configure_schema_problem(None)
         for provider in (embedding_provider, text_provider):
             if provider is not None:
                 provider.close()
+
+
+def _schema_report(factory) -> dict:
+    """Whether the database has the schema version this code needs (see services/schema_migrations.py)."""
+    try:
+        conn = factory()
+    except Exception:
+        logger.warning("Could not check the database schema at startup", exc_info=True)
+        return {"status": "unchecked"}
+    try:
+        problem = schema_problem(conn)
+    except Exception:
+        logger.warning("Could not check the database schema at startup", exc_info=True)
+        return {"status": "unchecked"}
+    finally:
+        conn.rollback()
+        conn.close()
+    return {"status": "outdated", **problem} if problem else {"status": "ok"}
 
 
 def _check_database(factory) -> None:
@@ -314,13 +343,15 @@ async def _readiness(state) -> dict:
     required = getattr(state, "required_languages", None) or _required_languages()
     missing = unavailable_languages(registry, required)
     worker_ok = worker == "running" or (worker == "disabled" and not _env_flag("ANALYSIS_WORKER_ENABLED", True))
-    failures = [name for name, ok in (("database", database == "ok"), ("worker", worker_ok),
-                                      ("analyzers", not missing)) if not ok]
+    schema = getattr(state, "schema", None) or {"status": "unchecked"}
+    failures = [name for name, ok in (("database", database == "ok"), ("schema", schema["status"] != "outdated"),
+                                      ("worker", worker_ok), ("analyzers", not missing)) if not ok]
     return {
         "status": "ok" if not failures else "degraded",
         "database": database,
         "worker": worker,
         "analyzers": {"required": required, "unavailable": missing},
+        "schema": schema,
         # Not a readiness failure: without indexing, analyses park safely and resume later.
         "indexing": getattr(state, "indexing", None) or {"status": "unconfigured"},
         "generation": getattr(state, "generation", None) or {"status": "unconfigured"},
@@ -331,7 +362,7 @@ async def _readiness(state) -> dict:
 async def health(request: Request) -> dict:
     """Summary for the UI: always 200; ``status`` is "ok" only when the service is ready."""
     readiness = await _readiness(request.app.state)
-    return {key: readiness[key] for key in ("status", "database", "worker", "analyzers")}
+    return {key: readiness[key] for key in ("status", "database", "schema", "worker", "analyzers")}
 
 
 async def health_live() -> dict:

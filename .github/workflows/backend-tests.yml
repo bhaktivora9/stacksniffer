@@ -69,15 +69,21 @@ jobs:
           TEST_DATABASE_URL: ""
         run: python -m pytest tests backend/tests -q -W error::DeprecationWarning
 
-      - name: Create the database from the canonical schema (smoke test included)
-        working-directory: StackSniffer_R1_PostgreSQL_pgvector_Schema/stacksniffer-r1-schema
+      # The same path every database takes: baseline, then every migration, then the smoke test.
+      - name: Create the database from the baseline schema and migrations (smoke test included)
         env:
           PGPASSWORD: test
         run: |
-          for f in 001_*.sql 002_*.sql 003_*.sql 004_*.sql 005_*.sql 006_*.sql 007_*.sql; do
+          cd StackSniffer_R1_PostgreSQL_pgvector_Schema/stacksniffer-r1-schema
+          for f in 001_*.sql 002_*.sql 003_*.sql 004_*.sql 005_*.sql 006_*.sql; do
             echo "applying $f"
             psql -h localhost -U postgres -d stacksniffer -X -q -v ON_ERROR_STOP=1 -f "$f"
           done
+          cd -
+          python -m backend.migrate --database-url "$TEST_DATABASE_URL"
+          python -m backend.migrate --database-url "$TEST_DATABASE_URL" --check
+          psql -h localhost -U postgres -d stacksniffer -X -q -v ON_ERROR_STOP=1 \
+            -f StackSniffer_R1_PostgreSQL_pgvector_Schema/stacksniffer-r1-schema/007_schema_smoke_test.sql
 
       - name: PostgreSQL suite against the fresh database
         run: python -m pytest tests backend/tests -q -W error::DeprecationWarning -rs

@@ -16,6 +16,11 @@ for migration in \
   psql "${DATABASE_DIRECT_URL}" -X -v ON_ERROR_STOP=1 -f "${migration}"
 done
 
+# Every change after the baseline is a numbered file in migrations/, applied once each and
+# recorded in core.schema_migration (backend/services/schema_migrations.py).
+printf 'Applying pending migrations\n'
+(cd "${script_dir}/../.." && python -m backend.migrate --database-url "${DATABASE_DIRECT_URL}")
+
 if [[ "${RUN_SCHEMA_SMOKE_TEST:-0}" == "1" ]]; then
   printf 'Running transactional schema smoke test\n'
   psql "${DATABASE_DIRECT_URL}" -X -v ON_ERROR_STOP=1 \
