@@ -173,3 +173,25 @@ def test_the_stage_list_is_served_once(monkeypatch):
         stages = client.get("/api/v1/analyses/stages").json()["stages"]
     assert stages == ["INGESTING", "EXTRACTING", "INDEXING", "PROJECTING", "SUMMARIZING"]
     assert all("stages" not in event for stream in _streams().values() for event in stream)
+
+
+def test_answer_availability_reports_the_live_server_state_and_the_fix():
+    ready = _state("READY", None, None, None)
+    original = analyses._search_configuration, analyses._text_provider
+    try:
+        analyses.configure_search(None)
+        analyses.configure_answers(None)
+        assert "embedding provider" in analyses._answer_availability(ready)["reason"]
+
+        analyses.configure_search(object())
+        analyses.configure_stage_readiness({"SUMMARIZING": UNCONFIGURED_SUMMARIES})
+        missing_model = analyses._answer_availability(ready)
+        assert missing_model["available"] is False
+        assert "text model" in missing_model["reason"] and "GEMINI_API_KEY is not set" in missing_model["reason"]
+
+        analyses.configure_answers(object())
+        assert analyses._answer_availability(ready) == {"available": True, "reason": None}
+        assert analyses._answer_availability(_state("DEGRADED", None, None, None))["available"] is True
+        assert "once the analysis finishes" in analyses._answer_availability(_state("INDEXING", None, None, None))["reason"]
+    finally:
+        analyses._search_configuration, analyses._text_provider = original

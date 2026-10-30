@@ -519,6 +519,23 @@ async def ask_question(analysis_id: UUID, request: AskRequest) -> dict[str, Any]
     }
 
 
+def _answer_availability(state: AnalysisStateResponse) -> dict[str, Any]:
+    """Whether this server can answer questions about the analysis now, and if not, why and the fix."""
+    if _search_configuration is None:
+        reason = _stage_readiness.get("INDEXING", {}).get("reason") or "not configured"
+        return {"available": False, "reason": f"Answers need an embedding provider, and none is configured "
+                                              f"({reason}). Set GEMINI_API_KEY or ANALYSIS_EMBEDDING_PROVIDER=offline, "
+                                              "then restart the API."}
+    if _text_provider is None:
+        report = _stage_readiness.get("SUMMARIZING", {})
+        reason = report.get("reason") or report.get("status") or "not configured"
+        return {"available": False, "reason": f"Answers need a text model, and none is configured ({reason}). "
+                                              "Set GEMINI_API_KEY or ANALYSIS_LLM_PROVIDER=offline, then restart the API."}
+    if state.status not in ("READY", "DEGRADED"):
+        return {"available": False, "reason": "Answers become available once the analysis finishes."}
+    return {"available": True, "reason": None}
+
+
 def _overview(conn: Any, analysis_id: UUID) -> dict[str, Any] | None:
     state = _get_analysis(conn, analysis_id)
     if state is None:
@@ -580,6 +597,8 @@ def _overview(conn: Any, analysis_id: UUID) -> dict[str, Any] | None:
             "activated_at": snapshot[4].isoformat() if snapshot[4] else None, "communities": run_metrics},
         "communities": communities,
         "answers_available": _text_provider is not None and _search_configuration is not None,
+        # Live server state, unlike the analysis's own stored state above: it changes with a restart.
+        "answers": _answer_availability(state),
     }
 
 

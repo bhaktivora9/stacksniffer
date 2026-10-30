@@ -67,7 +67,9 @@ function Citation({ citation, open, onToggle }) {
   );
 }
 
-function AskPanel({ analysisId, enabled }) {
+// `availability` is the server's live status ({ available, reason }), separate from the analysis's state.
+function AskPanel({ analysisId, availability }) {
+  const enabled = Boolean(availability?.available);
   const [question, setQuestion] = useState("");
   const [mode, setMode] = useState("");
   const [loading, setLoading] = useState(false);
@@ -100,13 +102,18 @@ function AskPanel({ analysisId, enabled }) {
   return (
     <section className="rounded-lg border border-border bg-surface p-4">
       <div className="text-xs font-medium uppercase tracking-wider text-muted">Ask the repository</div>
+      {!enabled && (
+        <p role="note" className="mt-2 rounded border border-border bg-bg px-3 py-2 text-xs text-muted">
+          <b className="text-text">Answers are unavailable on this server.</b> {availability?.reason || "The server did not report why."}
+        </p>
+      )}
       <form onSubmit={submit} className="mt-3 flex flex-wrap gap-2">
         <input value={question} onChange={(e) => setQuestion(e.target.value)} disabled={!enabled || loading}
-          placeholder={enabled ? "How does login work? What is the overall architecture?" : "Answers are not configured on the server"}
-          className="h-9 min-w-[260px] flex-1 rounded border border-border bg-bg px-3 text-sm text-text outline-none focus:border-accent" />
+          placeholder="How does login work? What is the overall architecture?" aria-label="Question about the repository"
+          className="h-9 min-w-[260px] flex-1 rounded border border-border bg-bg px-3 text-sm text-text outline-none focus:border-accent disabled:cursor-not-allowed disabled:opacity-50" />
         <select value={mode} onChange={(e) => setMode(e.target.value)} disabled={!enabled || loading}
-          className="h-9 rounded border border-border bg-bg px-2 text-sm text-text outline-none focus:border-accent"
-          title="Local: specific code. Global: the repository as a whole.">
+          className="h-9 rounded border border-border bg-bg px-2 text-sm text-text outline-none focus:border-accent disabled:cursor-not-allowed disabled:opacity-50"
+          aria-label="Answer mode" title="Local: specific code. Global: the repository as a whole.">
           <option value="">Auto</option>
           <option value="local">Local</option>
           <option value="global">Global</option>
@@ -256,7 +263,7 @@ export default function AnalysisPage() {
 
           <StatusBanner analysis={analysis} />
 
-          <AskPanel analysisId={analysisId} enabled={overview.answers_available && ["READY", "DEGRADED"].includes(analysis.status)} />
+          <AskPanel analysisId={analysisId} availability={overview.answers} />
 
           <section>
             <div className="text-xs font-medium uppercase tracking-wider text-muted">Components</div>

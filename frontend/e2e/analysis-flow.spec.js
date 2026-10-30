@@ -21,6 +21,8 @@ function overview(status, extra = {}) {
     graph: null,
     communities: [],
     answers_available: false,
+    answers: { available: false, reason: "Answers need a text model, and none is configured (GEMINI_API_KEY is not set). "
+      + "Set GEMINI_API_KEY or ANALYSIS_LLM_PROVIDER=offline, then restart the API." },
   };
 }
 
@@ -173,6 +175,21 @@ test("recent analyses are listed on the home page and open their page", async ({
   await expect(row).toContainText("waiting");
   await row.getByRole("link").click();
   await expect(page).toHaveURL(`/analyses/${ANALYSIS_ID}`);
+});
+
+test("the ask box says why answers are unavailable, with the fix, and its controls are disabled", async ({ page, api }) => {
+  await page.goto(`/analyses/${ANALYSIS_ID}`);
+  const note = page.getByRole("note");
+  await expect(note).toContainText("Answers are unavailable on this server");
+  await expect(note).toContainText("Set GEMINI_API_KEY or ANALYSIS_LLM_PROVIDER=offline");
+  await expect(page.getByLabel("Question about the repository")).toBeDisabled();
+  await expect(page.getByLabel("Answer mode")).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Ask" })).toBeDisabled();
+
+  api.overview = { ...api.overview, answers: { available: true, reason: null } };
+  await page.reload();
+  await expect(page.getByLabel("Question about the repository")).toBeEnabled();
+  await expect(page.getByRole("note")).toHaveCount(0);
 });
 
 test("navigation offers no links to the MVP pages R1 removed", async ({ page, api }) => {
