@@ -1,8 +1,7 @@
 import { API_BASE, fetchApi } from "../config/api";
+import { FINISHED_STATES, normalizeEvent, validStages } from "../utils/analysisEvents";
 
-// The backend stops streaming once an analysis reaches one of these states.
-// AWAITING_STAGE: every deployed stage finished; the analysis resumes when the next one ships.
-export const FINISHED_STATES = ["READY", "DEGRADED", "FAILED", "AWAITING_STAGE"];
+export { FINISHED_STATES };
 
 function errorDetail(body, fallback) {
   const detail = body?.detail;
@@ -29,13 +28,56 @@ export async function createAnalysis(repositoryUrl, { reference } = {}) {
   return body;
 }
 
+/** GET /api/v1/analyses — the most recently created analyses, newest first. */
+export async function listAnalyses(limit = 20) {
+  const response = await fetchApi(`/api/v1/analyses?limit=${encodeURIComponent(limit)}`);
+  const body = await response.json().catch(() => ([]));
+  if (!response.ok) throw new Error(errorDetail(body, `Analysis list request failed (${response.status})`));
+  return body;
+}
+
+/** GET /api/v1/analyses/stages — the pipeline's stages in order; null if unavailable. */
+export async function getPipelineStages() {
+  const response = await fetchApi("/api/v1/analyses/stages");
+  const body = await response.json().catch(() => ({}));
+  return response.ok ? validStages(body.stages) : null;
+}
+
+/** GET /api/v1/analyses/{id}/overview — repository, counts, graph and the community map. */
+export async function getOverview(analysisId) {
+  const response = await fetchApi(`/api/v1/analyses/${encodeURIComponent(analysisId)}/overview`);
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(errorDetail(body, `Overview request failed (${response.status})`));
+  return body;
+}
+
+/** POST /api/v1/analyses/{id}/ask — a grounded answer; mode "local", "global" or null (routed). */
+export async function askQuestion(analysisId, question, mode = null) {
+  const response = await fetchApi(`/api/v1/analyses/${encodeURIComponent(analysisId)}/ask`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ question, ...(mode ? { mode } : {}) }),
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(errorDetail(body, `Question failed (${response.status})`));
+  return body;
+}
+
+// Consecutive connection failures tolerated before giving up; the browser waits between retries.
+const MAX_RECONNECTS = 3;
+
 /**
- * Subscribes to /api/v1/analyses/{analysis_id}/events. Events are delivered once each, in order;
- * the stream closes itself after a finished state. Returns a function that closes it early.
+ * Subscribes to /api/v1/analyses/{analysis_id}/events. Events arrive normalized (see
+ * utils/analysisEvents), once each and in order; the stream closes itself after a finished state.
+ * An event's sequence is the analysis's persisted state version, so a dropped connection, retried
+ * by the browser with Last-Event-ID, continues where it stopped even across an API restart, and a
+ * state that repeats (a retried stage) still arrives. onDisconnect runs only after MAX_RECONNECTS
+ * failures in a row. Returns a function that closes the stream early.
  */
 export function subscribeToAnalysisEvents(analysisId, { onEvent, onDisconnect }) {
   const source = new EventSource(`${API_BASE}/api/v1/analyses/${encodeURIComponent(analysisId)}/events`);
   let lastSequence = 0;
+  let failures = 0;
   let closed = false;
 
   const close = () => {
@@ -43,16 +85,20 @@ export function subscribeToAnalysisEvents(analysisId, { onEvent, onDisconnect })
     source.close();
   };
 
+  source.onopen = () => { failures = 0; };
   source.onmessage = (message) => {
-    let event;
-    try { event = JSON.parse(message.data); } catch { return; }
-    if (!Number.isFinite(event.sequence) || event.sequence <= lastSequence) return;
+    let raw;
+    try { raw = JSON.parse(message.data); } catch { console.warn("Ignoring a malformed analysis event", message.data); return; }
+    const event = normalizeEvent(raw);
+    if (!event || event.sequence <= lastSequence) return;
     lastSequence = event.sequence;
     if (FINISHED_STATES.includes(event.state)) close();
     onEvent(event);
   };
   source.onerror = () => {
     if (closed) return;
+    failures += 1;
+    if (source.readyState === EventSource.CONNECTING && failures <= MAX_RECONNECTS) return;
     close();
     onDisconnect?.();
   };

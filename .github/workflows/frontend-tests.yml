@@ -1,0 +1,48 @@
+name: frontend tests
+
+on:
+  push:
+    branches: [developer, master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      # Every *.test.js, including the event stream contract (the backend writes its fixture in
+      # tests/test_analysis_event_contract.py; analysisEvents.test.js replays it).
+      - name: Unit tests
+        run: npm test
+
+      - name: Install the browser
+        run: npx playwright install --with-deps chromium
+
+      # Paste a URL and follow it to the analysis page, once per terminal state; fails on console errors.
+      - name: Analysis flow in a browser
+        run: npm run test:e2e
+
+      - name: Keep the report of a failed run
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            frontend/playwright-report
+            frontend/test-results
+          retention-days: 7

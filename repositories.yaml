@@ -11,3 +11,38 @@ repositories:
     language: python
     license: MIT
     evaluation_purpose: smoke
+
+  # R1 retrieval benchmark: small layered applications with labelled questions (SS-ML-303).
+  # Test repositories are never used for tuning or contrastive training.
+  # frozen_commit resolved from ref 'main' via the GitHub API on 2026-10-27
+  - id: spring-petclinic
+    url: https://github.com/spring-projects/spring-petclinic
+    frozen_commit: "500158f732419217507c7656904b8e6aa1bcc0d6"
+    language: java
+    license: Apache-2.0
+    evaluation_purpose: retrieval_test
+
+  # frozen_commit resolved from ref 'master' via the GitHub API on 2026-10-27; questions cover backend/
+  - id: full-stack-fastapi-template
+    url: https://github.com/fastapi/full-stack-fastapi-template
+    frozen_commit: "f4bcfaba7c85be3c6332cc74a20819f586dcdbc6"
+    language: python
+    license: MIT
+    evaluation_purpose: retrieval_test
+
+  # Validation repositories: used to tune graph expansion and GraphRAG before touching the test set.
+  # frozen_commit resolved from ref 'master' via the GitHub API on 2026-10-27
+  - id: spring-boot-realworld
+    url: https://github.com/gothinkster/spring-boot-realworld-example-app
+    frozen_commit: "ee17e31aafe733d98c4853c8b9a74d7f2f6c924a"
+    language: java
+    license: MIT
+    evaluation_purpose: retrieval_validation
+
+  # frozen_commit resolved from tag '3.1.3' via the GitHub API on 2026-10-27
+  - id: flask
+    url: https://github.com/pallets/flask
+    frozen_commit: "22d924701a6ae2e4cd01e9a15bbaf3946094af65"
+    language: python
+    license: BSD-3-Clause
+    evaluation_purpose: retrieval_validation

@@ -1,6 +1,7 @@
 """Symbol-aware chunking of one source file (pure: source bytes and entities in, chunks out).
 
-A file is CODE, CONFIGURATION or DOCUMENTATION (`file_kind`, from its name and language only).
+A file is CODE, CONFIGURATION, DOCUMENTATION or ASSET (`file_kind`, from its name and language only).
+ASSET files (vector images and fonts) are text but never retrieval targets; no profile includes them.
 
 - CODE, `innermost_declaration`: every line belongs to the innermost included declaration
   covering it (a method's lines belong to the method, not also to its class), and lines outside
@@ -51,7 +52,8 @@ class Chunk:
     section: str | None = None  # the Markdown heading a documentation chunk falls under
 
 
-CODE, CONFIGURATION, DOCUMENTATION = "CODE", "CONFIGURATION", "DOCUMENTATION"
+CODE, CONFIGURATION, DOCUMENTATION, ASSET = "CODE", "CONFIGURATION", "DOCUMENTATION", "ASSET"
+_ASSET_EXTENSIONS = (".svg",)
 _DOCUMENTATION_EXTENSIONS = (".md", ".markdown", ".mdx", ".rst", ".adoc", ".txt")
 _DOCUMENTATION_NAMES = frozenset({"readme", "license", "changelog", "contributing", "authors", "notice"})
 _MARKDOWN_EXTENSIONS = (".md", ".markdown", ".mdx")
@@ -63,8 +65,10 @@ _FENCE = re.compile(r"^ {0,3}(```|~~~)")
 
 
 def file_kind(path: str, language: str | None) -> str:
-    """CODE, CONFIGURATION or DOCUMENTATION, from the file name and detected language only."""
+    """CODE, CONFIGURATION, DOCUMENTATION or ASSET, from the file name and detected language only."""
     name = path.rsplit("/", 1)[-1].lower()
+    if name.endswith(_ASSET_EXTENSIONS):
+        return ASSET
     if name.endswith(_DOCUMENTATION_EXTENSIONS) or name in _DOCUMENTATION_NAMES:
         return DOCUMENTATION
     if (language in _CONFIGURATION_LANGUAGES or name.endswith(_CONFIGURATION_EXTENSIONS)

@@ -1,21 +1,22 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import type { ReactNode } from "react";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import ErrorBoundary from "./components/ErrorBoundary";
 import HomePage from "./pages/HomePage";
-import ResultsPage from "./pages/ResultsPage";
-import ReviewQueuePage from "./pages/ReviewQueuePage";
-import RepositoryHistoryPage from "./pages/RepositoryHistoryPage";
-import AnalyticsPage from "./pages/AnalyticsPage";
-import SearchPage from "./pages/SearchPage";
+import AnalysisPage from "./pages/AnalysisPage";
+
+// Each page renders inside its own boundary, cleared on navigation, so one page's render error
+// cannot blank the app.
+function Guarded({ children }: { children: ReactNode }) {
+  const location = useLocation();
+  return <ErrorBoundary resetKey={location.key}>{children}</ErrorBoundary>;
+}
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/results/:analysisId" element={<ResultsPage />} />
-        <Route path="/review" element={<ReviewQueuePage />} />
-        <Route path="/repositories" element={<RepositoryHistoryPage />} />
-        <Route path="/analytics" element={<AnalyticsPage />} />
-        <Route path="/search" element={<SearchPage />} />
+        <Route path="/" element={<Guarded><HomePage /></Guarded>} />
+        <Route path="/analyses/:analysisId" element={<Guarded><AnalysisPage /></Guarded>} />
       </Routes>
     </BrowserRouter>
   );

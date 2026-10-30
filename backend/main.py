@@ -9,7 +9,15 @@ When DATABASE_URL is set, the same process also runs the analysis worker that
 moves QUEUED analyses through the pipeline. Indexing (chunking and embedding) runs after
 extraction with the provider named by ANALYSIS_EMBEDDING_PROVIDER: "gemini" (default; needs
 GEMINI_API_KEY) or "offline" (deterministic vectors, no network). Without a usable provider,
-extracted analyses park awaiting INDEXING and resume once one is configured.
+extracted analyses park awaiting INDEXING and resume once one is configured. Vector search
+(POST /api/v1/analyses/{id}/search) embeds queries with the same provider and profiles, so it
+only finds analyses indexed under them.
+
+After indexing, the GraphRAG stage projects the analysis into a graph snapshot, detects
+communities and summarizes them with the text provider named by ANALYSIS_LLM_PROVIDER: "gemini"
+(default; needs GEMINI_API_KEY; model ANALYSIS_LLM_MODEL), "offline" (templated text, no network)
+or "none". Without one, analyses park awaiting SUMMARIZING. The same provider answers
+POST /api/v1/analyses/{id}/ask.
 
 ``create_app`` loads backend/.env before building the app. Setting
 STACKSNIFFER_LOAD_DOTENV=0 skips that; the test suite does so (see conftest.py)
@@ -30,30 +38,38 @@ from fastapi.responses import JSONResponse
 
 try:
     from cors_config import allowed_origins
-    from routers.analyses import configure_connection_factory
+    from routers.analyses import (configure_answers, configure_connection_factory, configure_schema_problem,
+                                  configure_search, configure_stage_readiness)
     from routers.analyses import router as analyses_router
     from services.analysis_pipeline import AnalysisPipeline
     from services.analysis_worker import supervise_worker
     from services.extraction.registry import AnalyzerRegistry
     from services.extraction.stage import StructuralExtractionStage
+    from services.graphrag.llm import GeminiTextProvider, OfflineTextProvider
+    from services.graphrag.stage import GraphRAGStage
     from services.semantic.embeddings import GeminiEmbeddingProvider, OfflineEmbeddingProvider
     from services.semantic.profiles import DEFAULT_EMBEDDING_PROFILE, OFFLINE_EMBEDDING_PROFILE
     from services.semantic.stage import SemanticIndexingStage
     from services.postgres import PostgresUnavailable, make_connection_factory
+    from services.schema_migrations import schema_problem
     from services.repository_acquisition import AcquisitionLimits, GitRepositoryAcquirer
     from services.repository_resolver import github_reported_size_bytes
 except ModuleNotFoundError:
     from backend.cors_config import allowed_origins
-    from backend.routers.analyses import configure_connection_factory
+    from backend.routers.analyses import (configure_answers, configure_connection_factory, configure_schema_problem,
+                                          configure_search, configure_stage_readiness)
     from backend.routers.analyses import router as analyses_router
     from backend.services.analysis_pipeline import AnalysisPipeline
     from backend.services.analysis_worker import supervise_worker
     from backend.services.extraction.registry import AnalyzerRegistry
     from backend.services.extraction.stage import StructuralExtractionStage
+    from backend.services.graphrag.llm import GeminiTextProvider, OfflineTextProvider
+    from backend.services.graphrag.stage import GraphRAGStage
     from backend.services.semantic.embeddings import GeminiEmbeddingProvider, OfflineEmbeddingProvider
     from backend.services.semantic.profiles import DEFAULT_EMBEDDING_PROFILE, OFFLINE_EMBEDDING_PROFILE
     from backend.services.semantic.stage import SemanticIndexingStage
     from backend.services.postgres import PostgresUnavailable, make_connection_factory
+    from backend.services.schema_migrations import schema_problem
     from backend.services.repository_acquisition import (
         AcquisitionLimits,
         GitRepositoryAcquirer,
@@ -134,7 +150,26 @@ def unavailable_languages(registry: AnalyzerRegistry, required: list[str]) -> di
     return missing
 
 
-def _indexing_stage(connection_factory) -> tuple[SemanticIndexingStage | None, dict, object | None]:
+def _text_provider() -> tuple[object | None, dict]:
+    """The provider for community summaries and answers, and its readiness report."""
+    choice = os.getenv("ANALYSIS_LLM_PROVIDER", "gemini").strip().lower()
+    if choice == "none":
+        return None, {"status": "disabled"}
+    if choice == "offline":
+        provider = OfflineTextProvider()
+    elif choice == "gemini":
+        if not (os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")):
+            logger.warning("GEMINI_API_KEY is not set; analyses will wait for summarization")
+            return None, {"status": "unconfigured", "provider": "gemini", "reason": "GEMINI_API_KEY is not set"}
+        provider = GeminiTextProvider(timeout_seconds=float(os.getenv("ANALYSIS_LLM_TIMEOUT_SECONDS", "120")))
+    else:
+        logger.error("Unknown ANALYSIS_LLM_PROVIDER %r; analyses will wait for summarization", choice)
+        return None, {"status": "unconfigured", "provider": choice, "reason": "unknown provider"}
+    logger.info("Text generation enabled: %s", provider.profile)
+    return provider, {"status": "enabled", "model_profile": provider.profile}
+
+
+def _indexing_stage(connection_factory, next_stage=None) -> tuple[SemanticIndexingStage | None, dict, object | None]:
     """The INDEXING stage, its readiness report, and the provider to close on shutdown."""
     if not _env_flag("ANALYSIS_INDEXING_ENABLED", True):
         logger.warning("ANALYSIS_INDEXING_ENABLED is off; extracted analyses will wait for indexing")
@@ -154,7 +189,8 @@ def _indexing_stage(connection_factory) -> tuple[SemanticIndexingStage | None, d
         logger.error("Unknown ANALYSIS_EMBEDDING_PROVIDER %r; extracted analyses will wait for indexing", choice)
         return None, {"status": "unconfigured", "provider": choice, "reason": "unknown provider"}, None
     stage = SemanticIndexingStage(connection_factory, provider, embedding_profile=profile,
-                                  batch_size=int(os.getenv("ANALYSIS_EMBEDDING_BATCH_SIZE", "64")))
+                                  batch_size=int(os.getenv("ANALYSIS_EMBEDDING_BATCH_SIZE", "64")),
+                                  next_stage=next_stage)
     logger.info("Indexing enabled: provider %s, embedding profile %s/%s", provider.name, profile.profile_key,
                 profile.profile_version)
     return stage, {"status": "enabled", "provider": provider.name,
@@ -183,7 +219,9 @@ async def lifespan(app: FastAPI):
     app.state.connection_factory = None
     app.state.worker_task = None
     app.state.indexing = {"status": "unconfigured"}
-    embedding_provider = None
+    app.state.generation = {"status": "unconfigured"}
+    app.state.schema = {"status": "unchecked"}
+    embedding_provider = text_provider = None
     app.state.analyzer_registry = AnalyzerRegistry.default()
     app.state.required_languages = _required_languages()
     if missing := unavailable_languages(app.state.analyzer_registry, app.state.required_languages):
@@ -201,10 +239,25 @@ async def lifespan(app: FastAPI):
         logger.warning("DATABASE_URL is not set; analyses cannot be created or processed")
 
     if app.state.connection_factory is not None:
+        app.state.schema = await run_in_threadpool(_schema_report, app.state.connection_factory)
+        if app.state.schema["status"] == "outdated":
+            # Refuse analysis requests with the fix, and run no worker, rather than fail on missing columns.
+            logger.error("%s", app.state.schema["detail"])
+            configure_schema_problem(app.state.schema["detail"])
+
+    if app.state.connection_factory is not None and app.state.schema["status"] != "outdated":
+        text_provider, app.state.generation = _text_provider()
+        graph_stage = GraphRAGStage(app.state.connection_factory, text_provider,
+                                    summary_workers=int(os.getenv("ANALYSIS_SUMMARY_WORKERS", "4")))
+        # Search and answers embed queries with the indexing stage's provider and profiles, worker or not.
+        indexing, app.state.indexing, embedding_provider = _indexing_stage(app.state.connection_factory, graph_stage)
+        if indexing is not None:
+            configure_search(embedding_provider, indexing.chunk_profile, indexing.embedding_profile)
+        configure_answers(text_provider)
+        configure_stage_readiness({"INDEXING": app.state.indexing, "SUMMARIZING": app.state.generation})
         if _env_flag("ANALYSIS_WORKER_ENABLED", True):
             acquirer = _acquirer()
             await _remove_orphaned_acquisitions(acquirer)
-            indexing, app.state.indexing, embedding_provider = _indexing_stage(app.state.connection_factory)
             app.state.worker_task = asyncio.create_task(
                 supervise_worker(
                     app.state.connection_factory,
@@ -232,8 +285,30 @@ async def lifespan(app: FastAPI):
                 await asyncio.wait_for(task, timeout=WORKER_SHUTDOWN_SECONDS)
             except (TimeoutError, asyncio.CancelledError):
                 task.cancel()
-        if embedding_provider is not None:
-            embedding_provider.close()
+        configure_search(None)
+        configure_answers(None)
+        configure_schema_problem(None)
+        for provider in (embedding_provider, text_provider):
+            if provider is not None:
+                provider.close()
+
+
+def _schema_report(factory) -> dict:
+    """Whether the database has the schema version this code needs (see services/schema_migrations.py)."""
+    try:
+        conn = factory()
+    except Exception:
+        logger.warning("Could not check the database schema at startup", exc_info=True)
+        return {"status": "unchecked"}
+    try:
+        problem = schema_problem(conn)
+    except Exception:
+        logger.warning("Could not check the database schema at startup", exc_info=True)
+        return {"status": "unchecked"}
+    finally:
+        conn.rollback()
+        conn.close()
+    return {"status": "outdated", **problem} if problem else {"status": "ok"}
 
 
 def _check_database(factory) -> None:
@@ -268,15 +343,18 @@ async def _readiness(state) -> dict:
     required = getattr(state, "required_languages", None) or _required_languages()
     missing = unavailable_languages(registry, required)
     worker_ok = worker == "running" or (worker == "disabled" and not _env_flag("ANALYSIS_WORKER_ENABLED", True))
-    failures = [name for name, ok in (("database", database == "ok"), ("worker", worker_ok),
-                                      ("analyzers", not missing)) if not ok]
+    schema = getattr(state, "schema", None) or {"status": "unchecked"}
+    failures = [name for name, ok in (("database", database == "ok"), ("schema", schema["status"] != "outdated"),
+                                      ("worker", worker_ok), ("analyzers", not missing)) if not ok]
     return {
         "status": "ok" if not failures else "degraded",
         "database": database,
         "worker": worker,
         "analyzers": {"required": required, "unavailable": missing},
+        "schema": schema,
         # Not a readiness failure: without indexing, analyses park safely and resume later.
         "indexing": getattr(state, "indexing", None) or {"status": "unconfigured"},
+        "generation": getattr(state, "generation", None) or {"status": "unconfigured"},
         "failing": failures,
     }
 
@@ -284,7 +362,7 @@ async def _readiness(state) -> dict:
 async def health(request: Request) -> dict:
     """Summary for the UI: always 200; ``status`` is "ok" only when the service is ready."""
     readiness = await _readiness(request.app.state)
-    return {key: readiness[key] for key in ("status", "database", "worker", "analyzers")}
+    return {key: readiness[key] for key in ("status", "database", "schema", "worker", "analyzers")}
 
 
 async def health_live() -> dict:

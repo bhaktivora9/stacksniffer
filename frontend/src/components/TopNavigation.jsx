@@ -2,10 +2,6 @@ import { Link, useLocation } from "react-router-dom";
 
 const LINKS = [
   ["/", "Overview"],
-  ["/repositories", "Repositories"],
-  ["/search", "Search"],
-  ["/analytics", "Analytics"],
-  ["/review", "Review Queue"],
 ];
 
 export default function TopNavigation({ health, actions, onNewAnalysis }) {

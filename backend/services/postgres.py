@@ -20,6 +20,11 @@ class PostgresConnection:
             cursor.execute(query, args)
             return cursor.rowcount
 
+    def execute_script(self, sql: str) -> None:
+        """Run a SQL script of several statements (no parameters), such as a migration file."""
+        with self._connection.cursor() as cursor:
+            cursor.execute(sql)  # without parameters psycopg runs several statements
+
     def fetch_one(self, query: str, *args: Any) -> Any:
         with self._connection.cursor() as cursor:
             cursor.execute(query, args)

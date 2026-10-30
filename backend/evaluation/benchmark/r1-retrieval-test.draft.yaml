@@ -1,0 +1,604 @@
+# DRAFT: model-assisted first pass. Every judgment needs the human second pass described in
+# docs/evaluation/retrieval-benchmark-rubric.md before this dataset is loaded and frozen.
+# Targets: an entity stable key at the manifest's frozen commit, or a file with an inclusive line range.
+dataset_key: r1-retrieval-test
+dataset_version: 1
+status: draft
+description: 'R1 retrieval benchmark, test split: local and global questions on the frozen test repositories.'
+rubric: docs/evaluation/retrieval-benchmark-rubric.md
+annotator_version: rubric/1
+judgment_source: MODEL_ASSISTED
+annotator: claude-opus-5-5
+repositories:
+- manifest_id: spring-petclinic
+  role: TEST
+  questions:
+  - key: pc-l01
+    class: local
+    task_category: flow
+    scope: SYMBOL
+    lexical_overlap: low
+    text: How does the app stop an owner from registering two pets with the same name?
+    judgments:
+    - entity: method:src/main/java/org/springframework/samples/petclinic/owner/PetController.java::org.springframework.samples.petclinic.owner.PetController.processCreationForm(Owner,Pet,BindingResult,RedirectAttributes)
+      grade: 3
+    - entity: method:src/main/java/org/springframework/samples/petclinic/owner/Owner.java::org.springframework.samples.petclinic.owner.Owner.getPet(String,boolean)
+      grade: 2
+      note: case-insensitive name lookup used for the check
+    - entity: method:src/main/java/org/springframework/samples/petclinic/owner/PetController.java::org.springframework.samples.petclinic.owner.PetController.isDuplicatePetNameViolation(DataIntegrityViolationException)
+      grade: 2
+      note: fallback when the database constraint fires
+    - file: src/main/resources/db/h2/schema.sql
+      lines:
+      - 55
+      - 55
+      grade: 1
+      note: unique_owner_pet_name constraint
+  - key: pc-l02
+    class: local
+    task_category: code_search
+    scope: SYMBOL
+    lexical_overlap: low
+    text: What rules make a submitted pet form invalid?
+    judgments:
+    - entity: method:src/main/java/org/springframework/samples/petclinic/owner/PetValidator.java::org.springframework.samples.petclinic.owner.PetValidator.validate(Object,Errors)
+      grade: 3
+    - entity: method:src/main/java/org/springframework/samples/petclinic/owner/PetController.java::org.springframework.samples.petclinic.owner.PetController.processCreationForm(Owner,Pet,BindingResult,RedirectAttributes)
+      grade: 1
+      note: adds the future-birth-date and duplicate-name rules
+    - entity: method:src/main/java/org/springframework/samples/petclinic/owner/PetController.java::org.springframework.samples.petclinic.owner.PetController.processUpdateForm(Owner,Pet,BindingResult,RedirectAttributes)
+      grade: 1
+  - key: pc-l03
+    class: local
+    task_category: flow
+    scope: SYMBOL
+    lexical_overlap: low
+    text: What happens when an owner search by last name matches exactly one owner?
+    judgments:
+    - entity: method:src/main/java/org/springframework/samples/petclinic/owner/OwnerController.java::org.springframework.samples.petclinic.owner.OwnerController.processFindForm(int,Owner,BindingResult,Model,RedirectAttributes)
+      grade: 3
+  - key: pc-l04
+    class: local
+    task_category: code_search
+    scope: SYMBOL
+    lexical_overlap: low
+    text: How many owners appear per page of search results, and what happens with an out-of-range page number?
+    judgments:
+    - entity: method:src/main/java/org/springframework/samples/petclinic/owner/OwnerController.java::org.springframework.samples.petclinic.owner.OwnerController.findPaginatedForOwnersLastName(int,String)
+      grade: 3
+    - entity: method:src/main/java/org/springframework/samples/petclinic/owner/OwnerController.java::org.springframework.samples.petclinic.owner.OwnerController.processFindForm(int,Owner,BindingResult,Model,RedirectAttributes)
+      grade: 3
+      note: redirects to page 1 when the page is out of range
+    - entity: method:src/main/java/org/springframework/samples/petclinic/owner/OwnerController.java::org.springframework.samples.petclinic.owner.OwnerController.addPaginationModel(int,Model,Page<Owner>)
+      grade: 1
+  - key: pc-l05
+    class: local
+    task_category: configuration
+    scope: SYMBOL
+    lexical_overlap: low
+    text: How is the list of veterinarians cached?
+    judgments:
+    - entity: method:src/main/java/org/springframework/samples/petclinic/vet/VetRepository.java::org.springframework.samples.petclinic.vet.VetRepository.findAll()
+      grade: 3
+    - entity: method:src/main/java/org/springframework/samples/petclinic/vet/VetRepository.java::org.springframework.samples.petclinic.vet.VetRepository.findAll(Pageable)
+      grade: 3
+    - entity: method:src/main/java/org/springframework/samples/petclinic/system/CacheConfiguration.java::org.springframework.samples.petclinic.system.CacheConfiguration.petclinicCacheConfigurationCustomizer()
+      grade: 3
+    - entity: method:src/main/java/org/springframework/samples/petclinic/system/CacheConfiguration.java::org.springframework.samples.petclinic.system.CacheConfiguration.cacheConfiguration()
+      grade: 1
+  - key: pc-l06
+    class: local
+    task_category: flow
+    scope: SYMBOL
+    lexical_overlap: low
+    text: How does booking a visit ensure the visit date is in the future?
+    judgments:
+    - entity: method:src/main/java/org/springframework/samples/petclinic/owner/VisitController.java::org.springframework.samples.petclinic.owner.VisitController.processNewVisitForm(Owner,int,Visit,BindingResult,RedirectAttributes)
+      grade: 3
+    - entity: method:src/main/java/org/springframework/samples/petclinic/owner/VisitController.java::org.springframework.samples.petclinic.owner.VisitController.minVisitDate()
+      grade: 2
+      note: minimum date offered by the form
+  - key: pc-l07
+    class: local
+    task_category: flow
+    scope: SYMBOL
+    lexical_overlap: low
+    text: Before a visit form is shown, how is the pet loaded, and what if the pet does not belong to the owner?
+    judgments:
+    - entity: method:src/main/java/org/springframework/samples/petclinic/owner/VisitController.java::org.springframework.samples.petclinic.owner.VisitController.loadPetWithVisit(int,int,Map<String,Object>)
+      grade: 3
+    - entity: method:src/main/java/org/springframework/samples/petclinic/owner/Owner.java::org.springframework.samples.petclinic.owner.Owner.getPet(Integer)
+      grade: 2
+  - key: pc-l08
+    class: local
+    task_category: code_search
+    scope: SYMBOL
+    lexical_overlap: low
+    text: How is the pet type chosen in a form converted into a pet type object?
+    judgments:
+    - entity: method:src/main/java/org/springframework/samples/petclinic/owner/PetTypeFormatter.java::org.springframework.samples.petclinic.owner.PetTypeFormatter.parse(String,Locale)
+      grade: 3
+    - entity: method:src/main/java/org/springframework/samples/petclinic/owner/PetTypeRepository.java::org.springframework.samples.petclinic.owner.PetTypeRepository.findPetTypes()
+      grade: 2
+    - entity: method:src/main/java/org/springframework/samples/petclinic/owner/PetTypeFormatter.java::org.springframework.samples.petclinic.owner.PetTypeFormatter.print(PetType,Locale)
+      grade: 1
+  - key: pc-l09
+    class: local
+    task_category: configuration
+    scope: SYMBOL
+    lexical_overlap: low
+    text: How can a user switch the language of the user interface?
+    judgments:
+    - entity: method:src/main/java/org/springframework/samples/petclinic/system/WebConfiguration.java::org.springframework.samples.petclinic.system.WebConfiguration.localeChangeInterceptor()
+      grade: 3
+    - entity: method:src/main/java/org/springframework/samples/petclinic/system/WebConfiguration.java::org.springframework.samples.petclinic.system.WebConfiguration.localeResolver()
+      grade: 2
+    - entity: method:src/main/java/org/springframework/samples/petclinic/system/WebConfiguration.java::org.springframework.samples.petclinic.system.WebConfiguration.addInterceptors(InterceptorRegistry)
+      grade: 2
+    - file: src/main/resources/application.properties
+      lines:
+      - 15
+      - 16
+      grade: 1
+      note: message bundle location
+  - key: pc-l10
+    class: local
+    task_category: code_search
+    scope: SYMBOL
+    lexical_overlap: low
+    text: Which endpoint deliberately fails to demonstrate error handling?
+    judgments:
+    - entity: method:src/main/java/org/springframework/samples/petclinic/system/CrashController.java::org.springframework.samples.petclinic.system.CrashController.triggerException()
+      grade: 3
+    - file: src/main/resources/templates/error.html
+      lines:
+      - 1
+      - 21
+      grade: 1
+  - key: pc-l11
+    class: local
+    task_category: flow
+    scope: SYMBOL
+    lexical_overlap: low
+    text: When a pet is edited, how are the changes applied to the existing pet instead of adding a new one?
+    judgments:
+    - entity: method:src/main/java/org/springframework/samples/petclinic/owner/PetController.java::org.springframework.samples.petclinic.owner.PetController.updatePetDetails(Owner,Pet)
+      grade: 3
+    - entity: method:src/main/java/org/springframework/samples/petclinic/owner/PetController.java::org.springframework.samples.petclinic.owner.PetController.processUpdateForm(Owner,Pet,BindingResult,RedirectAttributes)
+      grade: 2
+    - entity: method:src/main/java/org/springframework/samples/petclinic/owner/Owner.java::org.springframework.samples.petclinic.owner.Owner.getPet(Integer)
+      grade: 1
+  - key: pc-l12
+    class: local
+    task_category: code_search
+    scope: SYMBOL
+    lexical_overlap: low
+    text: How is the veterinarian list returned as JSON?
+    judgments:
+    - entity: method:src/main/java/org/springframework/samples/petclinic/vet/VetController.java::org.springframework.samples.petclinic.vet.VetController.showResourcesVetList()
+      grade: 3
+    - entity: class:src/main/java/org/springframework/samples/petclinic/vet/Vets.java::org.springframework.samples.petclinic.vet.Vets
+      grade: 2
+      note: wrapper type serialized instead of a bare collection
+  - key: pc-l13
+    class: local
+    task_category: code_search
+    scope: SYMBOL
+    lexical_overlap: low
+    text: What stops the same pet from being added to an owner twice?
+    judgments:
+    - entity: method:src/main/java/org/springframework/samples/petclinic/owner/Owner.java::org.springframework.samples.petclinic.owner.Owner.addPet(Pet)
+      grade: 3
+  - key: pc-g01
+    class: global
+    task_category: configuration
+    scope: REPOSITORY
+    lexical_overlap: low
+    text: Which databases can the application run against, and how is one selected?
+    judgments:
+    - file: src/main/resources/application.properties
+      lines:
+      - 1
+      - 4
+      grade: 3
+    - file: src/main/resources/application-postgres.properties
+      lines:
+      - 1
+      - 7
+      grade: 3
+    - file: src/main/resources/application-mysql.properties
+      lines:
+      - 1
+      - 7
+      grade: 3
+    - file: docker-compose.yml
+      lines:
+      - 1
+      - 21
+      grade: 2
+  - key: pc-g02
+    class: global
+    task_category: data_model
+    scope: REPOSITORY
+    lexical_overlap: low
+    text: What does the relational schema for owners, pets and visits look like?
+    judgments:
+    - file: src/main/resources/db/h2/schema.sql
+      lines:
+      - 36
+      - 65
+      grade: 3
+    - file: src/main/resources/db/postgres/schema.sql
+      lines:
+      - 1
+      - 53
+      grade: 2
+    - file: src/main/resources/db/mysql/schema.sql
+      lines:
+      - 1
+      - 56
+      grade: 2
+    - entity: class:src/main/java/org/springframework/samples/petclinic/owner/Owner.java::org.springframework.samples.petclinic.owner.Owner
+      grade: 1
+    - entity: class:src/main/java/org/springframework/samples/petclinic/owner/Pet.java::org.springframework.samples.petclinic.owner.Pet
+      grade: 1
+    - entity: class:src/main/java/org/springframework/samples/petclinic/owner/Visit.java::org.springframework.samples.petclinic.owner.Visit
+      grade: 1
+  - key: pc-g03
+    class: global
+    task_category: architecture
+    scope: REPOSITORY
+    lexical_overlap: low
+    text: How is the application organized into feature areas, and which controllers handle each?
+    judgments:
+    - entity: class:src/main/java/org/springframework/samples/petclinic/owner/OwnerController.java::org.springframework.samples.petclinic.owner.OwnerController
+      grade: 3
+      note: owner area
+    - entity: class:src/main/java/org/springframework/samples/petclinic/vet/VetController.java::org.springframework.samples.petclinic.vet.VetController
+      grade: 3
+      note: vet area
+    - entity: class:src/main/java/org/springframework/samples/petclinic/owner/PetController.java::org.springframework.samples.petclinic.owner.PetController
+      grade: 2
+    - entity: class:src/main/java/org/springframework/samples/petclinic/owner/VisitController.java::org.springframework.samples.petclinic.owner.VisitController
+      grade: 2
+    - entity: class:src/main/java/org/springframework/samples/petclinic/system/WelcomeController.java::org.springframework.samples.petclinic.system.WelcomeController
+      grade: 2
+      note: system area
+    - entity: class:src/main/java/org/springframework/samples/petclinic/PetClinicApplication.java::org.springframework.samples.petclinic.PetClinicApplication
+      grade: 1
+    - file: README.md
+      lines:
+      - 1
+      - 181
+      grade: 1
+  - key: pc-g04
+    class: global
+    task_category: configuration
+    scope: REPOSITORY
+    lexical_overlap: low
+    text: How is the application deployed to Kubernetes?
+    judgments:
+    - file: k8s/petclinic.yml
+      lines:
+      - 1
+      - 64
+      grade: 3
+    - file: k8s/db.yml
+      lines:
+      - 1
+      - 73
+      grade: 3
+    - file: .github/workflows/deploy-and-test-cluster.yml
+      lines:
+      - 1
+      - 30
+      grade: 2
+  - key: pc-g05
+    class: global
+    task_category: data_model
+    scope: MODULE
+    lexical_overlap: low
+    text: What is the inheritance hierarchy shared by the domain objects?
+    judgments:
+    - entity: class:src/main/java/org/springframework/samples/petclinic/model/BaseEntity.java::org.springframework.samples.petclinic.model.BaseEntity
+      grade: 3
+    - entity: class:src/main/java/org/springframework/samples/petclinic/model/NamedEntity.java::org.springframework.samples.petclinic.model.NamedEntity
+      grade: 3
+    - entity: class:src/main/java/org/springframework/samples/petclinic/model/Person.java::org.springframework.samples.petclinic.model.Person
+      grade: 3
+    - entity: class:src/main/java/org/springframework/samples/petclinic/owner/Owner.java::org.springframework.samples.petclinic.owner.Owner
+      grade: 1
+    - entity: class:src/main/java/org/springframework/samples/petclinic/vet/Vet.java::org.springframework.samples.petclinic.vet.Vet
+      grade: 1
+    - entity: class:src/main/java/org/springframework/samples/petclinic/owner/Pet.java::org.springframework.samples.petclinic.owner.Pet
+      grade: 1
+  - key: pc-g06
+    class: global
+    task_category: architecture
+    scope: MODULE
+    lexical_overlap: high
+    text: Which data-access repositories exist, and what queries do they define?
+    judgments:
+    - entity: interface:src/main/java/org/springframework/samples/petclinic/owner/OwnerRepository.java::org.springframework.samples.petclinic.owner.OwnerRepository
+      grade: 3
+    - entity: interface:src/main/java/org/springframework/samples/petclinic/vet/VetRepository.java::org.springframework.samples.petclinic.vet.VetRepository
+      grade: 3
+    - entity: interface:src/main/java/org/springframework/samples/petclinic/owner/PetTypeRepository.java::org.springframework.samples.petclinic.owner.PetTypeRepository
+      grade: 3
+- manifest_id: full-stack-fastapi-template
+  role: TEST
+  questions:
+  - key: fa-l01
+    class: local
+    task_category: flow
+    scope: SYMBOL
+    lexical_overlap: low
+    text: How does the API verify a bearer token and load the calling user?
+    judgments:
+    - entity: function:backend/app/api/deps.py::get_current_user
+      grade: 3
+    - entity: function:backend/app/core/security.py::create_access_token
+      grade: 1
+  - key: fa-l02
+    class: local
+    task_category: flow
+    scope: SYMBOL
+    lexical_overlap: low
+    text: How are login credentials checked, and how is a timing attack on unknown emails prevented?
+    judgments:
+    - entity: function:backend/app/crud.py::authenticate
+      grade: 3
+    - entity: function:backend/app/api/routes/login.py::login_access_token
+      grade: 2
+    - entity: function:backend/app/core/security.py::verify_password
+      grade: 2
+  - key: fa-l03
+    class: local
+    task_category: code_search
+    scope: SYMBOL
+    lexical_overlap: low
+    text: How are passwords hashed, and how are stored hashes upgraded to a newer algorithm?
+    judgments:
+    - file: backend/app/core/security.py
+      lines:
+      - 11
+      - 16
+      grade: 3
+      note: Argon2 primary, bcrypt accepted
+    - entity: function:backend/app/core/security.py::verify_password
+      grade: 3
+    - entity: function:backend/app/core/security.py::get_password_hash
+      grade: 3
+    - entity: function:backend/app/crud.py::authenticate
+      grade: 2
+      note: stores the re-hashed password
+  - key: fa-l04
+    class: local
+    task_category: flow
+    scope: SYMBOL
+    lexical_overlap: low
+    text: How does password recovery avoid revealing whether an email is registered?
+    judgments:
+    - entity: function:backend/app/api/routes/login.py::recover_password
+      grade: 3
+    - entity: function:backend/app/api/routes/login.py::reset_password
+      grade: 2
+  - key: fa-l05
+    class: local
+    task_category: code_search
+    scope: SYMBOL
+    lexical_overlap: low
+    text: How long is a password reset token valid, and how is it verified?
+    judgments:
+    - entity: function:backend/app/utils.py::generate_password_reset_token
+      grade: 3
+    - entity: function:backend/app/utils.py::verify_password_reset_token
+      grade: 3
+    - file: backend/app/core/config.py
+      lines:
+      - 57
+      - 57
+      grade: 2
+      note: EMAIL_RESET_TOKEN_EXPIRE_HOURS
+  - key: fa-l06
+    class: local
+    task_category: code_search
+    scope: SYMBOL
+    lexical_overlap: low
+    text: Who is allowed to read, change or delete an item that belongs to another user?
+    judgments:
+    - entity: function:backend/app/api/routes/items.py::read_item
+      grade: 3
+    - entity: function:backend/app/api/routes/items.py::update_item
+      grade: 3
+    - entity: function:backend/app/api/routes/items.py::delete_item
+      grade: 3
+    - entity: function:backend/app/api/routes/items.py::read_items
+      grade: 2
+  - key: fa-l07
+    class: local
+    task_category: code_search
+    scope: SYMBOL
+    lexical_overlap: low
+    text: How is the item list restricted for users who are not superusers?
+    judgments:
+    - entity: function:backend/app/api/routes/items.py::read_items
+      grade: 3
+  - key: fa-l08
+    class: local
+    task_category: code_search
+    scope: SYMBOL
+    lexical_overlap: low
+    text: Can a superuser delete their own account?
+    judgments:
+    - entity: function:backend/app/api/routes/users.py::delete_user_me
+      grade: 3
+  - key: fa-l09
+    class: local
+    task_category: data_model
+    scope: SYMBOL
+    lexical_overlap: low
+    text: What happens to a user's items when the user is deleted?
+    judgments:
+    - entity: class:backend/app/models.py::User
+      grade: 3
+      note: cascade_delete on the relationship
+    - entity: class:backend/app/models.py::Item
+      grade: 3
+      note: ondelete=CASCADE foreign key
+    - entity: function:backend/app/api/routes/users.py::delete_user_me
+      grade: 1
+    - entity: function:backend/app/api/routes/users.py::delete_user
+      grade: 1
+  - key: fa-l10
+    class: local
+    task_category: flow
+    scope: SYMBOL
+    lexical_overlap: low
+    text: When users change their own password, what is checked first?
+    judgments:
+    - entity: function:backend/app/api/routes/users.py::update_password_me
+      grade: 3
+    - entity: function:backend/app/core/security.py::verify_password
+      grade: 1
+  - key: fa-l11
+    class: local
+    task_category: configuration
+    scope: SYMBOL
+    lexical_overlap: low
+    text: How are emails sent, and when is email sending enabled?
+    judgments:
+    - entity: function:backend/app/utils.py::send_email
+      grade: 3
+    - entity: method:backend/app/core/config.py::Settings.emails_enabled
+      grade: 3
+    - entity: function:backend/app/api/routes/login.py::recover_password
+      grade: 1
+  - key: fa-l12
+    class: local
+    task_category: flow
+    scope: SYMBOL
+    lexical_overlap: low
+    text: How is the first superuser created when the database is initialized?
+    judgments:
+    - entity: function:backend/app/core/db.py::init_db
+      grade: 3
+    - entity: function:backend/app/initial_data.py::init
+      grade: 2
+    - entity: function:backend/app/crud.py::create_user
+      grade: 1
+  - key: fa-l13
+    class: local
+    task_category: configuration
+    scope: FILE
+    lexical_overlap: low
+    text: Which API routes are only available in development?
+    judgments:
+    - file: backend/app/api/main.py
+      lines:
+      - 13
+      - 14
+      grade: 3
+    - entity: function:backend/app/api/routes/private.py::create_user
+      grade: 2
+    - entity: class:backend/app/api/routes/private.py::PrivateUserCreate
+      grade: 1
+  - key: fa-g01
+    class: global
+    task_category: configuration
+    scope: REPOSITORY
+    lexical_overlap: low
+    text: Which settings must be changed from their defaults before deploying, and how is that enforced?
+    judgments:
+    - entity: method:backend/app/core/config.py::Settings._enforce_non_default_secrets
+      grade: 3
+    - entity: method:backend/app/core/config.py::Settings._check_default_secret
+      grade: 3
+    - entity: class:backend/app/core/config.py::Settings
+      grade: 1
+  - key: fa-g02
+    class: global
+    task_category: configuration
+    scope: REPOSITORY
+    lexical_overlap: low
+    text: How is the database connection configured, and which driver does it use?
+    judgments:
+    - entity: method:backend/app/core/config.py::Settings._use_psycopg_driver
+      grade: 3
+    - file: backend/app/core/db.py
+      lines:
+      - 7
+      - 7
+      grade: 3
+      note: engine with pool_pre_ping
+    - entity: function:backend/app/api/deps.py::get_db
+      grade: 2
+  - key: fa-g03
+    class: global
+    task_category: architecture
+    scope: REPOSITORY
+    lexical_overlap: low
+    text: How are the API routers assembled into the application?
+    judgments:
+    - file: backend/app/api/main.py
+      lines:
+      - 1
+      - 14
+      grade: 3
+    - file: backend/app/main.py
+      lines:
+      - 21
+      - 35
+      grade: 3
+    - entity: function:backend/app/main.py::custom_generate_unique_id
+      grade: 1
+  - key: fa-g04
+    class: global
+    task_category: architecture
+    scope: REPOSITORY
+    lexical_overlap: low
+    text: How are database schema migrations managed?
+    judgments:
+    - entity: function:backend/app/alembic/env.py::run_migrations_online
+      grade: 3
+    - entity: function:backend/app/alembic/env.py::run_migrations_offline
+      grade: 2
+    - entity: function:backend/app/alembic/env.py::get_url
+      grade: 1
+    - entity: function:backend/app/core/db.py::init_db
+      grade: 1
+      note: notes that tables come from migrations
+  - key: fa-g05
+    class: global
+    task_category: configuration
+    scope: REPOSITORY
+    lexical_overlap: low
+    text: How is the frontend allowed to call the backend from another origin?
+    judgments:
+    - file: backend/app/main.py
+      lines:
+      - 27
+      - 33
+      grade: 3
+      note: CORS middleware
+    - file: backend/app/core/config.py
+      lines:
+      - 26
+      - 26
+      grade: 2
+      note: FRONTEND_HOST
+  - key: fa-g06
+    class: global
+    task_category: architecture
+    scope: REPOSITORY
+    lexical_overlap: low
+    text: What authorization levels does the API have, and where are they enforced?
+    judgments:
+    - entity: function:backend/app/api/deps.py::get_current_active_superuser
+      grade: 3
+    - entity: function:backend/app/api/deps.py::get_current_user
+      grade: 3
+    - entity: function:backend/app/api/routes/items.py::read_items
+      grade: 1
+    - entity: function:backend/app/api/routes/users.py::delete_user_me
+      grade: 1

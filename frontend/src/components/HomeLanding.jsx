@@ -1,15 +1,15 @@
+import { Link } from "react-router-dom";
 import TopNavigation from "./TopNavigation";
 
 export default function HomeLanding({
   repoUrl,
+  recent,
   onChange,
   onSubmit,
-  onDemo,
   inputRef,
   health,
   urlError,
   error,
-  rateLimitCountdown,
 }) {
   return (
     <div className="home-v2">
@@ -48,17 +48,34 @@ export default function HomeLanding({
                 {urlError}
               </p>
             )}
-            {error && !rateLimitCountdown && <p className="home-error">{error}</p>}
-            {rateLimitCountdown != null && (
-              <p className="home-error">GitHub rate limit hit. Retrying in {rateLimitCountdown}s...</p>
-            )}
+            {error && <p className="home-error">{error}</p>}
 
-            <div className="home-subrow">
-              <button onClick={onDemo}>&gt; try demo - bhaktivora9/stacksniffer</button>
-              <span>no sign-in - no API key</span>
-            </div>
           </div>
         </section>
+
+        {recent?.length > 0 && (
+          <section className="home-recent">
+            <div className="home-wrap">
+              <div className="home-section-label">Recent analyses</div>
+              <ul>
+                {recent.map((item) => (
+                  <li key={item.analysis_id}>
+                    <Link to={`/analyses/${encodeURIComponent(item.analysis_id)}`}>
+                      <span className="repo">
+                        {item.owner_name}/<b>{item.repository_name}</b>
+                      </span>
+                      <span className="sha">{item.commit_sha.slice(0, 7)}</span>
+                      <span className={`state ${item.status.toLowerCase()}`}>
+                        {item.status === "AWAITING_STAGE" ? "waiting" : item.status.toLowerCase()}
+                      </span>
+                      <time dateTime={item.created_at}>{new Date(item.created_at).toLocaleString()}</time>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </section>
+        )}
 
         <section className="home-pipeline">
           <div className="home-wrap">

@@ -78,7 +78,9 @@ class StructuralExtractionStage:
     @property
     def resumable_stages(self) -> tuple[str, ...]:
         """Stages this stage can continue a parked analysis at."""
-        return (AnalysisState.INDEXING.value,) if self._next_stage is not None else ()
+        if self._next_stage is None:
+            return ()
+        return (AnalysisState.INDEXING.value,) + tuple(getattr(self._next_stage, "resumable_stages", ()))
 
     async def resume(self, analysis_id: UUID, attempt_id: UUID) -> str:
         """Continue a parked analysis after its completed extraction: no acquisition, no re-extraction.
